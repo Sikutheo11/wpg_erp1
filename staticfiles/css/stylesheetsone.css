@@ -1,0 +1,69 @@
+/* Default Light Mode Styles */
+body {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+.navbar {
+    background-color: #ffffff;
+}
+.navbar-nav .nav-link {
+    color: #212529;
+}
+.navbar-nav .nav-link:hover {
+    color: #1a73e8;
+}
+.dropdown-menu {
+    background-color: #ffffff;
+    color: #212529;
+}
+.dropdown-menu .dropdown-item {
+    color: #212529;
+}
+.dropdown-menu .dropdown-item:hover {
+    background-color: #e9ecef;
+}
+.btn-primary {
+    background-color: #1a73e8;
+    border-color: #1a73e8;
+}
+.btn-primary:hover {
+    background-color: #185abc;
+    border-color: #185abc;
+}
+
+/* Eye Care Mode Styles */
+body.eye-care-mode {
+    background-color: #f0f0f0; /* Softer background color to reduce strain */
+    color: #000000; /* High contrast text color */
+}
+.navbar.eye-care-mode {
+    background-color: #e0e0e0; /* Softer navbar color */
+}
+.navbar-eye-care-mode .navbar-nav .nav-link {
+    color: #000000; /* High contrast text color */
+}
+.navbar-eye-care-mode .navbar-nav .nav-link:hover {
+    color: #000000; /* Ensure hover color is also high contrast */
+}
+.dropdown-menu.eye-care-mode {
+    background-color: #e0e0e0; /* Softer dropdown menu color */
+    color: #000000; /* High contrast text color */
+}
+.dropdown-menu.eye-care-mode .dropdown-item {
+    color: #000000; /* High contrast text color */
+}
+.dropdown-menu.eye-care-mode .dropdown-item:hover {
+    background-color: #c0c0c0; /* Softer hover background color */
+}
+.btn-primary.eye-care-mode {
+    background-color: #1a73e8;
+    border-color: #1a73e8;
+}
+.btn-primary.eye-care-mode:hover {
+    background-color: #185abc;
+    border-color: #185abc;
+}
+.form-check-input:checked {
+    background-color: #1a73e8;
+    border-color: #1a73e8;
+}

@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<style>
+
+/* ================= PAGE ================= */
+
+.register-page{
+    min-height: 100vh;
+    padding-top: 40px;
+}
+
+/* ================= BACKGROUND ================= */
+
+.bg-slider{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    overflow: hidden;
+}
+
+.bg-slider img{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    animation: slideShow 18s infinite;
+}
+
+.bg-slider img:nth-child(1){
+    animation-delay: 0s;
+}
+
+.bg-slider img:nth-child(2){
+    animation-delay: 6s;
+}
+
+.bg-slider img:nth-child(3){
+    animation-delay: 12s;
+}
+
+@keyframes slideShow {
+
+    0%{
+        opacity: 0;
+        transform: scale(1.1);
+    }
+
+    10%{
+        opacity: 1;
+    }
+
+    33%{
+        opacity: 1;
+    }
+
+    45%{
+        opacity: 0;
+    }
+
+    100%{
+        opacity: 0;
+    }
+}
+
+/* ================= OVERLAY ================= */
+
+.overlay{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,.55);
+    z-index: -1;
+}
+
+/* ================= FORM POSITION ================= */
+
+.register-wrapper{
+    display: flex;
+    justify-content: flex-end;
+    padding: 40px;
+}
+
+/* ================= CARD ================= */
+
+.register-card{
+    width: 700px;
+    background: rgba(255,255,255,.97);
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 15px 40px rgba(0,0,0,.25);
+}
+
+/* ================= TITLE ================= */
+
+.register-title{
+    text-align: center;
+    font-size: 2.3rem;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #212529;
+}
+
+/* ================= LABELS ================= */
+
+.form-label{
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+/* ================= DJANGO FORM INPUTS ================= */
+
+.register-card input,
+.register-card select{
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    transition: .3s;
+}
+
+.register-card input:focus,
+.register-card select:focus{
+    border-color: #d4a017;
+    box-shadow: 0 0 0 3px rgba(212,160,23,.15);
+    outline: none;
+}
+
+/* ================= BUTTON ================= */
+
+.btn-register{
+    width: 100%;
+    background: #d4a017;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-weight: 600;
+    transition: .3s;
+}
+
+.btn-register:hover{
+    background: #b8860b;
+}
+
+/* ================= ERRORS ================= */
+
+.errorlist{
+    list-style: none;
+    padding: 0;
+    margin-top: 5px;
+    color: red;
+    font-size: 14px;
+}
+
+/* ================= MOBILE ================= */
+
+@media(max-width:768px){
+
+    .register-wrapper{
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .register-card{
+        width: 100%;
+    }
+}
+
+</style>
+
+<!-- ================= BACKGROUND ================= -->
+
+<div class="bg-slider">
+    <img src="{% static 'images/sofa.jpg' %}" alt="">
+    <img src="{% static 'images/table.jpg' %}" alt="">
+    <img src="{% static 'images/bed.jpg' %}" alt="">
+</div>
+
+<div class="overlay"></div>
+
+<!-- ================= REGISTER FORM ================= -->
+
+<div class="register-page">
+
+    <div class="register-wrapper">
+
+        <div class="register-card">
+
+            <h2 class="register-title">
+                Create Account
+            </h2>
+
+            <form action="{% url 'registerUser' %}" method="POST">
+
+                {% csrf_token %}
+
+                <div class="row">
+
+                    <!-- First Name -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">First Name</label>
+                        {{ form.first_name }}
+                        {{ form.first_name.errors }}
+                    </div>
+
+                    <!-- Last Name -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Last Name</label>
+                        {{ form.last_name }}
+                        {{ form.last_name.errors }}
+                    </div>
+
+                    <!-- Username -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Username</label>
+                        {{ form.username }}
+                        {{ form.username.errors }}
+                    </div>
+
+                    <!-- Email -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Email</label>
+                        {{ form.email }}
+                        {{ form.email.errors }}
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Phone</label>
+                        {{ form.phone }}
+                        {{ form.phone.errors }}
+                    </div>
+
+                    <!-- Role -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Role</label>
+                        {{ form.role }}
+                        {{ form.role.errors }}
+                    </div>
+
+                    <!-- Password -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Password</label>
+                        {{ form.password }}
+                        {{ form.password.errors }}
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Confirm Password</label>
+                        {{ form.confirm_password }}
+                        {{ form.confirm_password.errors }}
+                    </div>
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Submit -->
+                    <div class="col-12 mt-3">
+                        <button type="submit" class="btn-register">
+                            Register
+                        </button>
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}HR Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-3">
+
+    <!-- HEADER -->
+    <div class="mb-4">
+        <h2 class="fw-bold">👥 HR Department Dashboard</h2>
+        <p class="text-muted">Employees, departments & positions overview</p>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6>Total Employees</h6>
+                <h3>{{ total_employees }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6>Active Employees</h6>
+                <h3>{{ active_employees }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6>Inactive Employees</h6>
+                <h3>{{ inactive_employees }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6>Departments</h6>
+                <h3>{{ total_departments }}</h3>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SECOND ROW -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-6">
+            <div class="card shadow-sm p-3">
+                <h6>Positions</h6>
+                <h3>{{ total_positions }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm p-3">
+                <h6>HR Summary</h6>
+                <p>Total Employees: {{ total_employees }}</p>
+                <p>Active: {{ active_employees }}</p>
+                <p>Inactive: {{ inactive_employees }}</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- BREAKDOWN -->
+    <div class="row g-3 mb-4">
+
+        <!-- Department Breakdown -->
+        <div class="col-md-6">
+            <div class="card shadow-sm p-3">
+                <h6>Employees by Department</h6>
+
+                {% for item in employees_by_department %}
+                    <p>
+                        {{ item.department__name }}:
+                        <strong>{{ item.total }}</strong>
+                    </p>
+                {% empty %}
+                    <p class="text-muted">No data</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Position Breakdown -->
+        <div class="col-md-6">
+            <div class="card shadow-sm p-3">
+                <h6>Employees by Position</h6>
+
+                {% for item in employees_by_position %}
+                    <p>
+                        {{ item.position__title }}:
+                        <strong>{{ item.total }}</strong>
+                    </p>
+                {% empty %}
+                    <p class="text-muted">No data</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ALERTS -->
+    <div class="card shadow-sm p-3">
+
+        <h5>Alerts</h5>
+
+        {% if alerts %}
+            {% for alert in alerts %}
+                <div class="alert alert-warning py-2">
+                    {{ alert }}
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">HR system is stable 🎉</p>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

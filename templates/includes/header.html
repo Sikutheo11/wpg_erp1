@@ -1,0 +1,159 @@
+{% block content %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WPG INVENTORY SYSTEM</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/stylesheets.css' %}">
+    <!-- Bootstrap CSS -->
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+<link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="css/sb-admin-2.min.css" rel="stylesheet">
+
+<!-- Bootstrap Bundle JS (including Popper) -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+<script src="vendor/jquery/jquery.min.js"></script>
+<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="js/sb-admin-2.min.js"></script>
+
+</head>
+<style>
+    .user-info {
+        position: relative;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+    }
+    .dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 40px;
+        right: 0;
+        background-color: white;
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+    }
+    .dropdown-menu a {
+        display: block;
+        padding: 10px 20px;
+        text-decoration: none;
+        color: #007bff;
+    }
+    .dropdown-menu a:hover {
+        background-color: #f1f1f1;
+    }
+</style>
+
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light topbar">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{%url 'worker_dashboard'%}">
+            <div class="logo">
+                <span class="logo-text">W.P.G</span>
+                <span class="logo-subtext"><sup><i>INVENTORY</i></sup></span>
+            </div>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'manager_dashboard' %}"><i class="fas fa-fw fa-tachometer-alt"></i> Dashboard</a>
+                </li>
+                <li class="nav-item dropdown my-">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                      <i class="fas fa-warehouse"></i> Stock
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li>
+                          <a class="nav-link" href="#"><i class="fas fa-fw fa-box"></i> Materials</a>                          
+                        </li>
+                        <li>
+                            <a class="nav-link" href="#"><i class="fas fa-fw fa-tools"></i> Tools</a>
+                        </li>
+                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item dropdown my-">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                      <i class="fas fa-user-shield"></i> Entities
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li>
+                          <a class="nav-link" href="#"><i class="fas fa-users"></i> Employees </a>
+                        </li>
+                         <li>
+                            <a class="nav-link" href="#"><i class="fas fa-user-plus"></i> Users</a>
+                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="#"><i class="fas fa-fw fa-file"></i> Equity</a>
+                </li>
+                <li class="nav-item dropdown my-">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                      <i class="fas fa-fw fa-chart-area"></i> Project
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li>
+                          <a class="nav-link" href="%#">
+                            <i class="fas fa-fw fa-box"></i> Project List</a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="#">
+                              <i class="fas fa-fw fa-tools"></i> Assigned Project</a>
+                        </li>
+                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#"><i class="fas fa-fw fa-table"></i> Tables</a>
+                </li>
+            </ul>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="eyeCareModeSwitch">
+            </div>
+            <div class="user-info d-flex align-items-center ms-3 dropdown">
+                <span class="me-2 dropdown-toggle" id="settingsDropdown" data-bs-toggle="dropdown" aria-expanded="false">Settings</span>
+                <i class="fas fa-cog" style="font-size: 50px; color: green;" data-bs-toggle="dropdown" aria-expanded="false"></i>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="settingsDropdown">
+                    <li><a class="dropdown-item" href="#">Manage Account</a></li>
+                    <li><a class="dropdown-item" href="#}">Logout</a></li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+<script>
+    const eyeCareModeSwitch = document.getElementById('eyeCareModeSwitch');
+    const body = document.body;
+
+    // Check if the user has previously selected eye care mode
+    if (localStorage.getItem('eyeCareMode') === 'enabled') {
+        body.classList.add('eye-care-mode');
+        eyeCareModeSwitch.checked = true;
+    }
+
+    eyeCareModeSwitch.addEventListener('change', function() {
+        if (this.checked) {
+            body.classList.add('eye-care-mode');
+            localStorage.setItem('eyeCareMode', 'enabled');
+        } else {
+            body.classList.remove('eye-care-mode');
+            localStorage.setItem('eyeCareMode', 'disabled');
+        }
+    });
+</script>
+{% endblock %}

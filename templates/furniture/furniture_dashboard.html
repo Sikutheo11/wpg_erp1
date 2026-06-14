@@ -1,0 +1,93 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Furniture Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-3">
+
+    <!-- HEADER -->
+    <div class="mb-4">
+        <h2 class="fw-bold">🪑 Furniture Production Dashboard</h2>
+        <p class="text-muted">Department overview & performance</p>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6>Products</h6>
+                <h3>{{ total_products }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6>Product Value</h6>
+                <h3>{{ total_product_value }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6>Raw Materials</h6>
+                <h3>{{ total_materials }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h6>Workers</h6>
+                <h3>{{ total_workers }}</h3>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ORDERS -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+            <div class="card p-3 shadow-sm">
+                <h6>Total Orders</h6>
+                <h4>{{ total_orders }}</h4>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card p-3 shadow-sm">
+                <h6>Pending</h6>
+                <h4>{{ pending_orders }}</h4>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card p-3 shadow-sm">
+                <h6>Completed</h6>
+                <h4>{{ completed_orders }}</h4>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ALERTS -->
+    <div class="card p-3 shadow-sm">
+
+        <h5>Alerts</h5>
+
+        {% if alerts %}
+            {% for alert in alerts %}
+                <div class="alert alert-warning py-2">
+                    {{ alert }}
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">All good 🎉</p>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

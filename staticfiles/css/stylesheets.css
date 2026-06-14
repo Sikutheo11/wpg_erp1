@@ -1,0 +1,348 @@
+body {
+    padding-top: 110px;
+    background-color: #c5c6cb;
+}
+/* Base styles */
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+    background-color: #f6e0a7;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    height: 70px; /* Default height */
+    padding: 10px 20px; /* Default padding */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.nav-item .nav-link {
+    color: #4e73df;
+}
+
+.nav-item .nav-link:hover {
+    color: #2e59d9;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+.user-info img {
+    width: 40px;
+    height: 30px;
+    border-radius: 50%;
+    margin-left: 10px;
+}
+
+.logo {
+    display: inline-block;
+    padding-left: 40px;
+}
+
+.logo-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #007bff; /* Primary Bootstrap color */
+}
+
+.logo-subtext {
+    font-size: 1rem;
+    font-weight: normal;
+    color: #6c757d; /* Secondary Bootstrap color */
+}
+
+/* Media Queries */
+
+/* For screens smaller than 992px (tablets) */
+@media (max-width: 991.98px) {
+    .topbar {
+        height: 60px; /* Reduced height */
+        padding: 8px 15px; /* Reduced padding */
+        background-color: #95A393;
+    }
+
+    .logo {
+        padding-left: 30px; /* Reduced padding */
+    }
+
+    .logo-text {
+        font-size: 1.25rem; /* Reduced font size */
+    }
+
+    .logo-subtext {
+        font-size: 0.875rem; /* Reduced font size */
+    }
+
+    .user-info img {
+        width: 35px; /* Reduced width */
+        height: 25px; /* Reduced height */
+    }
+}
+
+/* For screens smaller than 768px (mobile phones) */
+@media (max-width: 767.98px) {
+    .topbar {
+        height: 30px; /* Further reduced height */
+        padding: 5px 10px; /* Further reduced padding */
+    }
+
+    .logo {
+        padding-left: 20px; /* Further reduced padding */
+    }
+
+    .logo-text {
+        font-size: 1rem; /* Further reduced font size */
+    }
+
+    .logo-subtext {
+        font-size: 0.75rem; /* Further reduced font size */
+    }
+
+    .user-info img {
+        width: 30px; /* Further reduced width */
+        height: 20px; /* Further reduced height */
+    }
+}
+
+.border-left-primary {
+  border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-bottom-primary {
+  border-bottom: 0.25rem solid #4e73df !important;
+}
+
+.border-left-secondary {
+  border-left: 0.25rem solid #858796 !important;
+}
+
+.border-bottom-secondary {
+  border-bottom: 0.25rem solid #858796 !important;
+}
+
+.border-left-success {
+  border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-bottom-success {
+  border-bottom: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+  border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-bottom-info {
+  border-bottom: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+  border-left: 0.25rem solid #f6c23e !important;
+}
+
+.border-bottom-warning {
+  border-bottom: 0.25rem solid #f6c23e !important;
+}
+
+.border-left-danger {
+  border-left: 0.25rem solid #e74a3b !important;
+}
+
+.border-bottom-danger {
+  border-bottom: 0.25rem solid #e74a3b !important;
+}
+
+.border-left-light {
+  border-left: 0.25rem solid #f8f9fc !important;
+}
+
+.border-bottom-light {
+  border-bottom: 0.25rem solid #f8f9fc !important;
+}
+
+.border-left-dark {
+  border-left: 0.25rem solid #5a5c69 !important;
+}
+
+.border-bottom-dark {
+  border-bottom: 0.25rem solid #5a5c69 !important;
+}
+
+.navbar {
+    background-color: #ffffff;
+}
+.navbar-nav .nav-link {
+    color: #212529;
+}
+.navbar-nav .nav-link:hover {
+    color: #1a73e8;
+}
+.dropdown-menu {
+    background-color: #ffffff;
+    color: #212529;
+}
+.dropdown-menu .dropdown-item {
+    color: #212529;
+}
+.dropdown-menu .dropdown-item:hover {
+    background-color: #e9ecef;
+}
+.btn-primary {
+    background-color: #1a73e8;
+    border-color: #1a73e8;
+}
+.btn-primary:hover {
+    background-color: #185abc;
+    border-color: #185abc;
+}
+
+/* Eye Care Mode Styles */
+body.eye-care-mode {
+    background-color: #38516f; /* Softer background color to reduce strain */
+    color: #000000; /* High contrast text color */
+}
+ .navbar.eye-care-mode {
+    background-color: blue;
+}
+.navbar-eye-care-mode .navbar-nav .nav-link {
+    color: #000000;
+}
+.navbar-eye-care-mode .navbar-nav .nav-link:hover {
+    color: #000000;
+}
+/*
+.dropdown-menu.eye-care-mode {
+    background-color: #e0e0e0;
+    color: #000000;
+}
+.dropdown-menu.eye-care-mode .dropdown-item {
+    color: #000000;
+}
+.dropdown-menu.eye-care-mode .dropdown-item:hover {
+    background-color: #c0c0c0;
+}
+.btn-primary.eye-care-mode {
+    background-color: #1a73e8;
+    border-color: #1a73e8;
+}
+.btn-primary.eye-care-mode:hover {
+    background-color: #185abc;
+    border-color: #185abc;
+}
+.form-check-input:checked {
+    background-color: #1a73e8;
+    border-color: #1a73e8;
+} */
+
+.table thead th {
+    background-color: #343a40;
+    color: #ffffff;
+    text-align: center;
+}
+.table tbody tr:nth-child(odd) {
+    background-color: #f8f9fa;
+}
+.table tbody tr:nth-child(even) {
+    background-color: #ffffff;
+}
+.table tbody tr:hover {
+    background-color: #e9ecef; /* Light grey on hover */
+}
+.table td {
+    vertical-align: middle; /* Center content vertically */
+}
+.table th {
+    text-align: center; /* Center headers */
+}
+.container {
+    margin-top: 20px;
+}
+.card {
+    border-radius: 0.5rem; /* Rounded corners */
+}
+.card-body {
+    padding: 2rem; /* Padding for card body */
+}
+.card-title {
+    font-size: 1.5rem; /* Larger title text */
+    margin-bottom: 1.5rem; /* Space below title */
+}
+.custom-table {
+    width: 60%;
+    margin: 0 auto; /* Center the table horizontally */
+}
+.action-buttons .btn {
+    margin-right: 5px; /* Space between buttons */
+    padding: 5px 10px; /* Adjust padding for text buttons */
+    font-size: 14px; /* Adjust font size */
+    border: none; /* Remove borders */
+    border-radius: 0.25rem; /* Rounded corners */
+    color: white; /* Text color */
+}
+
+.btn-delete {
+    background-color: #dc3545; /* Red for delete */
+}
+
+.btn-edit {
+    background-color: #007bff; /* Blue for edit */
+}
+
+.btn-view {
+    background-color: #6c757d; /* Grey for view */
+}
+
+.btn-add {
+    background-color: #28a745; /* Green for add */
+    color: white;
+    margin-bottom: 20px; /* Space below the button */
+    padding: 10px 20px; /* More padding for a larger button */
+    font-size: 18px; /* Larger text */
+    border-radius: 0.5rem; /* Rounded corners */
+    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+    display: inline-flex; /* Align icon and text */
+    align-items: center; /* Center icon and text vertically */
+    justify-content: center; /* Center content */
+    text-align: center; /* Center text */
+}
+
+.btn-add i {
+    margin-right: 8px; /* Space between icon and text */
+}
+
+.btn-add:hover {
+    background-color: #218838; /* Darker green on hover */
+    text-decoration: none; /* Remove underline on hover */
+}
+
+.btn-print {
+    background-color: #17a2b8; /* Teal for print */
+    color: white;
+    margin-bottom: 20px; /* Space below the button */
+    padding: 10px 20px; /* More padding for a larger button */
+    font-size: 18px; /* Larger text */
+    border-radius: 0.5rem; /* Rounded corners */
+    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+    display: inline-flex; /* Align icon and text */
+    align-items: center; /* Center icon and text vertically */
+    justify-content: center; /* Center content */
+    text-align: center; /* Center text */
+}
+
+.btn-print i {
+    margin-right: 8px; /* Space between icon and text */
+}
+
+.btn-print:hover {
+    background-color: #138496; /* Darker teal on hover */
+    text-decoration: none; /* Remove underline on hover */
+}

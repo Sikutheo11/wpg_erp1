@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- HEADER -->
+    <div class="mb-4">
+        <h3>👷 Furniture Production Worker Dashboard</h3>
+        <p class="text-muted">Welcome {{ employee.user.first_name }} {{ employee.user.last_name }}</p>
+    </div>
+
+    <!-- KPI ROW -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6>Total Tasks</h6>
+                    <h3>{{ total_tasks }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6>Pending</h6>
+                    <h3>{{ pending_tasks }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6>In Progress</h6>
+                    <h3>{{ in_progress_tasks }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6>Completed</h6>
+                    <h3>{{ completed_tasks }}</h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- PRODUCTION OUTPUT -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header">
+            📦 My Production Output
+        </div>
+        <div class="card-body">
+            <h4>Total Output: {{ total_output }}</h4>
+        </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="card shadow-sm">
+        <div class="card-header">⚠️ Alerts</div>
+        <div class="card-body">
+
+            {% for alert in alerts %}
+                {% if alert %}
+                    <div class="alert alert-warning">
+                        {{ alert }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
