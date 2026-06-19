@@ -1,0 +1,59 @@
+{% extends 'furniture/base_furniture.html' %}
+
+
+{% block content %}
+
+
+<div class="container">
+
+
+<h3>
+Quotation Approval
+</h3>
+
+
+<h5>
+{{quotation.order.product}}
+</h5>
+
+
+<p>
+Selling Price:
+{{quotation.selling_price}}
+</p>
+
+
+<form method="POST">
+
+{% csrf_token %}
+
+
+<button 
+name="action"
+value="approve"
+class="btn btn-success">
+
+Approve
+
+</button>
+
+
+
+<button 
+name="action"
+value="reject"
+class="btn btn-danger">
+
+Reject
+
+</button>
+
+
+
+</form>
+
+
+</div>
+
+
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+
+<div class="container">
+
+
+<h3>
+Create Quotation
+</h3>
+
+
+<h5>
+{{order.product}}
+</h5>
+
+
+
+<form method="POST">
+
+{% csrf_token %}
+
+
+{{form.as_p}}
+
+
+
+<button class="btn btn-success">
+
+Submit Quotation
+
+</button>
+
+
+</form>
+
+
+</div>
+
+
+{% endblock %}

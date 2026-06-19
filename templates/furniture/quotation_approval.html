@@ -1,0 +1,24 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+
+<div class="card shadow p-4">
+    <h4>Quotation Approval</h4>
+
+    <div class="alert alert-info">
+        Order: {{ order.product.name }} <br>
+        Quantity: {{ order.quantity_to_produce }} <br>
+        Estimated Cost: <strong>{{ order.estimated_cost }}</strong>
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <button class="btn btn-success">
+            Approve / Reject
+        </button>
+    </form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends 'construction/base_construction.html' %}
+
+
+{% block content %}
+
+
+<div class="d-flex justify-content-between mb-3">
+
+<h2>
+Material Usage
+</h2>
+
+
+<a href="{% url 'material_usage_create' %}"
+class="btn btn-primary">
+
++ Use Material
+
+</a>
+
+
+</div>
+
+
+
+<div class="card shadow">
+
+
+<table class="table table-striped">
+
+
+<tr>
+
+<th>Project</th>
+<th>Material</th>
+<th>Quantity</th>
+<th>Unit Cost</th>
+<th>Total Cost</th>
+<th>Date</th>
+
+</tr>
+
+
+
+{% for material in materials %}
+
+
+<tr>
+
+
+<td>
+{{material.project.name}}
+</td>
+
+
+<td>
+{{material.raw_material.name}}
+</td>
+
+
+<td>
+{{material.quantity_used}}
+{{material.raw_material.unit}}
+</td>
+
+
+<td>
+{{material.unit_cost}}
+</td>
+
+
+<td>
+
+<strong>
+{{material.total_cost}}
+</strong>
+
+</td>
+
+
+<td>
+{{material.date|date:"d M Y"}}
+</td>
+
+
+</tr>
+
+
+
+{% empty %}
+
+
+<tr>
+
+<td colspan="6"
+class="text-center">
+
+No material usage recorded
+
+</td>
+
+</tr>
+
+
+{% endfor %}
+
+
+
+</table>
+
+
+</div>
+
+
+
+{% endblock %}

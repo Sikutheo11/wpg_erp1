@@ -3,6 +3,7 @@ from django.conf import settings
 from django.utils import timezone
 from datetime import datetime
 from django.db.models import Max
+from django.contrib.auth.models import Group
 import random
 import string
 from accounts.models import User
@@ -93,11 +94,10 @@ class Employee(models.Model):
     )
 
     position = models.ForeignKey(Position, on_delete=models.SET_NULL, null=True,blank=True)
-    job_title = models.CharField(max_length=100, unique=True, blank=True)
     employee_code = models.CharField(max_length=20, unique=True, blank=True)
-    salary = models.DecimalField(max_digits=12, decimal_places=2)
+    salary = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     hourly_rate = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    hire_date = models.DateField()
+    hire_date = models.DateField(null=True, blank=True)
     national_id = models.CharField(max_length=30)
     emergency_contact = models.CharField(max_length=20)
     is_active = models.BooleanField(default=True)

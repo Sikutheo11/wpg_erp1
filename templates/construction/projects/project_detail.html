@@ -1,0 +1,119 @@
+{% extends 'construction/base_construction.html' %}
+
+
+
+{% block content %}
+
+
+
+<h2>
+{{project.name}}
+</h2>
+
+
+<div class="row">
+
+
+<div class="col-md-4">
+
+<div class="card shadow">
+
+<div class="card-body">
+
+
+<h6>Budget</h6>
+
+<h4>
+{{project.budget}}
+</h4>
+
+
+<h6>Spent</h6>
+
+<h4 class="text-danger">
+
+{{project.total_spent}}
+
+</h4>
+
+
+<h6>Remaining</h6>
+
+<h4 class="text-success">
+
+{{project.remaining_budget}}
+
+</h4>
+
+
+</div>
+
+</div>
+
+
+</div>
+
+
+<div class="col-md-8">
+
+
+<div class="card shadow">
+
+
+<div class="card-header">
+
+Tasks
+
+</div>
+
+
+<table class="table">
+
+
+{% for task in tasks %}
+
+
+<tr>
+
+<td>
+
+{{task.title}}
+
+</td>
+
+<td>
+
+{{task.status}}
+
+</td>
+
+</tr>
+
+
+{% empty %}
+
+<tr>
+
+<td>
+No Tasks
+</td>
+
+</tr>
+
+
+{% endfor %}
+
+
+</table>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+{% endblock %}

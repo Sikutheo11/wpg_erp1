@@ -1,0 +1,102 @@
+{% extends 'inventory/base_inventory.html' %}
+
+
+
+{% block content %}
+
+
+
+<h2 class="text-danger">
+
+Low Stock Report
+
+</h2>
+
+
+
+
+<div class="card shadow mt-3">
+
+
+<table class="table">
+
+
+<tr>
+
+<th>
+Material
+</th>
+
+<th>
+Current Stock
+</th>
+
+<th>
+Minimum Stock
+</th>
+
+
+</tr>
+
+
+
+
+{% for material in materials %}
+
+
+<tr>
+
+
+<td>
+
+{{material.name}}
+
+</td>
+
+
+<td class="text-danger">
+
+{{material.current_stock}}
+
+{{material.unit}}
+
+</td>
+
+
+<td>
+
+{{material.minimum_stock}}
+
+</td>
+
+
+</tr>
+
+
+
+{% empty %}
+
+
+<tr>
+
+<td colspan="3"
+class="text-center">
+
+All materials are OK
+
+</td>
+
+</tr>
+
+
+{% endfor %}
+
+
+
+</table>
+
+
+</div>
+
+
+{% endblock %}

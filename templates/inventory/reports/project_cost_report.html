@@ -1,0 +1,121 @@
+{% extends 'construction/base_construction.html' %}
+
+
+
+{% block content %}
+
+
+<h2 class="mb-4">
+
+Project Cost Report
+
+</h2>
+
+
+
+<div class="card shadow">
+
+
+<table class="table table-bordered">
+
+
+<tr>
+
+<th>
+Project
+</th>
+
+<th>
+Budget
+</th>
+
+<th>
+Spent
+</th>
+
+<th>
+Remaining
+</th>
+
+<th>
+Progress
+</th>
+
+
+</tr>
+
+
+
+{% for project in projects %}
+
+
+<tr>
+
+
+<td>
+
+{{project.name}}
+
+</td>
+
+
+<td>
+
+{{project.budget}}
+
+</td>
+
+
+<td class="text-danger">
+
+{{project.total_spent}}
+
+</td>
+
+
+<td class="text-success">
+
+{{project.remaining_budget}}
+
+</td>
+
+
+
+<td>
+
+
+<div class="progress">
+
+
+<div class="progress-bar"
+style="width:{{project.progress_percentage}}%">
+
+
+{{project.progress_percentage}}%
+
+
+</div>
+
+
+</div>
+
+
+</td>
+
+
+</tr>
+
+
+
+{% endfor %}
+
+
+
+</table>
+
+
+</div>
+
+
+
+{% endblock %}

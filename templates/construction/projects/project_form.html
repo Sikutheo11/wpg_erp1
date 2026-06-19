@@ -1,0 +1,40 @@
+{% extends 'construction/base_construction.html' %}
+
+
+
+{% block content %}
+
+
+<h2>
+Project Form
+</h2>
+
+
+
+<div class="card shadow p-4">
+
+
+<form method="POST">
+
+{% csrf_token %}
+
+
+{{form.as_p}}
+
+
+
+<button class="btn btn-success">
+
+Save Project
+
+</button>
+
+
+</form>
+
+
+</div>
+
+
+
+{% endblock %}

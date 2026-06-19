@@ -1,0 +1,34 @@
+{% extends 'furniture/base_furniture.html' %}
+
+
+{% block content %}
+
+
+<div class="container">
+
+<h3>
+Labour Cost
+</h3>
+
+
+<form method="POST">
+
+{% csrf_token %}
+
+{{form.as_p}}
+
+
+<button class="btn btn-primary">
+
+Save Labour
+
+</button>
+
+
+</form>
+
+
+</div>
+
+
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'furniture/base_furniture.html' %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+<h2 class="mb-4">
+    Furniture Production Dashboard
+</h2>
+
+<div class="row">
+
+
+<div class="col-md-4">
+<div class="card shadow">
+<div class="card-body">
+
+<h6>Total Orders</h6>
+
+<h2>
+{{ total_orders }}
+</h2>
+
+</div>
+</div>
+</div>
+
+
+
+<div class="col-md-4">
+
+<div class="card shadow">
+
+<div class="card-body">
+
+<h6>
+Pending Quotations
+</h6>
+
+
+<h2 class="text-warning">
+{{ pending_quotes }}
+</h2>
+
+
+</div>
+
+</div>
+
+</div>
+
+
+
+</div>
+
+
+
+</div>
+
+{% endblock %}

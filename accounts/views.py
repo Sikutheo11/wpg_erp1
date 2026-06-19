@@ -48,7 +48,7 @@ def login(request):
                         return redirect('customer_dashboard')
 
                     elif user.role == 'worker':
-                        return redirect('worker_dashboard')
+                        return redirect('furniture_worker_dashboard')
 
                     elif user.role == 'manager':
                         return redirect('manager_dashboard')

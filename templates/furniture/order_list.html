@@ -1,0 +1,149 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>📦 Orders</h3>
+
+    <a href="{% url 'create_order' %}" class="btn btn-primary">
+        + Create Order
+    </a>
+</div>
+
+<!-- ================= FILTER SECTION ================= -->
+<form method="GET" class="card shadow-sm mb-3">
+    <div class="card-body">
+
+        <div class="row g-2">
+
+            <!-- SEARCH -->
+            <div class="col-md-5">
+                <input type="text"
+                       name="search"
+                       value="{{ request.GET.search }}"
+                       class="form-control"
+                       placeholder="Search by Order ID or Product name...">
+            </div>
+
+            <!-- STATUS FILTER -->
+            <div class="col-md-4">
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+
+                    <option value="pending" {% if request.GET.status == "pending" %}selected{% endif %}>Pending</option>
+                    <option value="waiting_quotation" {% if request.GET.status == "waiting_quotation" %}selected{% endif %}>Waiting Quotation</option>
+                    <option value="quotation_pending_approval" {% if request.GET.status == "quotation_pending_approval" %}selected{% endif %}>Quotation Approval</option>
+                    <option value="assigned" {% if request.GET.status == "assigned" %}selected{% endif %}>Assigned</option>
+                    <option value="ongoing" {% if request.GET.status == "ongoing" %}selected{% endif %}>Ongoing</option>
+                    <option value="completed" {% if request.GET.status == "completed" %}selected{% endif %}>Completed</option>
+                    <option value="cancelled" {% if request.GET.status == "cancelled" %}selected{% endif %}>Cancelled</option>
+
+                </select>
+            </div>
+
+            <!-- FILTER BUTTON -->
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-dark w-100">
+                    Filter
+                </button>
+            </div>
+
+            <!-- RESET -->
+            <div class="col-md-1">
+                <a href="{% url 'order_list' %}" class="btn btn-outline-secondary w-100">
+                    Reset
+                </a>
+            </div>
+
+        </div>
+
+    </div>
+</form>
+
+<!-- ================= TABLE ================= -->
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <table class="table table-hover table-bordered align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Status</th>
+                    <th>Cost</th>
+                    <th>Assigned To</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for order in orders %}
+                <tr>
+
+                    <td>{{ order.id }}</td>
+
+                    <td>{{ order.product.name }}</td>
+
+                    <td>{{ order.quantity_to_produce }}</td>
+
+                    <td>
+                        {% if order.status == "pending" %}
+                            <span class="badge bg-secondary">Pending</span>
+                        {% elif order.status == "waiting_quotation" %}
+                            <span class="badge bg-warning text-dark">Waiting Quotation</span>
+                        {% elif order.status == "quotation_pending_approval" %}
+                            <span class="badge bg-info text-dark">Quotation Approval</span>
+                        {% elif order.status == "assigned" %}
+                            <span class="badge bg-primary">Assigned</span>
+                        {% elif order.status == "ongoing" %}
+                            <span class="badge bg-primary">Ongoing</span>
+                        {% elif order.status == "completed" %}
+                            <span class="badge bg-success">Completed</span>
+                        {% elif order.status == "cancelled" %}
+                            <span class="badge bg-danger">Cancelled</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if order.estimated_cost %}
+                            {{ order.estimated_cost }}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if order.assigned_to %}
+                            {{ order.assigned_to.first_name }} {{ order.assigned_to.last_name }}
+                        {% else %}
+                            <span class="text-muted">Not assigned</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <a href="{% url 'approve_order' order.id %}" class="btn btn-sm btn-success">
+                            Approve
+                        </a>
+
+                        <a href="{% url 'assign_order' order.id %}" class="btn btn-sm btn-primary">
+                            Assign
+                        </a>
+                    </td>
+
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted">
+                        No orders found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,135 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}WPG ERP{% endblock %}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+
+        body{
+            background:#f4f6f9;
+            font-family:'Poppins',sans-serif;
+        }
+
+        .sidebar{
+            width:260px;
+            height:100vh;
+            position:fixed;
+            top:0;
+            left:0;
+            background:#111827;
+            overflow-y:auto;
+        }
+
+        .sidebar-header{
+            padding:20px;
+            text-align:center;
+            color:white;
+            border-bottom:1px solid rgba(255,255,255,.1);
+        }
+
+        .sidebar a{
+            display:block;
+            color:#cbd5e1;
+            text-decoration:none;
+            padding:14px 20px;
+            transition:.3s;
+        }
+
+        .sidebar a:hover{
+            background:#1f2937;
+            color:white;
+            border-left:4px solid #3b82f6;
+        }
+
+        .main{
+            margin-left:260px;
+        }
+
+        .topbar{
+            background:white;
+            padding:15px 25px;
+            box-shadow:0 2px 10px rgba(0,0,0,.05);
+        }
+
+        .content{
+            padding:25px;
+        }
+
+        .card{
+            border:none;
+            border-radius:12px;
+            box-shadow:0 2px 10px rgba(0,0,0,.05);
+        }
+
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<div class="sidebar">
+
+    <div class="sidebar-header">
+        <h4>🏢 WPG ERP</h4>
+    </div>
+
+    <a href="{% url 'admin_dashboard' %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+
+
+    <a href="{% url 'inventory_dashboard' %}">
+        <i class="bi bi-box-seam"></i> Inventory
+    </a>
+
+    <a href="{% url 'order_list' %}" class="nav-link">
+        <i class="bi bi-cart"></i> My Tasks
+    </a>
+
+    <a href="#">
+        <i class="bi bi-gear"></i> Settings
+    </a>
+
+</div>
+
+<div class="main">
+
+    <div class="topbar d-flex justify-content-between align-items-center">
+
+        <h5 class="mb-0">
+            {% block page_title %}
+            Dashboard
+            {% endblock %}
+        </h5>
+
+        <div>
+            <i class="bi bi-bell me-3"></i>
+
+            {{ request.user.first_name }}
+            {{ request.user.last_name }}
+        </div>
+
+    </div>
+
+    <div class="content">
+
+        {% block content %}
+        {% endblock %}
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

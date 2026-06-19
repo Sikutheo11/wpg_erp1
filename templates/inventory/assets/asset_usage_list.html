@@ -1,0 +1,111 @@
+{% extends 'construction/base_construction.html' %}
+
+
+
+{% block content %}
+
+
+<div class="d-flex justify-content-between">
+
+
+<h2>
+Equipment Usage
+</h2>
+
+
+<a href="{% url 'asset_usage_create' %}"
+class="btn btn-primary">
+
++ Add Equipment Usage
+
+</a>
+
+
+</div>
+
+
+
+<div class="card shadow mt-3">
+
+
+<table class="table table-striped">
+
+
+<tr>
+
+<th>Project</th>
+<th>Asset</th>
+<th>Hours Used</th>
+<th>Cost / Hour</th>
+<th>Total Cost</th>
+
+</tr>
+
+
+
+{% for asset in assets %}
+
+
+
+<tr>
+
+
+<td>
+{{asset.project.name}}
+</td>
+
+
+<td>
+{{asset.asset.name}}
+</td>
+
+
+<td>
+{{asset.hours_used}}
+</td>
+
+
+<td>
+{{asset.cost_per_hour}}
+</td>
+
+
+<td>
+
+{{asset.total_cost}}
+
+</td>
+
+
+
+</tr>
+
+
+
+{% empty %}
+
+
+<tr>
+
+<td colspan="5"
+class="text-center">
+
+No equipment usage
+
+</td>
+
+</tr>
+
+
+{% endfor %}
+
+
+
+</table>
+
+
+</div>
+
+
+
+{% endblock %}

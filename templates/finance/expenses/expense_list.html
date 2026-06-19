@@ -1,0 +1,123 @@
+{% extends 'construction/base_construction.html' %}
+
+
+{% block content %}
+
+
+<div class="d-flex justify-content-between mb-3">
+
+
+<h2>
+Project Expenses
+</h2>
+
+
+<a href="{% url 'expense_create' %}"
+class="btn btn-primary">
+
++ Add Expense
+
+</a>
+
+
+</div>
+
+
+
+
+<div class="card shadow">
+
+
+<table class="table table-striped">
+
+
+<tr>
+
+<th>Project</th>
+<th>Type</th>
+<th>Description</th>
+<th>Amount</th>
+<th>Date</th>
+
+</tr>
+
+
+
+{% for expense in expenses %}
+
+
+<tr>
+
+
+<td>
+
+{{expense.project.name}}
+
+</td>
+
+
+<td>
+
+<span class="badge bg-warning">
+
+{{expense.expense_type}}
+
+</span>
+
+</td>
+
+
+<td>
+
+{{expense.description}}
+
+</td>
+
+
+<td>
+
+<strong>
+{{expense.amount}}
+</strong>
+
+</td>
+
+
+<td>
+
+{{expense.date|date:"d M Y"}}
+
+</td>
+
+
+
+</tr>
+
+
+{% empty %}
+
+
+<tr>
+
+<td colspan="5"
+class="text-center">
+
+No expenses found
+
+</td>
+
+</tr>
+
+
+{% endfor %}
+
+
+
+</table>
+
+
+</div>
+
+
+
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">📦 Create Order</h5>
+        </div>
+
+        <div class="card-body">
+
+            <form method="POST" novalidate>
+                {% csrf_token %}
+
+                <!-- PRODUCT -->
+                <div class="mb-3">
+                    <label class="form-label">Product</label>
+                    {{ form.product }}
+                </div>
+
+                <!-- QUANTITY -->
+                <div class="mb-3">
+                    <label class="form-label">Quantity</label>
+                    {{ form.quantity_to_produce }}
+                </div>
+
+                <!-- START DATE -->
+                <div class="mb-3">
+                    <label class="form-label">Start Date</label>
+                    {{ form.start_date }}
+                </div>
+
+                <!-- NOTES -->
+                <div class="mb-3">
+                    <label class="form-label">Notes</label>
+                    {{ form.notes }}
+                </div>
+
+                <!-- ERRORS -->
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
+
+                <!-- BUTTONS -->
+                <div class="d-flex gap-2 mt-3">
+
+                    <button type="submit" class="btn btn-primary">
+                        Create Order
+                    </button>
+
+                    <a href="{% url 'order_list' %}" class="btn btn-secondary">
+                        Cancel
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

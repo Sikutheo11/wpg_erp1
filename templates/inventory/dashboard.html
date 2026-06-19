@@ -1,0 +1,220 @@
+{% extends 'inventory/base_inventory.html' %}
+
+
+{% block title %}
+Inventory Dashboard
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<h2 class="mb-4">
+Inventory Dashboard
+</h2>
+
+
+
+<div class="row">
+
+
+<div class="col-md-3">
+
+<div class="card shadow">
+
+<div class="card-body">
+
+<h6>
+Products
+</h6>
+
+<h2>
+{{total_products}}
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+
+<div class="col-md-3">
+
+<div class="card shadow">
+
+<div class="card-body">
+
+<h6>
+Raw Materials
+</h6>
+
+<h2>
+{{total_materials}}
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+
+<div class="col-md-3">
+
+<div class="card shadow">
+
+<div class="card-body">
+
+<h6>
+Assets
+</h6>
+
+<h2>
+{{total_assets}}
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+
+<div class="col-md-3">
+
+<div class="card shadow">
+
+<div class="card-body">
+
+<h6>
+Low Stock
+</h6>
+
+<h2 class="text-danger">
+
+{{low_materials_count}}
+
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+
+</div>
+
+
+
+
+<br>
+
+
+
+<div class="card shadow">
+
+
+<div class="card-header">
+
+Recent Stock Movements
+
+</div>
+
+
+<table class="table table-striped">
+
+
+<tr>
+
+<th>
+Item
+</th>
+
+<th>
+Type
+</th>
+
+<th>
+Quantity
+</th>
+
+<th>
+Date
+</th>
+
+</tr>
+
+
+
+{% for movement in recent_movements %}
+
+
+<tr>
+
+
+<td>
+
+{% if movement.product %}
+
+{{movement.product.name}}
+
+{% else %}
+
+{{movement.raw_material.name}}
+
+{% endif %}
+
+</td>
+
+
+<td>
+
+{{movement.movement_type}}
+
+</td>
+
+
+<td>
+
+{{movement.quantity}}
+
+</td>
+
+
+<td>
+
+{{movement.created_at|date:"Y-m-d"}}
+
+</td>
+
+
+</tr>
+
+
+{% empty %}
+
+<tr>
+
+<td colspan="4">
+No movements
+</td>
+
+</tr>
+
+{% endfor %}
+
+
+</table>
+
+
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'furniture/base_furniture.html' %}
+
+
+{% block content %}
+
+
+<div class="container">
+
+
+<h3>
+Assign Worker
+</h3>
+
+
+<p>
+Order:
+{{order.product}}
+</p>
+
+
+
+<form method="POST">
+
+{% csrf_token %}
+
+{{form.as_p}}
+
+
+<button class="btn btn-warning">
+
+Assign Worker
+
+</button>
+
+
+</form>
+
+
+</div>
+
+
+{% endblock %}

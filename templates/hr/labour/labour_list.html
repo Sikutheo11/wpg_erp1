@@ -1,0 +1,139 @@
+{% extends 'construction/base_construction.html' %}
+
+
+
+{% block content %}
+
+
+
+<div class="d-flex justify-content-between">
+
+
+<h2>
+Labour Management
+</h2>
+
+
+<a href="{% url 'labour_create' %}"
+class="btn btn-primary">
+
++ Add Labour
+
+</a>
+
+
+</div>
+
+
+
+
+<div class="card shadow mt-3">
+
+
+<table class="table table-bordered">
+
+
+<tr>
+
+<th>Project</th>
+<th>Employee</th>
+<th>Role</th>
+<th>Hours</th>
+<th>Rate</th>
+<th>Total Cost</th>
+
+
+</tr>
+
+
+
+
+{% for labour in labours %}
+
+
+
+<tr>
+
+
+<td>
+
+{{labour.project.name}}
+
+</td>
+
+
+
+<td>
+
+{{labour.employee}}
+
+</td>
+
+
+
+<td>
+
+{{labour.role}}
+
+</td>
+
+
+
+<td>
+
+{{labour.hours_worked}}
+
+</td>
+
+
+
+<td>
+
+{{labour.hourly_rate}}
+
+</td>
+
+
+
+<td>
+
+<strong>
+{{labour.total_cost}}
+</strong>
+
+</td>
+
+
+
+</tr>
+
+
+
+{% empty %}
+
+
+<tr>
+
+<td colspan="6"
+class="text-center">
+
+No labour records
+
+</td>
+
+
+</tr>
+
+
+{% endfor %}
+
+
+
+</table>
+
+
+</div>
+
+
+
+{% endblock %}

@@ -1,108 +1,237 @@
 from django.contrib import admin
+
 from .models import (
     Order,
+    BillOfMaterial,
+    Quotation,
     ProductionMaterial,
+    ProductionLabour,
+    ProductionMachine,
+    StockReservation,
     ProductionOutput,
-    ProductionLabour
 )
 
 
-# =========================
-# PRODUCTION MATERIAL INLINE
-# =========================
-class ProductionMaterialInline(admin.TabularInline):
-    model = ProductionMaterial
-    extra = 1
 
+# ======================================================
+# ORDER ADMIN
+# ======================================================
 
-# =========================
-# PRODUCTION OUTPUT INLINE
-# =========================
-class ProductionOutputInline(admin.TabularInline):
-    model = ProductionOutput
-    extra = 1
-
-
-# =========================
-# PRODUCTION LABOUR INLINE
-# =========================
-class ProductionLabourInline(admin.TabularInline):
-    model = ProductionLabour
-    extra = 1
-
-
-# =========================
-# PRODUCTION ORDER ADMIN
-# =========================
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+
     list_display = (
         'id',
+        'customer_name',
         'product',
         'quantity_to_produce',
+        'assigned_to',
         'status',
-        'start_date',
-        'end_date',
-        'created_by',
         'created_at',
     )
 
-    list_filter = ('status', 'start_date', 'end_date')
-    search_fields = ('product__name',)
 
-    inlines = [
-        ProductionMaterialInline,
-        ProductionOutputInline,
-        ProductionLabourInline,
-    ]
+    list_filter = (
+        'status',
+        'created_at',
+        'assigned_to',
+    )
 
 
-# =========================
-# OPTIONAL: Register standalone (if needed)
-# =========================
+    search_fields = (
+        'customer_name',
+        'product__name',
+    )
+
+
+    readonly_fields = (
+        'created_at',
+    )
+
+
+
+# ======================================================
+# BOM ADMIN
+# ======================================================
+
+@admin.register(BillOfMaterial)
+class BillOfMaterialAdmin(admin.ModelAdmin):
+
+
+    list_display = (
+        'product',
+        'raw_material',
+        'quantity_required',
+        'total_cost',
+    )
+
+
+    search_fields = (
+        'product__name',
+        'raw_material__name',
+    )
+
+
+
+# ======================================================
+# QUOTATION ADMIN
+# ======================================================
+
+@admin.register(Quotation)
+class QuotationAdmin(admin.ModelAdmin):
+
+
+    list_display = (
+        'order',
+        'prepared_by',
+        'approved_by',
+        'selling_price',
+        'status',
+        'created_at',
+    )
+
+
+    list_filter = (
+        'status',
+        'created_at',
+    )
+
+
+    search_fields = (
+        'order__customer_name',
+        'order__product__name',
+    )
+
+
+    readonly_fields = (
+        'created_at',
+    )
+
+
+
+# ======================================================
+# MATERIAL CONSUMPTION ADMIN
+# ======================================================
+
 @admin.register(ProductionMaterial)
 class ProductionMaterialAdmin(admin.ModelAdmin):
-    list_display = ('production_order', 'raw_material', 'quantity_used', 'unit_cost')
 
 
-@admin.register(ProductionOutput)
-class ProductionOutputAdmin(admin.ModelAdmin):
-    list_display = ('production_order', 'product', 'quantity_produced', 'date')
+    list_display = (
+        'order',
+        'raw_material',
+        'quantity_used',
+        'unit_cost',
+        'total_cost',
+    )
 
+
+    search_fields = (
+        'order__customer_name',
+        'raw_material__name',
+    )
+
+
+
+# ======================================================
+# LABOUR COST ADMIN
+# ======================================================
 
 @admin.register(ProductionLabour)
 class ProductionLabourAdmin(admin.ModelAdmin):
-    list_display = ('production_order', 'employee', 'hours_worked', 'hourly_rate')
 
-from django.contrib import admin
-from .models import ProductionMachine
 
+    list_display = (
+        'order',
+        'employee',
+        'hours_worked',
+        'hourly_rate',
+        'total_cost',
+    )
+
+
+    search_fields = (
+        'employee__user__username',
+        'order__customer_name',
+    )
+
+
+
+# ======================================================
+# MACHINE COST ADMIN
+# ======================================================
 
 @admin.register(ProductionMachine)
 class ProductionMachineAdmin(admin.ModelAdmin):
+
+
     list_display = (
+        'order',
         'asset',
-        'production_order',
         'hours_used',
         'hourly_cost',
-        'get_total_cost',
-        'created_at'
+        'total_cost',
     )
 
-    list_filter = (
-        'created_at',
-        'asset',
-        'production_order',
-    )
 
     search_fields = (
         'asset__name',
-        'production_order__id',
+        'order__customer_name',
     )
 
-    readonly_fields = ('created_at', 'get_total_cost')
 
-    def get_total_cost(self, obj):
-        return obj.total_cost
 
-    get_total_cost.short_description = 'Total Cost'
+# ======================================================
+# STOCK RESERVATION ADMIN
+# ======================================================
+
+@admin.register(StockReservation)
+class StockReservationAdmin(admin.ModelAdmin):
+
+
+    list_display = (
+        'order',
+        'raw_material',
+        'quantity',
+        'status',
+    )
+
+
+    list_filter = (
+        'status',
+    )
+
+
+    search_fields = (
+        'raw_material__name',
+        'order__customer_name',
+    )
+
+
+
+# ======================================================
+# PRODUCTION OUTPUT ADMIN
+# ======================================================
+
+@admin.register(ProductionOutput)
+class ProductionOutputAdmin(admin.ModelAdmin):
+
+
+    list_display = (
+        'order',
+        'product',
+        'quantity_produced',
+        'produced_by',
+        'date',
+    )
+
+
+    search_fields = (
+        'product__name',
+        'order__customer_name',
+    )
+
+
+    readonly_fields = (
+        'date',
+    )

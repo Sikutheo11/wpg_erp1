@@ -74,6 +74,7 @@ def manager_dashboard(request):
     pending_orders = Order.objects.filter(status='pending').count()
     completed_orders = Order.objects.filter(status='completed').count()
     cancelled_orders = Order.objects.filter(status='cancelled').count()
+    approval_orders = Order.objects.filter(status__in=["waiting_quotation","quotation_pending_approval"])
 
 
     # ================= PROJECTS =================
@@ -149,6 +150,7 @@ def manager_dashboard(request):
         "out_of_stock": out_of_stock,
 
         "total_orders": total_orders,
+        "approval_orders": approval_orders,
         "pending_orders": pending_orders,
         "completed_orders": completed_orders,
         "cancelled_orders": cancelled_orders,
@@ -262,5 +264,4 @@ def admin_dashboard(request):
     }
 
     return render(request, 'core/admin_dashboard.html', context)
-
 

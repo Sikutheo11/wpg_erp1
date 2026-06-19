@@ -1,0 +1,91 @@
+{% extends 'inventory/base_inventory.html' %}
+
+
+
+{% block content %}
+
+
+
+<div class="d-flex justify-content-between">
+
+
+<h2>
+Assets
+</h2>
+
+
+
+<a href="{% url 'asset_create' %}"
+class="btn btn-primary">
+
++ Add Asset
+
+</a>
+
+
+</div>
+
+
+
+
+<div class="card shadow mt-3">
+
+
+<table class="table table-striped">
+
+
+<thead>
+
+<tr>
+
+<th>Code</th>
+<th>Name</th>
+<th>Type</th>
+<th>Cost</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+{% for asset in assets %}
+<tr>
+<td>
+{{asset.asset_code}}
+</td>
+<td>
+{{asset.name}}
+</td>
+<td>
+{{asset.asset_type}}
+</td>
+<td>
+{{asset.purchase_cost}}
+</td>
+<td>
+<span class="badge bg-success">
+{{asset.status}}
+</span>
+</td>
+<td>
+<a href="{% url 'asset_update' asset.id %}"
+class="btn btn-sm btn-warning">
+Edit
+</a>
+<a href="{% url 'asset_delete' asset.id %}"
+class="btn btn-sm btn-danger">
+Delete
+</a>
+</td>
+</tr>
+{% empty %}
+<tr>
+<td colspan="5"
+class="text-center">
+No assets
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endblock %}

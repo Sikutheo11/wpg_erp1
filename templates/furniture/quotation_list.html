@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+
+<div class="container-fluid">
+
+
+<h3>
+Pending Quotations
+</h3>
+
+
+
+<table class="table">
+
+
+<tr>
+
+<th>Customer</th>
+<th>Worker</th>
+<th>Price</th>
+<th>Status</th>
+<th></th>
+
+</tr>
+
+
+
+{% for q in quotations %}
+
+
+<tr>
+
+
+<td>
+{{q.order.customer_name}}
+</td>
+
+
+<td>
+{{q.prepared_by}}
+</td>
+
+
+<td>
+{{q.selling_price}}
+</td>
+
+
+<td>
+
+{{q.status}}
+
+</td>
+
+
+<td>
+
+<a href="{% url 'approve_quotation' q.id %}"
+class="btn btn-primary btn-sm">
+
+Review
+
+</a>
+
+
+</td>
+
+
+</tr>
+
+
+{% endfor %}
+
+
+
+</table>
+
+
+</div>
+
+
+{% endblock %}

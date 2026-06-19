@@ -1,0 +1,508 @@
+{% extends 'construction/base_construction.html' %}
+
+
+{% block content %}
+
+
+<div class="container-fluid">
+
+
+<!-- HEADER -->
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+
+<div>
+
+<h2 class="fw-bold">
+
+Project Cost Report
+
+</h2>
+
+
+<p class="text-muted">
+
+Financial overview of construction projects
+
+</p>
+
+
+</div>
+
+
+
+<a href="{% url 'construction_dashboard' %}"
+class="btn btn-secondary">
+
+
+<i class="bi bi-arrow-left"></i>
+
+Dashboard
+
+
+</a>
+
+
+</div>
+
+
+
+
+
+<!-- SUMMARY CARDS -->
+
+<div class="row mb-4">
+
+
+
+<div class="col-md-3">
+
+
+<div class="card shadow border-0">
+
+
+<div class="card-body">
+
+
+<h6 class="text-muted">
+
+Total Projects
+
+</h6>
+
+
+<h3>
+
+{{projects|length}}
+
+</h3>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+<div class="col-md-3">
+
+
+<div class="card shadow border-0">
+
+
+<div class="card-body">
+
+
+<h6 class="text-muted">
+
+Total Budget
+
+</h6>
+
+
+<h3 class="text-primary">
+
+{{total_budget}}
+
+</h3>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+<div class="col-md-3">
+
+
+<div class="card shadow border-0">
+
+
+<div class="card-body">
+
+
+<h6 class="text-muted">
+
+Total Spent
+
+</h6>
+
+
+<h3 class="text-danger">
+
+{{total_spent}}
+
+</h3>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+<div class="col-md-3">
+
+
+<div class="card shadow border-0">
+
+
+<div class="card-body">
+
+
+<h6 class="text-muted">
+
+Remaining
+
+</h6>
+
+
+<h3 class="text-success">
+
+{{remaining_budget}}
+
+</h3>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+<!-- PROJECT COST TABLE -->
+
+<div class="card shadow border-0">
+
+
+<div class="card-header bg-white">
+
+
+<h5 class="mb-0">
+
+Project Financial Details
+
+</h5>
+
+
+</div>
+
+
+
+<div class="card-body">
+
+
+
+<div class="table-responsive">
+
+
+<table class="table table-hover align-middle">
+
+
+<thead class="table-light">
+
+
+<tr>
+
+
+<th>
+Project
+</th>
+
+
+<th>
+Client
+</th>
+
+
+<th>
+Budget
+</th>
+
+
+<th>
+Spent
+</th>
+
+
+<th>
+Remaining
+</th>
+
+
+<th>
+Progress
+</th>
+
+
+<th>
+Status
+</th>
+
+
+</tr>
+
+
+</thead>
+
+
+
+
+
+<tbody>
+
+
+
+{% for project in projects %}
+
+
+<tr>
+
+
+
+<td>
+
+
+<strong>
+
+{{project.name}}
+
+</strong>
+
+
+<br>
+
+
+<small class="text-muted">
+
+{{project.code}}
+
+</small>
+
+
+</td>
+
+
+
+
+
+<td>
+
+{{project.client_name}}
+
+</td>
+
+
+
+
+
+<td>
+
+
+{{project.budget|floatformat:2}}
+
+
+</td>
+
+
+
+
+
+<td class="text-danger">
+
+
+{{project.total_spent|floatformat:2}}
+
+
+</td>
+
+
+
+
+
+<td class="text-success">
+
+
+{{project.remaining_budget|floatformat:2}}
+
+
+</td>
+
+
+
+
+
+
+<td width="180">
+
+
+<div class="progress">
+
+
+<div class="progress-bar"
+role="progressbar"
+style="width:{{project.progress_percentage}}%">
+
+
+
+{{project.progress_percentage}}%
+
+
+
+</div>
+
+
+</div>
+
+
+</td>
+
+
+
+
+
+
+<td>
+
+
+{% if project.status == 'completed' %}
+
+
+<span class="badge bg-success">
+
+Completed
+
+</span>
+
+
+
+{% elif project.status == 'ongoing' %}
+
+
+<span class="badge bg-primary">
+
+Ongoing
+
+</span>
+
+
+
+{% elif project.status == 'delayed' %}
+
+
+<span class="badge bg-danger">
+
+Delayed
+
+</span>
+
+
+
+{% else %}
+
+
+<span class="badge bg-secondary">
+
+{{project.status}}
+
+</span>
+
+
+
+{% endif %}
+
+
+
+</td>
+
+
+
+
+
+</tr>
+
+
+
+{% empty %}
+
+
+
+<tr>
+
+<td colspan="7"
+class="text-center text-muted">
+
+
+No projects available
+
+
+</td>
+
+</tr>
+
+
+
+{% endfor %}
+
+
+
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+{% endblock %}

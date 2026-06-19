@@ -1,0 +1,150 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- ================= HEADER ================= -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <h3>Quotation for Order #{{ quotation.order.id }}</h3>
+            <p><strong>Customer:</strong> {{ quotation.order.customer }}</p>
+            <p><strong>Status:</strong> {{ quotation.order.status }}</p>
+            <p><strong>Assigned Worker:</strong> {{ quotation.worker }}</p>
+        </div>
+    </div>
+
+    <!-- ================= MATERIALS ================= -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-primary text-white">
+            Production Materials
+        </div>
+        <div class="card-body table-responsive">
+
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Material</th>
+                        <th>Quantity</th>
+                        <th>Unit Cost</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in order.materials.all %}
+                    <tr>
+                        <td>{{ m.raw_material.name }}</td>
+                        <td>{{ m.quantity_used }}</td>
+                        <td>{{ m.unit_cost }}</td>
+                        <td>{{ m.total_cost }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">No materials found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+    <!-- ================= LABOUR ================= -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-success text-white">
+            Production Labour
+        </div>
+        <div class="card-body table-responsive">
+
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Hours Worked</th>
+                        <th>Hourly Rate</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in order.labours.all %}
+                    <tr>
+                        <td>{{ l.employee }}</td>
+                        <td>{{ l.hours_worked }}</td>
+                        <td>{{ l.hourly_rate }}</td>
+                        <td>{{ l.total_cost }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">No labour records found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+    <!-- ================= MACHINES ================= -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-warning">
+            Production Machine Usage
+        </div>
+        <div class="card-body table-responsive">
+
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Machine</th>
+                        <th>Hours Used</th>
+                        <th>Hourly Cost</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in order.machines.all %}
+                    <tr>
+                        <td>{{ m.asset.name }}</td>
+                        <td>{{ m.hours_used }}</td>
+                        <td>{{ m.hourly_cost }}</td>
+                        <td>{{ m.total_cost }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">No machine usage found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+    <!-- ================= SUMMARY ================= -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h4>Cost Summary</h4>
+
+            <p><strong>Material Cost:</strong> {{ order.material_cost }}</p>
+            <p><strong>Labour Cost:</strong> {{ order.labour_cost }}</p>
+            <p><strong>Machine Cost:</strong> {{ order.machine_cost }}</p>
+
+            <hr>
+
+            <h3>Total Production Cost:
+                {{ order.material_cost|add:order.labour_cost|add:order.machine_cost }}
+            </h3>
+        </div>
+    </div>
+
+    <!-- ================= ACTION ================= -->
+    <div class="text-end mb-5">
+        <form method="post">
+            {% csrf_token %}
+            <button class="btn btn-primary btn-lg">
+                Submit Quotation
+            </button>
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

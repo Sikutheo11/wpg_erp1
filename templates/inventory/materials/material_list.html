@@ -1,0 +1,68 @@
+{% extends 'inventory/base_inventory.html' %}
+
+
+{% block content %}
+
+
+<div class="d-flex justify-content-between">
+
+<h2>
+Raw Materials
+</h2>
+
+
+<a href="{% url 'material_create' %}"
+class="btn btn-primary">
+
++ Add Material
+
+</a>
+
+</div>
+
+
+
+<table class="table table-bordered mt-3">
+
+
+<tr>
+
+<th>Name</th>
+<th>Code</th>
+<th>Stock</th>
+<th>Cost</th>
+<th>Status</th>
+
+</tr>
+{% for material in materials %}
+<tr>
+<td>
+{{material.name}}
+</td>
+<td>
+{{material.code}}
+</td>
+<td>
+{{material.current_stock}}
+{{material.unit}}
+</td>
+<td>
+{{material.unit_cost}}
+</td>
+<td>
+{{material.status}}
+</td>
+<td>
+<a href="{% url 'material_update' material.id %}"
+class="btn btn-sm btn-warning">
+Edit
+</a>
+<a href="{% url 'material_delete' material.id %}"
+class="btn btn-sm btn-danger">
+Delete
+</a>
+</td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

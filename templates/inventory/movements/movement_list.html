@@ -1,0 +1,146 @@
+{% extends 'inventory/base_inventory.html' %}
+
+
+
+{% block content %}
+
+
+<div class="d-flex justify-content-between">
+
+
+<h2>
+Stock Movements
+</h2>
+
+
+
+<a href="{% url 'stock_create' %}"
+class="btn btn-primary">
+
++ New Movement
+
+</a>
+
+
+</div>
+
+
+
+
+<div class="card shadow mt-3">
+
+
+<table class="table table-bordered">
+
+
+<tr>
+
+<th>Item</th>
+<th>Type</th>
+<th>Quantity</th>
+<th>Reference</th>
+<th>Date</th>
+
+</tr>
+
+
+
+{% for movement in movements %}
+
+
+<tr>
+
+
+<td>
+
+{% if movement.product %}
+
+{{movement.product.name}}
+
+{% else %}
+
+{{movement.raw_material.name}}
+
+{% endif %}
+
+</td>
+
+
+
+<td>
+
+
+{% if movement.movement_type == "IN" %}
+
+<span class="badge bg-success">
+
+{{movement.movement_type}}
+
+</span>
+
+
+{% elif movement.movement_type == "OUT" %}
+
+
+<span class="badge bg-danger">
+
+{{movement.movement_type}}
+
+</span>
+
+
+{% else %}
+
+
+<span class="badge bg-warning">
+
+{{movement.movement_type}}
+
+</span>
+
+
+{% endif %}
+
+
+</td>
+
+
+
+
+<td>
+
+{{movement.quantity}}
+
+</td>
+
+
+
+<td>
+
+{{movement.reference_no}}
+
+</td>
+
+
+
+<td>
+
+{{movement.created_at|date:"Y-m-d"}}
+
+</td>
+
+
+</tr>
+
+
+{% endfor %}
+
+
+</table>
+
+
+</div>
+
+
+
+{% endblock %}

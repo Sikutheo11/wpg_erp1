@@ -1,0 +1,41 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+
+<div class="card shadow p-4">
+    <h4>Stock Approval</h4>
+
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Material</th>
+                    <th>Quantity</th>
+                    <th>Order</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in movements %}
+                <tr>
+                    <td>{{ item.raw_material.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.reference_no }}</td>
+                    <td>
+                        <form method="POST" action="{% url 'approve_stock' item.id %}">
+                            {% csrf_token %}
+                            <button class="btn btn-success btn-sm">
+                                Approve
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+    </div>
+</div>
+
+{% endblock %}
