@@ -1,76 +1,407 @@
 from django.db import models
-from decimal import Decimal
-from django.db.models import Max
+from django.utils import timezone
+from accounts.models import User
+from inventory.models import Product,Warehouse
 
+
+
+# ==========================================
+# CUSTOMER
+# ==========================================
+
+class Customer(models.Model):
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+
+    company_name = models.CharField(
+        max_length=200,
+        blank=True
+    )
+
+    phone = models.CharField(
+        max_length=30
+    )
+
+    address = models.TextField(
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+
+    def __str__(self):
+
+        if self.company_name:
+            return self.company_name
+
+        if self.user:
+            return self.user.username
+
+        return f"Customer-{self.id}"
+
+
+
+# ==========================================
+# SALES QUOTATION
+# ==========================================
+
+class SalesQuotation(models.Model):
+
+    STATUS = (
+        ('draft', 'Draft'),
+        ('sent', 'Sent'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+
+
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE,
+        related_name="quotations"
+    )
+
+
+    quotation_no = models.CharField(
+        max_length=50,
+        unique=True
+    )
+
+
+    quotation_date = models.DateField(
+        default=timezone.now
+    )
+
+
+    valid_until = models.DateField()
+
+
+    discount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
+
+    tax = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
+
+    total_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS,
+        default="draft"
+    )
+
+
+    notes = models.TextField(
+        blank=True
+    )
+
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+
+    def __str__(self):
+        return self.quotation_no
+
+
+
+# ==========================================
+# QUOTATION ITEMS
+# ==========================================
+
+class SalesQuotationItem(models.Model):
+
+    quotation = models.ForeignKey(
+        SalesQuotation,
+        on_delete=models.CASCADE,
+        related_name="items"
+    )
+
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE
+    )
+
+
+    quantity = models.DecimalField(
+        max_digits=12,
+        decimal_places=2
+    )
+
+
+    unit_price = models.DecimalField(
+        max_digits=15,
+        decimal_places=2
+    )
+
+
+    @property
+    def subtotal(self):
+
+        return self.quantity * self.unit_price
+
+
+
+# ==========================================
+# SALE
+# ==========================================
 
 class Sale(models.Model):
 
-    STATUS_CHOICES = (
-        ('draft', 'Draft'),
+    STATUS = (
+        ('pending', 'Pending'),
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     )
 
-    sale_code = models.CharField(max_length=50, unique=True, blank=True)
-    customer_name = models.CharField(max_length=200, blank=True, null=True)
 
-    sale_date = models.DateTimeField(auto_now_add=True)
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE,
+        related_name="sales"
+    )
+    warehouse = models.ForeignKey(
+        Warehouse,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
 
-    subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    discount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    total = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+
+    quotation = models.ForeignKey(
+        SalesQuotation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales"
+    )
+
+
+    sale_no = models.CharField(
+        max_length=50,
+        unique=True
+    )
+
+
+    sale_date = models.DateField(
+        default=timezone.now
+    )
+
+
+    discount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
+
+    tax = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
+
+    total_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
 
     status = models.CharField(
         max_length=20,
-        choices=STATUS_CHOICES,
-        default='draft'
+        choices=STATUS,
+        default="pending"
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    def generate_sale_code(self):
-        last = Sale.objects.aggregate(Max('id'))['id__max'] or 0
-        return f"SALE-{last + 1:05d}"
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
 
-    def calculate_totals(self):
-        self.subtotal = sum(item.total for item in self.items.all())
-        self.total = self.subtotal - (self.discount or Decimal('0'))
-
-    def save(self, *args, **kwargs):
-        if not self.sale_code:
-            self.sale_code = self.generate_sale_code()
-
-        super().save(*args, **kwargs)
-
-        # recalc AFTER save (important for items relation)
-        self.calculate_totals()
-        super().save(update_fields=['subtotal', 'total'])
 
     def __str__(self):
-        return self.sale_code
 
+        return self.sale_no
+
+
+
+# ==========================================
+# SALE ITEMS
+# ==========================================
 
 class SaleItem(models.Model):
 
     sale = models.ForeignKey(
         Sale,
         on_delete=models.CASCADE,
-        related_name='items'
+        related_name="items"
     )
 
-    product_name = models.CharField(max_length=200)
-    quantity = models.PositiveIntegerField(default=1)
-    unit_price = models.DecimalField(max_digits=15, decimal_places=2)
 
-    total = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE
+    )
 
-    def save(self, *args, **kwargs):
-        self.total = self.quantity * self.unit_price
-        super().save(*args, **kwargs)
 
-        # auto-update parent sale totals
-        self.sale.calculate_totals()
-        self.sale.save()
+    quantity = models.DecimalField(
+        max_digits=12,
+        decimal_places=2
+    )
 
-    
+
+    unit_price = models.DecimalField(
+        max_digits=15,
+        decimal_places=2
+    )
+
+
+    @property
+    def subtotal(self):
+
+        return self.quantity * self.unit_price
+
+
+
+# ==========================================
+# INVOICE
+# ==========================================
+
+class Invoice(models.Model):
+
+    STATUS = (
+        ('unpaid', 'Unpaid'),
+        ('partial', 'Partial'),
+        ('paid', 'Paid'),
+    )
+
+
+    sale = models.OneToOneField(
+        Sale,
+        on_delete=models.CASCADE,
+        related_name="invoice"
+    )
+
+
+    invoice_no = models.CharField(
+        max_length=50,
+        unique=True
+    )
+
+
+    invoice_date = models.DateField(
+        default=timezone.now
+    )
+
+
+    due_date = models.DateField()
+
+
+    total_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2
+    )
+
+
+    amount_paid = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS,
+        default="unpaid"
+    )
+
+
+    @property
+    def balance(self):
+
+        return self.total_amount - self.amount_paid
+
+
+    def __str__(self):
+
+        return self.invoice_no
+
+
+
+# ==========================================
+# CUSTOMER PAYMENT
+# ==========================================
+
+class CustomerPayment(models.Model):
+
+
+    PAYMENT_METHODS = (
+        ('cash', 'Cash'),
+        ('bank', 'Bank'),
+        ('mobile_money', 'Mobile Money'),
+    )
+
+
+    invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.CASCADE,
+        related_name="payments"
+    )
+
+
+    amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2
+    )
+
+
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHODS
+    )
+
+
+    payment_date = models.DateField(
+        default=timezone.now
+    )
+
+
+    reference = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+
+    notes = models.TextField(
+        blank=True
+    )
+
+
+    def __str__(self):
+
+        return f"{self.invoice.invoice_no} - {self.amount}"

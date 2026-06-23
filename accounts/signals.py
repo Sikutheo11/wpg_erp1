@@ -7,37 +7,34 @@ from django.contrib.auth.models import Group
 
 
 @receiver(post_save, sender=User)
-def post_save_create_profile_receiver(sender, instance, created, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
-    else:
-        try:
-            profile =UserProfile.objects.get(user=instance)
-            profile.save()
-        except:
-            UserProfile.objects.create(user=instance)
+def create_user_profile(sender, instance, created, **kwargs):
 
-@receiver(pre_save, sender=User)
-def pre_save_profile_receiver(sender, instance, **kwargs):
-    print('profile created ')
+    if created:
+
+        UserProfile.objects.get_or_create(
+            user=instance
+        )
 
 @receiver(post_migrate)
 def create_groups(sender, **kwargs):
 
     groups = [
-        "Manager",
-        "Carpentry Supervisor",
-        "Construction Supervisor",
-        "Machinist Supervisor",
-        "Carpentry Worker",
-        "Construction Worker",
-        "Machinist Worker",
-        "Finance Manager"
-        "Sales",
-        "Store Keeper",
-        "Accountant",
-        "Customer"
-    ]
+    "Administrator",
+    "Manager",
+    "Finance Manager",
+    "HR Manager",
+    "Production Supervisor",
+    "Carpentry Supervisor",
+    "Construction Supervisor",
+    "Machinist Supervisor",
+    "Carpentry Worker",
+    "Construction Worker",
+    "Machinist Worker",
+    "Sales Officer",
+    "Store Keeper",
+    "Accountant",
+    "Customer",
+]
 
     for group in groups:
         Group.objects.get_or_create(

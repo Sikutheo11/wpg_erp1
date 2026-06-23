@@ -1,0 +1,71 @@
+{% extends 'sales/base_sales.html'%}
+{% block content %}
+
+<div class="card">
+
+    <div class="card-header">
+
+        <h4>Invoices</h4>
+
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-striped">
+
+            <thead>
+
+                <tr>
+                    <th>Invoice No</th>
+                    <th>Customer</th>
+                    <th>Total</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+            {% for invoice in invoices %}
+
+                <tr>
+
+                    <td>{{ invoice.invoice_no }}</td>
+
+                    <td>{{ invoice.sale.customer }}</td>
+
+                    <td>{{ invoice.total_amount }}</td>
+
+                    <td>{{ invoice.amount_paid }}</td>
+
+                    <td>{{ invoice.balance }}</td>
+
+                    <td>{{ invoice.status }}</td>
+
+                    <td>
+
+                        <a href="{% url 'invoice_detail' invoice.id %}"
+                           class="btn btn-info btn-sm">
+
+                            View
+
+                        </a>
+
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

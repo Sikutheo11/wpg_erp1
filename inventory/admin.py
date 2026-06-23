@@ -48,22 +48,39 @@ class RawMaterialAdmin(admin.ModelAdmin):
 
 # =========================
 # PRODUCT
-# =========================
+# ========================
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+
     list_display = (
-        'name',
         'product_code',
+        'name',
         'category',
         'selling_price',
-        'current_stock',
-        'material_cost',
-        'estimated_profit',
+        'get_current_stock',
+        'reorder_level',
+        'is_published',
+        'is_featured',
     )
-    list_filter = ('category',)
-    search_fields = ('name', 'product_code')
 
+    list_filter = (
+        'category',
+        'is_published',
+        'is_featured',
+    )
 
+    search_fields = (
+        'product_code',
+        'name',
+    )
+
+    readonly_fields = (
+        'created_at',
+    )
+
+    @admin.display(description="Current Stock")
+    def get_current_stock(self, obj):
+        return obj.current_stock
 # =========================
 # ASSET
 # =========================

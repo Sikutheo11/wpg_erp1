@@ -1,0 +1,158 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+Income
+{% endblock %}
+
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+<h2 class="fw-bold">
+💰 Income Management
+</h2>
+
+
+<a href="{% url 'finance:income_create' %}"
+class="btn btn-success">
+
++ Add Income
+
+</a>
+
+
+</div>
+
+
+
+
+<div class="card shadow-sm">
+
+<div class="card-body">
+
+
+<table class="table table-hover align-middle">
+
+
+<thead class="table-dark">
+
+<tr>
+
+<th>Date</th>
+
+<th>Title</th>
+
+<th>Type</th>
+
+<th>Account</th>
+
+<th>Amount</th>
+
+<th>Actions</th>
+
+</tr>
+
+</thead>
+
+
+
+<tbody>
+
+
+{% for income in incomes %}
+
+
+<tr>
+
+
+<td>
+{{income.date}}
+</td>
+
+
+<td>
+{{income.title|default:"Income"}}
+</td>
+
+
+<td>
+{{income.get_income_type_display}}
+</td>
+
+
+
+<td>
+{{income.account}}
+</td>
+
+
+
+<td class="text-success fw-bold">
+
+{{income.amount}}
+
+</td>
+
+
+
+<td>
+
+<a href="#"
+class="btn btn-sm btn-warning">
+
+Edit
+
+</a>
+
+
+<a href="#"
+class="btn btn-sm btn-danger">
+
+Delete
+
+</a>
+
+
+</td>
+
+
+</tr>
+
+
+{% empty %}
+
+
+<tr>
+
+<td colspan="6"
+class="text-center">
+
+No income records
+
+</td>
+
+</tr>
+
+
+{% endfor %}
+
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+</div>
+
+
+</div>
+
+
+{% endblock %}

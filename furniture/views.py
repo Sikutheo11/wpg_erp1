@@ -6,7 +6,6 @@ from django.shortcuts import (
 
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-
 from .models import (
     Order,
     Quotation,
@@ -41,27 +40,16 @@ from Employee.models import Employee
 def furniture_dashboard(request):
 
     orders = Order.objects.all()
-
     quotations = Quotation.objects.filter(
         status='submitted'
     )
-
     context = {
-
         "orders": orders,
-
         "total_orders": orders.count(),
-
         "pending_quotes": quotations.count(),
-
     }
 
-
-    return render(
-        request,
-        "furniture/dashboard.html",
-        context
-    )
+    return render(request, "furniture/furniture_dashboard.html", context)
 
 
 
@@ -272,12 +260,9 @@ def create_quotation(request, pk):
 @login_required
 def quotation_list(request):
 
-
     quotations = Quotation.objects.filter(
         status="submitted"
     )
-
-
     return render(
         request,
         "furniture/quotation_list.html",
@@ -301,7 +286,6 @@ def approve_quotation(request, pk):
         Quotation,
         id=pk
     )
-
 
     if request.method=="POST":
 

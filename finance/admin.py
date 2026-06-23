@@ -1,89 +1,226 @@
 from django.contrib import admin
-from .models import *
-from sales.models import Sale
 
-# =========================
-# ACCOUNT
-# =========================
+from .models import (
+    Account,
+    Transaction,
+    Income,
+    Expense,
+    Receivable,
+    Payable,
+    Payment,
+    Payroll,
+)
+
+
+
+# =====================================================
+# ACCOUNT ADMIN
+# =====================================================
+
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
-    list_display = ('name', 'account_type', 'account_number', 'balance', 'created_at')
-    list_filter = ('account_type',)
-    search_fields = ('name', 'account_number')
-    ordering = ('-created_at',)
+
+    list_display = (
+        'name',
+        'account_type',
+        'account_number',
+        'balance',
+        'created_at'
+    )
+
+    search_fields = (
+        'name',
+        'account_number'
+    )
+
+    list_filter = (
+        'account_type',
+    )
 
 
-# =========================
-# INCOME
-# =========================
+
+
+
+# =====================================================
+# TRANSACTION ADMIN
+# =====================================================
+
+@admin.register(Transaction)
+class TransactionAdmin(admin.ModelAdmin):
+
+    list_display = (
+        'account',
+        'transaction_type',
+        'amount',
+        'description',
+        'date'
+    )
+
+    list_filter = (
+        'transaction_type',
+        'date'
+    )
+
+    search_fields = (
+        'description',
+    )
+
+
+
+
+
+# =====================================================
+# INCOME ADMIN
+# =====================================================
+
 @admin.register(Income)
 class IncomeAdmin(admin.ModelAdmin):
-    list_display = ('title', 'income_type', 'amount', 'account', 'date', 'created_at')
-    list_filter = ('income_type', 'date')
-    search_fields = ('title',)
-    ordering = ('-date',)
+
+    list_display = (
+        'title',
+        'income_type',
+        'amount',
+        'account',
+        'date'
+    )
+
+    list_filter = (
+        'income_type',
+        'date'
+    )
+
+    search_fields = (
+        'title',
+    )
 
 
-# =========================
-# EXPENSE
-# =========================
+
+
+
+# =====================================================
+# EXPENSE ADMIN
+# =====================================================
+
 @admin.register(Expense)
 class ExpenseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'expense_type', 'amount', 'account', 'supplier', 'date', 'created_at')
-    list_filter = ('expense_type', 'date')
-    search_fields = ('title',)
-    ordering = ('-date',)
+
+    list_display = (
+        'title',
+        'expense_type',
+        'amount',
+        'account',
+        'supplier',
+        'date'
+    )
 
 
-# =========================
-# ACCOUNTS RECEIVABLE
-# =========================
+    list_filter = (
+        'expense_type',
+        'date'
+    )
+
+
+    search_fields = (
+        'title',
+    )
+
+
+
+
+
+# =====================================================
+# RECEIVABLE ADMIN
+# =====================================================
+
 @admin.register(Receivable)
 class ReceivableAdmin(admin.ModelAdmin):
+
     list_display = (
         'invoice_number',
         'customer',
         'total_amount',
         'amount_paid',
-        'balance',
         'status',
         'due_date'
     )
-    list_filter = ('status', 'due_date')
-    search_fields = ('invoice_number',)
 
 
-# =========================
-# ACCOUNTS PAYABLE
-# =========================
+    list_filter = (
+        'status',
+        'due_date'
+    )
+
+
+    search_fields = (
+        'invoice_number',
+        'customer__email'
+    )
+
+
+
+
+
+# =====================================================
+# PAYABLE ADMIN
+# =====================================================
+
 @admin.register(Payable)
 class PayableAdmin(admin.ModelAdmin):
+
     list_display = (
         'reference',
         'supplier',
         'total_amount',
         'amount_paid',
-        'balance',
         'status',
         'due_date'
     )
-    list_filter = ('status', 'due_date')
-    search_fields = ('reference',)
 
 
-# =========================
-# PAYMENT
-# =========================
+    list_filter = (
+        'status',
+        'due_date'
+    )
+
+
+    search_fields = (
+        'reference',
+        'supplier__name'
+    )
+
+
+
+
+
+# =====================================================
+# PAYMENT ADMIN
+# =====================================================
+
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
-    list_display = ('amount', 'method', 'receivable', 'payable', 'date')
-    list_filter = ('method', 'date')
-    search_fields = ('notes',)
+
+    list_display = (
+        'amount',
+        'method',
+        'receivable',
+        'payable',
+        'date'
+    )
 
 
-# =========================
-# PAYROLL
-# =========================
+    list_filter = (
+        'method',
+        'date'
+    )
+
+
+
+
+
+# =====================================================
+# PAYROLL ADMIN
+# =====================================================
+
 @admin.register(Payroll)
 class PayrollAdmin(admin.ModelAdmin):
 
@@ -92,37 +229,16 @@ class PayrollAdmin(admin.ModelAdmin):
         'month',
         'basic_salary',
         'gross_salary',
-        'deductions',
-        'net_salary',
-        'created_at',
+        'net_salary'
     )
+
 
     list_filter = (
         'month',
-        'employee',
     )
+
 
     search_fields = (
-        'employee__name',
-        'employee__email',
-    )
-
-    ordering = ('-month',)
-
-    readonly_fields = (
-        'gross_salary',
-        'net_salary',
-        'created_at',
-    )
-
-    fieldsets = (
-        ("Employee Info", {
-            'fields': ('employee', 'month')
-        }),
-        ("Salary Details", {
-            'fields': ('basic_salary', 'overtime_hours', 'overtime_rate', 'deductions')
-        }),
-        ("Calculated Fields", {
-            'fields': ('gross_salary', 'net_salary')
-        }),
+        'employee__user__first_name',
+        'employee__user__last_name'
     )

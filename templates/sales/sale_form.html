@@ -1,0 +1,249 @@
+{% extends 'sales/base_sales.html'%}
+
+{% block title %}
+Create Sale
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+```
+<div class="row">
+
+    <div class="col-lg-12">
+
+        <div class="card shadow-sm">
+
+            <div class="card-header">
+
+                <h4 class="mb-0">
+                    Create Sale
+                </h4>
+
+            </div>
+
+            <div class="card-body">
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+                    {{ formset.management_form }}
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">
+                                Customer
+                            </label>
+
+                            {{ sale_form.customer }}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">
+                                Warehouse
+                            </label>
+
+                            {{ sale_form.warehouse }}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">
+                                Sale Date
+                            </label>
+
+                            {{ sale_form.sale_date }}
+                        </div>
+
+                    </div>
+
+
+                    <div class="row">
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">
+                                Discount
+                            </label>
+
+                            {{ sale_form.discount }}
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">
+                                Tax
+                            </label>
+
+                            {{ sale_form.tax }}
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">
+                                Status
+                            </label>
+
+                            {{ sale_form.status }}
+                        </div>
+
+                    </div>
+
+
+                    <hr>
+
+
+                    <h5 class="mb-3">
+                        Sale Items
+                    </h5>
+
+
+                    <table class="table table-bordered" id="items-table">
+
+                        <thead>
+
+                            <tr>
+                                <th>Product</th>
+                                <th width="150">Quantity</th>
+                                <th width="180">Unit Price</th>
+                                <th width="80">Remove</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for form in formset %}
+
+                            <tr class="item-form">
+
+                                <td>
+                                    {{ form.product }}
+                                </td>
+
+                                <td>
+                                    {{ form.quantity }}
+                                </td>
+
+                                <td>
+                                    {{ form.unit_price }}
+                                </td>
+
+                                <td class="text-center">
+                                    {% if form.DELETE %}
+                                        {{ form.DELETE }}
+                                    {% endif %}
+                                </td>
+
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        id="add-row">
+
+                        Add Product
+
+                    </button>
+
+
+                    <hr>
+
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary">
+
+                        Save Sale
+
+                    </button>
+
+                    <a
+                        href="{% url 'sale_list' %}"
+                        class="btn btn-outline-secondary">
+
+                        Cancel
+
+                    </a>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+```
+
+</div>
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        let totalForms =
+            document.getElementById(
+                "id_items-TOTAL_FORMS"
+            );
+
+        const addButton =
+            document.getElementById(
+                "add-row"
+            );
+
+        const tableBody =
+            document.querySelector(
+                "#items-table tbody"
+            );
+
+
+
+        addButton.addEventListener(
+            "click",
+            function() {
+
+                let formCount =
+                    parseInt(
+                        totalForms.value
+                    );
+
+                let firstRow =
+                    document.querySelector(
+                        ".item-form"
+                    );
+
+                let newRow =
+                    firstRow.cloneNode(true);
+
+                newRow.innerHTML =
+                    newRow.innerHTML.replace(
+                        /items-0-/g,
+                        `items-${formCount}-`
+                    );
+
+                tableBody.appendChild(
+                    newRow
+                );
+
+                totalForms.value =
+                    formCount + 1;
+
+            }
+        );
+
+    }
+);
+
+</script>
+
+{% endblock %}

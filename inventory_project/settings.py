@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'core',
     'rest_framework',
     'corsheaders',
+    'ecommerce'
     
 ]
 

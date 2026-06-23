@@ -1,8 +1,9 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout, login as auth_login
+from django.contrib.auth import authenticate,logout, login as auth_login
 from .forms import LoginForm, UserForm, UserProfileForm
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import UserProfile
+from .utils import redirect_by_role
 
 def registerUser(request):
     if request.method == 'POST':
@@ -12,12 +13,9 @@ def registerUser(request):
             user = form.save(commit=False)
             user.set_password(form.cleaned_data['password'])
             user.save()
-
-            #  create empty profile
-            UserProfile.objects.create(user=user)
-
+            
             # login automatically
-            login(request, user)
+            login(request)
 
             return redirect('profile')
 
@@ -30,61 +28,46 @@ def registerUser(request):
 
 def login(request):
     form = LoginForm()
-
     if request.method == 'POST':
         form = LoginForm(request.POST)
-
         if form.is_valid():
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
-
-            user = authenticate(request, username=username, password=password)
-
+            user = authenticate(
+                request,
+                username=username,
+                password=password
+            )
             if user is not None:
                 auth_login(request, user)
-                if user is not None:
-                    auth_login(request, user)
-                    if user.role == 'customer':
-                        return redirect('customer_dashboard')
 
-                    elif user.role == 'worker':
-                        return redirect('furniture_worker_dashboard')
-
-                    elif user.role == 'manager':
-                        return redirect('manager_dashboard')
-
-                    elif user.role == 'admin':
-                        return redirect('admin_dashboard')
-
-    return render(request, 'accounts/login.html', {'form': form})
+                return redirect(redirect_by_role(user))
+    return render(request,'accounts/login.html',{'form':form})
 
 
 def logout(request):
-    logout(request)
+
+    if request.method == "POST":
+        logout(request)
+
     return redirect('login')
-
-
 
 @login_required
 def profile(request):
-    profile = request.user.userprofile
+    profile = request.user.profile
     if request.method == 'POST':
         form = UserProfileForm(request.POST, request.FILES, instance=profile)
-
         if form.is_valid():
             form.save()
-            return redirect('profile')
-
+            return redirect(redirect_by_role(request.user))
     else:
 
         form = UserProfileForm(instance=profile)
-
-    context = {
-        'form': form,
-        'profile': profile,
-    }
-
-    return render(request,'accounts/profile.html', context)
+    return render(request,'accounts/profile.html',{
+            'form':form,
+            'profile':profile
+        }
+    )
 
 def password_reset(request):
     return render(request, 'accounts/admin_dashboard.html')

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<style>
+
+
+body {
+
+    font-family: Arial, sans-serif;
+
+    font-size: 12px;
+
+}
+
+
+
+.header {
+
+    display:flex;
+
+    justify-content:space-between;
+
+}
+
+
+
+.company {
+
+    font-size:20px;
+
+    font-weight:bold;
+
+}
+
+
+
+.invoice-title {
+
+    font-size:30px;
+
+    text-align:right;
+
+}
+
+
+
+table {
+
+    width:100%;
+
+    border-collapse:collapse;
+
+    margin-top:20px;
+
+}
+
+
+
+th, td {
+
+    border:1px solid #444;
+
+    padding:8px;
+
+}
+
+
+
+th {
+
+    background:#eee;
+
+}
+
+
+
+.total-table {
+
+    width:40%;
+
+    margin-left:auto;
+
+}
+
+
+
+.signature {
+
+    margin-top:80px;
+
+}
+
+
+</style>
+
+
+</head>
+
+
+<body>
+
+
+<div class="header">
+
+
+<div>
+
+
+<h2 class="company">
+
+WPG COMPANY LTD
+
+</h2>
+
+
+<p>
+
+Kigali, Rwanda
+
+<br>
+
+Phone: +250 XXX XXX XXX
+
+<br>
+
+Email: info@wpg.com
+
+</p>
+
+
+</div>
+
+
+
+<div>
+
+
+<h1 class="invoice-title">
+
+INVOICE
+
+</h1>
+
+
+<p>
+
+<strong>
+Invoice No:
+</strong>
+
+{{ invoice.invoice_no }}
+
+</p>
+
+
+<p>
+
+<strong>
+Date:
+</strong>
+
+{{ invoice.invoice_date }}
+
+</p>
+
+
+</div>
+
+
+</div>
+
+
+
+<hr>
+
+
+
+<h3>
+Bill To:
+</h3>
+
+
+<p>
+
+<strong>
+{{ invoice.sale.customer }}
+</strong>
+
+<br>
+
+{{ invoice.sale.customer.phone }}
+
+<br>
+
+{{ invoice.sale.customer.address }}
+
+</p>
+
+
+
+
+<table>
+
+
+<thead>
+
+
+<tr>
+
+<th>
+Product
+</th>
+
+
+<th>
+Quantity
+</th>
+
+
+<th>
+Price
+</th>
+
+
+<th>
+Subtotal
+</th>
+
+
+</tr>
+
+
+</thead>
+
+
+
+<tbody>
+
+
+{% for item in invoice.sale.items.all %}
+
+
+<tr>
+
+
+<td>
+
+{{ item.product }}
+
+</td>
+
+
+
+<td>
+
+{{ item.quantity }}
+
+</td>
+
+
+
+<td>
+
+{{ item.unit_price }}
+
+</td>
+
+
+
+<td>
+
+{{ item.subtotal }}
+
+</td>
+
+
+
+</tr>
+
+
+{% endfor %}
+
+
+</tbody>
+
+
+</table>
+
+
+
+
+<table class="total-table">
+
+
+<tr>
+
+<th>
+Total
+</th>
+
+
+<td>
+
+{{ invoice.total_amount }}
+
+</td>
+
+
+</tr>
+
+
+
+<tr>
+
+<th>
+Paid
+</th>
+
+
+<td>
+
+{{ invoice.amount_paid }}
+
+</td>
+
+
+</tr>
+
+
+
+<tr>
+
+<th>
+Balance
+</th>
+
+
+<td>
+
+{{ invoice.balance }}
+
+</td>
+
+
+</tr>
+
+
+</table>
+
+
+
+
+
+<p>
+
+Payment Terms:
+
+<br>
+
+30 days from invoice date.
+
+</p>
+
+
+
+
+<div class="signature">
+
+
+<table>
+
+
+<tr>
+
+<td>
+
+Prepared By:
+
+<br><br><br>
+
+_________________
+
+</td>
+
+
+
+<td>
+
+Approved By:
+
+<br><br><br>
+
+_________________
+
+</td>
+
+
+</tr>
+
+
+</table>
+
+
+</div>
+
+
+
+
+</body>
+
+
+</html>

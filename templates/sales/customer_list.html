@@ -1,0 +1,46 @@
+{% extends 'sales/base_sales.html'%}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <h4>Customers</h4>
+
+        <a href="{% url 'customer_create' %}"
+           class="btn btn-primary">
+            New Customer
+        </a>
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-bordered">
+
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Phone</th>
+                    <th>Address</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+            {% for customer in customers %}
+
+                <tr>
+                    <td>{{ customer }}</td>
+                    <td>{{ customer.phone }}</td>
+                    <td>{{ customer.address }}</td>
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+{% endblock %}

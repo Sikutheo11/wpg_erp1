@@ -11,8 +11,7 @@ urlpatterns = [
     # DASHBOARD
     # =================================================
 
-    path(
-        '',
+    path('',
         views.furniture_dashboard,
         name='furniture_dashboard'
     ),

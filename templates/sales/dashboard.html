@@ -1,0 +1,462 @@
+{% extends 'sales/base_sales.html'%}
+
+{% block title %}
+Sales Dashboard
+{% endblock %}
+
+
+{% block content %}
+
+<div class="container-fluid">
+
+
+    <div class="row mb-4">
+
+        <div class="col-md-12">
+
+            <h3>
+                Sales Dashboard
+            </h3>
+
+            <p class="text-muted">
+                Business sales overview
+            </p>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- KPI CARDS -->
+
+    <div class="row">
+
+
+        <!-- Today Sales -->
+
+        <div class="col-md-3 mb-3">
+
+            <div class="card shadow-sm border-left-primary">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Today Sales
+                    </h6>
+
+
+                    <h3>
+                        {{ today_sales|floatformat:2 }}
+                        RWF
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Monthly Sales -->
+
+        <div class="col-md-3 mb-3">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Monthly Sales
+                    </h6>
+
+
+                    <h3>
+                        {{ monthly_sales|floatformat:2 }}
+                        RWF
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Outstanding -->
+
+        <div class="col-md-3 mb-3">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Outstanding Invoices
+                    </h6>
+
+
+                    <h3>
+                        {{ outstanding|floatformat:2 }}
+                        RWF
+                    </h3>
+
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Customers -->
+
+        <div class="col-md-3 mb-3">
+
+
+            <div class="card shadow-sm">
+
+
+                <div class="card-body">
+
+
+                    <h6 class="text-muted">
+
+                        Total Customers
+
+                    </h6>
+
+
+                    <h3>
+
+                        {{ top_customers|length }}
+
+                    </h3>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+
+
+    <!-- TOP CUSTOMERS -->
+
+    <div class="row mt-4">
+
+
+        <div class="col-md-6">
+
+
+            <div class="card shadow-sm">
+
+
+                <div class="card-header">
+
+                    <h5 class="mb-0">
+
+                        Top Customers
+
+                    </h5>
+
+
+                </div>
+
+
+
+                <div class="card-body">
+
+
+                    <table class="table table-bordered">
+
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Customer
+                                </th>
+
+
+                                <th>
+                                    Total Sales
+                                </th>
+
+
+                            </tr>
+
+
+                        </thead>
+
+
+
+                        <tbody>
+
+
+                        {% for customer in top_customers %}
+
+
+                            <tr>
+
+
+                                <td>
+
+                                    {{ customer }}
+
+                                </td>
+
+
+
+                                <td>
+
+                                    {{ customer.sales_total|default:0|floatformat:2 }}
+
+                                    RWF
+
+                                </td>
+
+
+                            </tr>
+
+
+
+                        {% empty %}
+
+
+                            <tr>
+
+                                <td colspan="2"
+                                    class="text-center">
+
+                                    No customer data
+
+                                </td>
+
+                            </tr>
+
+
+                        {% endfor %}
+
+
+                        </tbody>
+
+
+                    </table>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+
+
+
+        <!-- QUICK ACTIONS -->
+
+
+        <div class="col-md-6">
+
+
+            <div class="card shadow-sm">
+
+
+                <div class="card-header">
+
+                    <h5>
+                        Quick Actions
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+
+                    <a href="{% url 'sale_create' %}"
+                       class="btn btn-primary m-1">
+
+                        New Sale
+
+                    </a>
+
+
+
+                    <a href="{% url 'customer_create' %}"
+                       class="btn btn-success m-1">
+
+                        New Customer
+
+                    </a>
+
+
+
+                    <a href="{% url 'quotation_create' %}"
+                       class="btn btn-warning m-1">
+
+                        New Quotation
+
+                    </a>
+
+
+
+                    <a href="{% url 'invoice_list' %}"
+                       class="btn btn-info m-1">
+
+                        Invoices
+
+                    </a>
+
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+
+    </div>
+
+
+
+
+
+    <!-- SALES CHART AREA -->
+
+    <div class="row mt-4">
+
+
+        <div class="col-md-12">
+
+
+            <div class="card shadow-sm">
+
+
+                <div class="card-header">
+
+                    <h5>
+
+                        Monthly Sales Trend
+
+                    </h5>
+
+
+                </div>
+
+
+                <div class="card-body">
+
+
+                    <canvas id="salesChart"></canvas>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+</div>
+
+
+
+
+
+<!-- Chart.js -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+
+<script>
+
+
+const ctx = document
+.getElementById(
+    'salesChart'
+);
+
+
+
+new Chart(
+    ctx,
+    {
+
+        type:'line',
+
+
+        data:{
+
+            labels:[
+                "Week 1",
+                "Week 2",
+                "Week 3",
+                "Week 4"
+            ],
+
+
+            datasets:[{
+
+                label:
+                "Sales Revenue",
+
+
+                data:[
+                    0,
+                    0,
+                    0,
+                    {{ monthly_sales|default:0 }}
+                ],
+
+
+                borderWidth:2
+
+            }]
+
+        },
+
+
+        options:{
+
+            responsive:true
+
+        }
+
+
+    }
+
+);
+
+
+</script>
+
+
+{% endblock %}

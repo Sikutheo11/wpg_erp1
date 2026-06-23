@@ -1,0 +1,242 @@
+{% extends "base_dashboard.html" %}
+
+
+{% block title %}
+Payables
+{% endblock %}
+
+
+
+{% block content %}
+
+
+
+<div class="container-fluid py-4">
+
+
+<div class="d-flex justify-content-between mb-4">
+
+
+<h2 class="fw-bold">
+
+🏭 Supplier Payables
+
+</h2>
+
+
+<a href="{% url 'finance:payable_create' %}"
+class="btn btn-danger">
+
++ Add Payable
+
+</a>
+
+
+</div>
+
+
+
+
+
+<div class="card shadow-sm">
+
+
+<div class="card-body">
+
+
+<table class="table table-hover">
+
+
+<thead class="table-dark">
+
+
+<tr>
+
+<th>Supplier</th>
+
+<th>Reference</th>
+
+<th>Total Amount</th>
+
+<th>Paid</th>
+
+<th>Balance</th>
+
+<th>Status</th>
+
+<th>Due Date</th>
+
+<th>Action</th>
+
+
+</tr>
+
+
+</thead>
+
+
+
+<tbody>
+
+
+{% for item in items %}
+
+
+
+<tr>
+
+
+
+<td>
+
+{{item.supplier}}
+
+</td>
+
+
+
+<td>
+
+{{item.reference}}
+
+</td>
+
+
+
+<td>
+
+{{item.total_amount}}
+
+</td>
+
+
+
+<td class="text-success">
+
+{{item.amount_paid}}
+
+</td>
+
+
+
+
+<td class="fw-bold">
+
+{{item.balance}}
+
+</td>
+
+
+
+
+<td>
+
+
+
+{% if item.status == 'paid' %}
+
+<span class="badge bg-success">
+
+Paid
+
+</span>
+
+
+{% elif item.status == 'partial' %}
+
+<span class="badge bg-warning">
+
+Partial
+
+</span>
+
+
+{% else %}
+
+<span class="badge bg-danger">
+
+{{item.status}}
+
+</span>
+
+
+{% endif %}
+
+
+
+</td>
+
+
+
+
+<td>
+
+{{item.due_date}}
+
+</td>
+
+
+
+
+<td>
+
+
+<button class="btn btn-warning btn-sm">
+
+Edit
+
+</button>
+
+
+<button class="btn btn-danger btn-sm">
+
+Delete
+
+</button>
+
+
+
+</td>
+
+
+
+</tr>
+
+
+
+{% empty %}
+
+
+<tr>
+
+<td colspan="8"
+class="text-center">
+
+No payables found
+
+</td>
+
+</tr>
+
+
+{% endfor %}
+
+
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+{% endblock %}

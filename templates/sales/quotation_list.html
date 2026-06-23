@@ -1,0 +1,64 @@
+{% extends 'sales/base_sales.html'%}
+
+{% block content %}
+
+<div class="card">
+
+    <div class="card-header d-flex justify-content-between">
+
+        <h4>Quotations</h4>
+
+        <a href="{% url 'quotation_create' %}"
+           class="btn btn-primary">
+
+           New Quotation
+
+        </a>
+
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-bordered">
+
+            <thead>
+
+                <tr>
+                    <th>No</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+            {% for quotation in quotations %}
+
+                <tr>
+
+                    <td>{{ quotation.quotation_no }}</td>
+
+                    <td>{{ quotation.customer }}</td>
+
+                    <td>{{ quotation.quotation_date }}</td>
+
+                    <td>{{ quotation.total_amount }}</td>
+
+                    <td>{{ quotation.status }}</td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

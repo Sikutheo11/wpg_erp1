@@ -5,6 +5,7 @@ from accounts.models import User
 from Employee.models import Department, Employee
 import random
 import string
+from django.utils.text import slugify
 
 
 # =========================
@@ -132,53 +133,24 @@ class RawMaterial(models.Model):
 # =========================
 class Product(models.Model):
 
-    category = models.ForeignKey(
-        Category,
-        on_delete=models.SET_NULL,
-        null=True
-    )
-
-    product_code = models.CharField(
-        max_length=50,
-        unique=True,
-        blank=True
-    )
-
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    product_code = models.CharField(max_length=50, unique=True, blank=True)
     name = models.CharField(max_length=200)
-
-    description = models.TextField(
-        blank=True
-    )
-
-    unit = models.CharField(
-        max_length=20,
-        default="pcs"
-    )
-
-    selling_price = models.DecimalField(
-        max_digits=12,
-        decimal_places=2
-    )
-
-    reorder_level = models.PositiveIntegerField(
-        default=10
-    )
-
-    created_at = models.DateTimeField(
-        default=timezone.now
-    )
+    description = models.TextField(blank=True)
+    unit = models.CharField(max_length=20,default="pcs")
+    selling_price = models.DecimalField(max_digits=12,decimal_places=2)
+    reorder_level = models.PositiveIntegerField(default=10)
+    created_at = models.DateTimeField(default=timezone.now)
+    slug = models.SlugField(unique=True, blank=True)
+    image = models.ImageField(upload_to='products/', blank=True, null=True)
+    is_published = models.BooleanField(default=False)
+    is_featured = models.BooleanField(default=False)
+    
 
     def save(self, *args, **kwargs):
-
         if not self.product_code:
-
             prefix = self.name[:3].upper()
-
-            last_id = (
-                Product.objects.order_by('-id')
-                .first()
-            )
-
+            last_id = Product.objects.order_by('-id').first()
             next_id = 1
 
             if last_id:
@@ -186,44 +158,10 @@ class Product(models.Model):
 
             self.product_code = f"{prefix}-{next_id:05d}"
 
+        if not self.slug:
+            self.slug = slugify(self.name)
+
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.name
-
-    @property
-    def current_stock(self):
-
-        stock_in = StockMovement.objects.filter(
-            product=self,
-            movement_type='IN'
-        ).aggregate(total=Sum('quantity'))['total'] or 0
-
-        stock_out = StockMovement.objects.filter(
-            product=self,
-            movement_type='OUT'
-        ).aggregate(total=Sum('quantity'))['total'] or 0
-
-        return stock_in - stock_out
-
-    @property
-    def material_cost(self):
-
-        total = self.boms.aggregate(
-            total=Sum(
-                ExpressionWrapper(
-                    F('quantity_required') *
-                    F('raw_material__unit_cost'),
-                    output_field=DecimalField()
-                )
-            )
-        )['total']
-
-        return total or 0
-
-    @property
-    def estimated_profit(self):
-        return self.selling_price - self.material_cost
 
 
 # =========================

@@ -1,0 +1,294 @@
+{% extends 'sales/base_sales.html'%}
+
+{% block title %}
+Sale Details
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+```
+<div class="card shadow-sm">
+
+    <div class="card-header d-flex justify-content-between align-items-center">
+
+        <h4 class="mb-0">
+            Sale Details
+        </h4>
+
+        <div>
+
+            {% if sale.status != 'completed' %}
+
+            <a
+                href="{% url 'sale_complete' sale.id %}"
+                class="btn btn-success">
+
+                Complete Sale
+
+            </a>
+
+            {% endif %}
+
+            <a
+                href="{% url 'sale_list' %}"
+                class="btn btn-secondary">
+
+                Back
+
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <div class="card-body">
+
+        <!-- Sale Information -->
+
+        <div class="row mb-4">
+
+            <div class="col-md-3">
+                <strong>Sale Number</strong>
+                <p>{{ sale.sale_no }}</p>
+            </div>
+
+            <div class="col-md-3">
+                <strong>Customer</strong>
+                <p>{{ sale.customer }}</p>
+            </div>
+
+            <div class="col-md-3">
+                <strong>Warehouse</strong>
+                <p>{{ sale.warehouse }}</p>
+            </div>
+
+            <div class="col-md-3">
+                <strong>Sale Date</strong>
+                <p>{{ sale.sale_date }}</p>
+            </div>
+
+        </div>
+
+
+        <div class="row mb-4">
+
+            <div class="col-md-3">
+
+                <strong>Status</strong>
+
+                <p>
+
+                    {% if sale.status == 'completed' %}
+                        <span class="badge bg-success">
+                            Completed
+                        </span>
+
+                    {% elif sale.status == 'pending' %}
+                        <span class="badge bg-warning text-dark">
+                            Pending
+                        </span>
+
+                    {% else %}
+                        <span class="badge bg-danger">
+                            Cancelled
+                        </span>
+
+                    {% endif %}
+
+                </p>
+
+            </div>
+
+            <div class="col-md-3">
+                <strong>Discount</strong>
+                <p>{{ sale.discount }}</p>
+            </div>
+
+            <div class="col-md-3">
+                <strong>Tax</strong>
+                <p>{{ sale.tax }}</p>
+            </div>
+
+            <div class="col-md-3">
+                <strong>Total Amount</strong>
+                <p class="fw-bold">
+                    {{ sale.total_amount }}
+                </p>
+            </div>
+
+        </div>
+
+
+        <hr>
+
+        <h5 class="mb-3">
+            Sale Items
+        </h5>
+
+        <table class="table table-bordered table-striped">
+
+            <thead>
+
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Subtotal</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for item in sale.items.all %}
+
+                <tr>
+
+                    <td>
+                        {{ item.product }}
+                    </td>
+
+                    <td>
+                        {{ item.quantity }}
+                    </td>
+
+                    <td>
+                        {{ item.unit_price }}
+                    </td>
+
+                    <td>
+                        {{ item.subtotal }}
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+
+                    <td colspan="4" class="text-center">
+
+                        No items found
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+
+        {% if invoice %}
+
+        <hr>
+
+        <div class="row mt-4">
+
+            <div class="col-md-12">
+
+                <h5>
+                    Invoice Information
+                </h5>
+
+                <table class="table table-bordered">
+
+                    <tr>
+                        <th width="200">
+                            Invoice Number
+                        </th>
+
+                        <td>
+                            {{ invoice.invoice_no }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>
+                            Invoice Date
+                        </th>
+
+                        <td>
+                            {{ invoice.invoice_date }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>
+                            Due Date
+                        </th>
+
+                        <td>
+                            {{ invoice.due_date }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>
+                            Total Amount
+                        </th>
+
+                        <td>
+                            {{ invoice.total_amount }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>
+                            Amount Paid
+                        </th>
+
+                        <td>
+                            {{ invoice.amount_paid }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>
+                            Balance
+                        </th>
+
+                        <td>
+                            {{ invoice.balance }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>
+                            Status
+                        </th>
+
+                        <td>
+                            {{ invoice.status }}
+                        </td>
+                    </tr>
+
+                </table>
+
+                <a
+                    href="{% url 'invoice_detail' invoice.id %}"
+                    class="btn btn-primary">
+
+                    View Invoice
+
+                </a>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+```
+
+</div>
+
+{% endblock %}
