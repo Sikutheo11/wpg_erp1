@@ -28,16 +28,16 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'crispy_forms',
     'accounts',
-    'inventory',
-    'Construction',
-    'finance',
-    'furniture',
-    'sales',
-    'Employee',
+    "inventory.apps.InventoryConfig",
+    "finance.apps.FinanceConfig",
+    'furniture.apps.FurnitureConfig',
+    "sales.apps.SalesConfig",
+    "Employee.apps.EmployeeConfig",
     'core',
     'rest_framework',
     'corsheaders',
-    'ecommerce'
+    'ecommerce',
+    'Construction.apps.ConstructionConfig',
     
 ]
 

@@ -1,254 +1,834 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>ERP Dashboard</title>
+{% extends "base_dashboard.html" %}
 
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+{% block title %}
+Executive Dashboard - WPG ERP
+{% endblock %}
 
-    <style>
-        body {
-            background: #f4f6f9;
-        }
 
-        /* Sidebar */
-        .sidebar {
-            width: 260px;
-            height: 100vh;
-            position: fixed;
-            background: #1f2937;
-            color: white;
-            padding-top: 20px;
-        }
 
-        .sidebar a {
-            color: #cbd5e1;
-            text-decoration: none;
-            display: block;
-            padding: 12px 20px;
-            transition: 0.3s;
-        }
+{% block content %}
 
-        .sidebar a:hover {
-            background: #111827;
-            color: white;
-            border-left: 4px solid #3b82f6;
-        }
 
-        .main {
-            margin-left: 260px;
-            padding: 20px;
-        }
+<div class="container-fluid">
 
-        .topbar {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-        }
 
-        .card-kpi {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
+<div class="d-flex justify-content-between align-items-center mb-4">
 
-        .kpi-icon {
-            font-size: 28px;
-            opacity: 0.8;
-        }
+<div>
 
-        .chart-box {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            height: 300px;
-        }
+<h3 class="fw-bold">
+Executive Dashboard
+</h3>
 
-        .alert-box {
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-        }
-    </style>
-</head>
-
-<body>
-
-<!-- ================= SIDEBAR ================= -->
-<div class="sidebar">
-    <h4 class="text-center mb-4">🏢 WPG ERP</h4>
-
-    <a href="#"><i class="bi bi-speedometer2"></i> Dashboard</a>
-    <a href="#"><i class="bi bi-cash-stack"></i> Category</a>
-    <a href="#"><i class="bi bi-cash-stack"></i> Finance</a>
-    <a href="{% url 'inventory_dashboard' %}"><i class="bi bi-box"></i> Inventory</a>
-    <a href="#"><i class="bi bi-cart"></i> Furniture</a>
-    <a href="#"><i class="bi bi-building"></i> Projects</a>
-    <a href="#"><i class="bi bi-people"></i> HR</a>
-    <a href="#"><i class="bi bi-telephone"></i> Contacts</a>
-    <a href="#"><i class="bi bi-gear"></i> Settings</a>
-</div>
-
-<!-- ================= MAIN ================= -->
-<div class="main">
-
-    <!-- TOP BAR -->
-    <div class="topbar d-flex justify-content-between align-items-center mb-4">
-        <input type="text" class="form-control w-50" placeholder="Search anything...">
-
-        <div>
-            <i class="bi bi-bell fs-5 me-3"></i>
-            <i class="bi bi-person-circle fs-4"></i>
-        </div>
-    </div>
-
-    <!-- KPI CARDS -->
-    <div class="row g-3 mb-4">
-
-        <div class="col-md-3">
-            <div class="card card-kpi p-3">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6>Total Income</h6>
-                        <h4>{{ total_income }}</h4>
-                    </div>
-                    <i class="bi bi-cash-coin kpi-icon text-success"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card card-kpi p-3">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6>Net Profit</h6>
-                        <h4>{{ net_profit }}</h4>
-                    </div>
-                    <i class="bi bi-graph-up kpi-icon text-primary"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card card-kpi p-3">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6>Orders</h6>
-                        <h4>{{ total_orders }}</h4>
-                    </div>
-                    <i class="bi bi-cart kpi-icon text-warning"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card card-kpi p-3">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6>Total Expenses</h6>
-                        <h4>{{ total_orders }}</h4>
-                    </div>
-                    <i class="bi bi-building kpi-icon text-danger"></i>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- CHARTS + ALERTS -->
-    <div class="row g-3">
-
-        <!-- CHART -->
-        <div class="col-md-8">
-            <div class="chart-box">
-                <h5>Business Overview</h5>
-                <canvas id="mainChart"></canvas>
-            </div>
-        </div>
-
-        <!-- ALERTS -->
-        <div class="col-md-4">
-            <div class="alert-box">
-                <h5>Alerts</h5>
-
-                {% for alert in alerts %}
-                    <div class="alert alert-warning py-2">
-                        {{ alert }}
-                    </div>
-                {% empty %}
-                    <p class="text-muted">No alerts 🎉</p>
-                {% endfor %}
-            </div>
-        </div>
-
-    </div>
-
-    <!-- LOWER CARDS -->
-    <div class="row g-3 mt-2">
-
-        <div class="col-md-3">
-            <div class="card p-3">
-                <h6>Inventory</h6>
-                <p>Low Stock: {{ low_stock }}</p>
-                <p>Out of Stock: {{ out_of_stock }}</p>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card p-3">
-                <h6>Workers</h6>
-                <p>Employees: {{ total_workers }}</p>
-                <p>Departments: {{ total_departments }}</p>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card p-3">
-                <h6>Finance</h6>
-                <p>Receivables: {{ receivables }}</p>
-                <p>Payables: {{ payables }}</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card p-3">
-                <h6>Projects</h6>            
-                <p>Ongoing Projects: {{ ongoing_projects}}</p>
-                <p>Delayed Project: {{ delayed_projects }}</p>
-            </div>
-        </div>
-
-    </div>
+<p class="text-muted mb-0">
+Business performance overview
+</p>
 
 </div>
 
-<!-- CHART JS -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<div class="text-muted">
+
+<i class="bi bi-clock"></i>
+
+{{ executive.generated_at|date:"d M Y H:i" }}
+
+</div>
+
+
+</div>
+
+
+
+
+
+<div class="row g-4">
+
+
+
+<!-- ================= SALES ================= -->
+
+{% if executive.sales %}
+
+<div class="col-xl-3 col-md-6">
+
+<a href="{% url 'sales:sales_dashboard' %}"
+class="text-decoration-none text-dark">
+
+
+<div class="card shadow-sm h-100 dashboard-card">
+
+
+<div class="card-body">
+
+
+<div class="d-flex justify-content-between">
+
+
+<div>
+
+<h6 class="text-muted">
+Sales
+</h6>
+
+
+<h3 class="fw-bold">
+
+{{ executive.sales.total_sales|default:0 }}
+
+</h3>
+
+
+<p class="mb-0">
+
+Completed:
+
+<strong>
+{{ executive.sales.completed_sales|default:0 }}
+</strong>
+
+</p>
+
+
+</div>
+
+
+<div class="fs-1 text-primary">
+
+<i class="bi bi-cart-check"></i>
+
+</div>
+
+
+</div>
+
+
+<hr>
+
+
+<h6 class="text-muted">
+Sales Amount
+</h6>
+
+
+<h5 class="fw-bold">
+
+{{ executive.sales.sales_amount|default:0 }}
+
+RWF
+
+</h5>
+
+
+</div>
+
+
+</div>
+
+
+</a>
+
+</div>
+
+{% endif %}
+
+
+
+
+
+<!-- ================= FINANCE ================= -->
+
+
+{% if executive.finance %}
+
+
+<div class="col-xl-3 col-md-6">
+
+
+<a href="{% url 'finance:finance_dashboard' %}"
+class="text-decoration-none text-dark">
+
+
+<div class="card shadow-sm h-100 dashboard-card">
+
+
+<div class="card-body">
+
+
+<div class="d-flex justify-content-between">
+
+
+<div>
+
+<h6 class="text-muted">
+Finance
+</h6>
+
+
+<h3 class="fw-bold">
+
+{{ executive.finance.profit|default:0 }}
+
+</h3>
+
+
+<p>
+Profit
+</p>
+
+
+</div>
+
+
+<div class="fs-1 text-success">
+
+<i class="bi bi-cash-stack"></i>
+
+</div>
+
+
+</div>
+
+
+
+<hr>
+
+
+<p>
+Income:
+
+<strong>
+{{ executive.finance.income|default:0 }}
+</strong>
+
+</p>
+
+
+<p>
+Expense:
+
+<strong>
+{{ executive.finance.expense|default:0 }}
+</strong>
+
+</p>
+
+
+
+</div>
+
+
+</div>
+
+
+</a>
+
+
+</div>
+
+
+{% endif %}
+
+
+
+
+
+
+
+<!-- ================= INVENTORY ================= -->
+
+
+{% if executive.inventory %}
+
+
+<div class="col-xl-3 col-md-6">
+
+
+<a href="{% url 'inventory:dashboard' %}"
+class="text-decoration-none text-dark">
+
+
+<div class="card shadow-sm h-100 dashboard-card">
+
+
+<div class="card-body">
+
+
+<div class="d-flex justify-content-between">
+
+
+<div>
+
+
+<h6 class="text-muted">
+Inventory
+</h6>
+
+
+<h3 class="fw-bold">
+
+{{ executive.inventory.products|default:0 }}
+
+</h3>
+
+
+<p>
+Products
+</p>
+
+
+</div>
+
+
+
+<div class="fs-1 text-warning">
+
+<i class="bi bi-box-seam"></i>
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+</a>
+
+
+</div>
+
+
+{% endif %}
+
+
+
+
+
+
+
+<!-- ================= HR ================= -->
+
+
+{% if executive.hr %}
+
+
+<div class="col-xl-3 col-md-6">
+
+
+<a href="{% url 'employee:employee_dashboard' %}"
+class="text-decoration-none text-dark">
+
+
+<div class="card shadow-sm h-100 dashboard-card">
+
+
+<div class="card-body">
+
+
+<div class="d-flex justify-content-between">
+
+
+<div>
+
+
+<h6 class="text-muted">
+Human Resource
+</h6>
+
+
+<h3 class="fw-bold">
+
+{{ executive.hr.employees|default:0 }}
+
+</h3>
+
+
+<p>
+Employees
+</p>
+
+
+</div>
+
+
+
+<div class="fs-1 text-info">
+
+<i class="bi bi-people"></i>
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+</a>
+
+
+</div>
+
+
+{% endif %}
+
+
+
+
+
+
+
+<!-- ================= CONSTRUCTION ================= -->
+
+
+{% if executive.construction %}
+
+
+<div class="col-xl-3 col-md-6">
+
+
+<a href="{% url 'Construction:construction_dashboard' %}"
+class="text-decoration-none text-dark">
+
+
+<div class="card shadow-sm h-100 dashboard-card">
+
+
+<div class="card-body">
+
+
+<div class="d-flex justify-content-between">
+
+
+<div>
+
+
+<h6 class="text-muted">
+Construction
+</h6>
+
+
+<h3 class="fw-bold">
+
+{{ executive.construction.projects|default:0 }}
+
+</h3>
+
+
+<p>
+Projects
+</p>
+
+
+</div>
+
+
+<div class="fs-1 text-danger">
+
+<i class="bi bi-building"></i>
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+</a>
+
+
+</div>
+
+
+{% endif %}
+
+
+
+</div>
+
+
+
+
+
+
+<!-- ================= MODULES ================= -->
+
+
+<hr class="my-5">
+
+
+
+<h4 class="fw-bold mb-3">
+
+Available Modules
+
+</h4>
+
+
+
+<div class="row g-4">
+
+
+{% for module in modules %}
+
+
+<div class="col-xl-3 col-md-4">
+
+
+<div class="card shadow-sm h-100 dashboard-card">
+
+
+<div class="card-body">
+
+
+<div class="d-flex justify-content-between align-items-center">
+
+
+<h5 class="text-capitalize mb-0">
+
+{{ module.name }}
+
+</h5>
+
+
+<i class="bi bi-grid fs-3"></i>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+{% empty %}
+
+
+<p class="text-muted">
+No modules available.
+</p>
+
+
+{% endfor %}
+
+
+</div>
+
+
+
+</div>
+<!-- ==============================
+CHARTS SECTION
+============================== -->
+
+<hr class="my-5">
+
+
+<h4 class="fw-bold mb-4">
+
+Business Analytics
+
+</h4>
+
+
+
+<div class="row g-4">
+
+
+<!-- SALES TREND -->
+
+<div class="col-xl-6">
+
+
+<div class="card shadow-sm">
+
+
+<div class="card-body">
+
+
+<h5 class="mb-3">
+
+Sales Trend
+
+</h5>
+
+
+<canvas id="salesChart"></canvas>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+<!-- PROFIT ANALYSIS -->
+
+<div class="col-xl-6">
+
+
+<div class="card shadow-sm">
+
+
+<div class="card-body">
+
+
+<h5 class="mb-3">
+
+Profit Analysis
+
+</h5>
+
+
+<canvas id="profitChart"></canvas>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+<!-- INVENTORY -->
+
+<div class="col-xl-4">
+
+
+<div class="card shadow-sm">
+
+
+<div class="card-body">
+
+
+<h5>
+
+Inventory Status
+
+</h5>
+
+
+<canvas id="inventoryChart"></canvas>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+</div>
 <script>
-const ctx = document.getElementById('mainChart');
 
-new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: ['Income', 'Expenses', 'Orders', 'Projects'],
-        datasets: [{
-            label: 'Overview',
-            data: [
-                {{ total_income }},
-                {{ total_expenses }},
-                {{ total_orders }},
-                {{ active_projects }}
-            ],
-            borderWidth: 1
-        }]
-    }
+
+// ============================
+// SALES TREND
+// ============================
+
+
+const salesCtx =
+document.getElementById(
+"salesChart"
+);
+
+
+
+new Chart(
+salesCtx,
+{
+
+
+type:"line",
+
+
+data:{
+
+
+labels:
+{{ charts.sales_trend.labels|safe }},
+
+
+datasets:[{
+
+
+label:"Sales Amount",
+
+
+data:
+{{ charts.sales_trend.data|safe }},
+
+
+borderWidth:2,
+
+
+tension:0.3
+
+
+}]
+
+
+}
+
+
 });
+
+
+
+
+
+
+// ============================
+// PROFIT
+// ============================
+
+
+const profitCtx =
+document.getElementById(
+"profitChart"
+);
+
+
+
+new Chart(
+profitCtx,
+{
+
+
+type:"bar",
+
+
+data:{
+
+
+labels:[
+"Income",
+"Expense",
+"Profit"
+],
+
+
+datasets:[{
+
+
+label:"RWF",
+
+
+data:[
+
+
+{{ charts.profit.income }},
+
+
+{{ charts.profit.expense }},
+
+
+{{ charts.profit.profit }}
+
+
+],
+
+
+borderWidth:1
+
+
+}]
+
+
+}
+
+
+});
+
+
+
+
+
+
+
+// ============================
+// INVENTORY
+// ============================
+
+
+const inventoryCtx =
+document.getElementById(
+"inventoryChart"
+);
+
+
+
+new Chart(
+inventoryCtx,
+{
+
+
+type:"doughnut",
+
+
+data:{
+
+
+labels:[
+"Products"
+],
+
+
+datasets:[{
+
+
+data:[
+
+{{ charts.inventory.products }}
+
+]
+
+
+}]
+
+
+}
+
+
+});
+
+
+
 </script>
 
-</body>
-</html>
+
+{% endblock %}

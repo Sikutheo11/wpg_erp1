@@ -1,211 +1,78 @@
-{% extends 'construction/base_construction.html' %}
-{% block title %}
-Construction Dashboard
-{% endblock %}
+{% extends "base_dashboard.html" %}
+
 {% block content %}
-<h2 class="mb-4">
-Construction Dashboard
-</h2>
-<div class="row">
-<div class="col-md-3">
-<div class="card shadow">
-<div class="card-body">
-<h6>
-Total Projects
-</h6>
-<h2>
-{{total_projects}}
-</h2>
-</div>
-</div>
-</div>
 
+<div class="card shadow-sm">
 
+    <div class="card-header">
+        <h4 class="mb-0">🏗 Construction Dashboard</h4>
+    </div>
 
+    <div class="card-body">
 
-<div class="col-md-3">
+        <div class="row g-3">
 
-<div class="card shadow">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <h6>Total Projects</h6>
+                        <h2>{{ construction.total_projects }}</h2>
+                    </div>
+                </div>
+            </div>
 
-<div class="card-body">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <h6>Ongoing</h6>
+                        <h2>{{ construction.ongoing_projects }}</h2>
+                    </div>
+                </div>
+            </div>
 
-<h6>
-Active Projects
-</h6>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <h6>Completed</h6>
+                        <h2>{{ construction.completed_projects }}</h2>
+                    </div>
+                </div>
+            </div>
 
-<h2 class="text-success">
-{{active_projects}}
-</h2>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <h6>Delayed</h6>
+                        <h2>{{ construction.delayed_projects }}</h2>
+                    </div>
+                </div>
+            </div>
 
-</div>
+        </div>
 
-</div>
+        <hr>
 
-</div>
+        <div class="row text-center">
 
+            <div class="col-md-4">
+                <h6>Total Budget</h6>
+                <h3>{{ construction.total_budget }}</h3>
+            </div>
 
+            <div class="col-md-4">
+                <h6>Total Spent</h6>
+                <h3>{{ construction.total_spent }}</h3>
+            </div>
 
+            <div class="col-md-4">
+                <h6>Remaining Budget</h6>
+                <h3>{{ construction.remaining_budget }}</h3>
+            </div>
 
-<div class="col-md-3">
+        </div>
 
-<div class="card shadow">
-
-<div class="card-body">
-
-<h6>
-Total Budget
-</h6>
-
-<h4>
-{{total_budget}}
-</h4>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-
-<div class="col-md-3">
-
-<div class="card shadow">
-
-<div class="card-body">
-
-<h6>
-Spent
-</h6>
-
-<h4 class="text-danger">
-
-{{total_spent}}
-
-</h4>
+    </div>
 
 </div>
-
-</div>
-
-</div>
-
-
-
-</div>
-
-
-
-
-<br>
-
-
-
-<div class="card shadow">
-
-
-<div class="card-header">
-
-Recent Projects
-
-</div>
-
-
-<table class="table">
-
-
-<tr>
-
-<th>
-Project
-</th>
-
-<th>
-Client
-</th>
-
-<th>
-Status
-</th>
-
-<th>
-Progress
-</th>
-
-</tr>
-
-
-
-{% for project in recent_projects %}
-
-
-<tr>
-
-
-<td>
-
-{{project.name}}
-
-</td>
-
-
-<td>
-
-{{project.client_name}}
-
-</td>
-
-
-<td>
-
-{{project.status}}
-
-</td>
-
-
-<td>
-
-<div class="progress">
-
-<div class="progress-bar"
-style="width:{{project.progress_percentage}}%">
-
-{{project.progress_percentage}}%
-
-</div>
-
-</div>
-
-
-</td>
-
-
-</tr>
-
-
-{% empty %}
-
-<tr>
-
-<td colspan="4">
-
-No Projects
-
-</td>
-
-</tr>
-
-
-{% endfor %}
-
-
-
-</table>
-
-
-</div>
-
-
 
 {% endblock %}

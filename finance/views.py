@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.utils import timezone
+from .dashboard import get_finance_dashboard
 
 from .models import (
     Account,
@@ -16,97 +17,11 @@ from .models import (
 )
 
 
-
-# =====================================================
-# FINANCE DASHBOARD
-# =====================================================
-
 @login_required
 def finance_dashboard(request):
+    context = get_finance_dashboard(request.user)
 
-    accounts = Account.objects.all()
-
-
-    total_cash = accounts.aggregate(
-        total=Sum('balance')
-    )['total'] or 0
-
-
-
-    total_income = Income.objects.aggregate(
-        total=Sum('amount')
-    )['total'] or 0
-
-
-
-    total_expense = Expense.objects.aggregate(
-        total=Sum('amount')
-    )['total'] or 0
-
-
-
-    receivable = Receivable.objects.aggregate(
-        total=Sum('amount_paid')
-    )['total'] or 0
-
-
-
-    payable = Payable.objects.aggregate(
-        total=Sum('amount_paid')
-    )['total'] or 0
-
-
-
-    profit = (
-        total_income
-        -
-        total_expense
-    )
-
-
-
-    recent_transactions = Transaction.objects.all().order_by(
-        '-created_at'
-    )[:10]
-
-    cash_balance = Account.objects.aggregate(
-        total=Sum('balance')
-    )['total'] or 0
-
-
-
-    context={
-
-        "accounts":accounts,
-
-        "cash_balance":total_cash,
-
-        "income":total_income,
-
-        "expense":total_expense,
-
-        "receivable":receivable,
-
-        "payable":payable,
-
-        "profit":profit,
-
-        "transactions":recent_transactions,
-        "cash_balance": cash_balance,
-
-    }
-
-
-
-    return render(
-        request,
-        "finance/dashboard.html",
-        context
-    )
-
-
-
-
+    return render(request, "finance/dashboard.html",context)
 
 
 # =====================================================

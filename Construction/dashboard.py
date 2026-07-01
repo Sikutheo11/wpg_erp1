@@ -1,299 +1,243 @@
-# Construction/dashboard.py
-
 from decimal import Decimal
-
-from django.db.models import Sum
+from core.dashboard_registry import register_dashboard
+from django.db.models import Sum, Avg, Count
 from django.db.models.functions import Coalesce
-
-from .models import (
-    Project,
-    ConstructionMaterial,
-)
+from .models import (Project, ConstructionMaterial)
 
 
 
-# ======================================================
-# CONSTRUCTION DASHBOARD DATA
-# ======================================================
-
-
-def get_construction_dashboard():
+def get_construction_dashboard(user):
 
     projects = Project.objects.all()
 
 
+    # ==========================
+    # PROJECT KPI
+    # ==========================
 
-    # ==================================================
-    # PROJECT SUMMARY
-    # ==================================================
+    project_summary = {
 
-    total_projects = projects.count()
+        "total":
+            projects.count(),
 
+        "planning":
+            projects.filter(
+                status="planning"
+            ).count(),
 
-    planning_projects = projects.filter(
-        status="planning"
-    ).count()
+        "ongoing":
+            projects.filter(
+                status="ongoing"
+            ).count(),
 
+        "completed":
+            projects.filter(
+                status="completed"
+            ).count(),
 
-    ongoing_projects = projects.filter(
-        status="ongoing"
-    ).count()
+        "delayed":
+            projects.filter(
+                status="delayed"
+            ).count(),
 
-
-    paused_projects = projects.filter(
-        status="paused"
-    ).count()
-
-
-    completed_projects = projects.filter(
-        status="completed"
-    ).count()
-
-
-    cancelled_projects = projects.filter(
-        status="cancelled"
-    ).count()
-
-
-    delayed_projects = projects.filter(
-        status="delayed"
-    ).count()
-
-
-
-    # ==================================================
-    # FINANCIAL SUMMARY
-    # ==================================================
-
-    total_budget = projects.aggregate(
-        total=Coalesce(
-            Sum("budget"),
-            Decimal("0")
+        "average_progress":
+        round(
+            sum(
+                p.progress_percentage
+                for p in projects
+            )
+            /
+            projects.count()
         )
-    )["total"]
+        if projects.count()
+        else 0
+
+    }
 
 
 
-    total_spent = sum(
-        project.total_spent
-        for project in projects
+    # ==========================
+    # FINANCE
+    # ==========================
+
+
+    finance = {
+
+        "total_budget":
+            projects.aggregate(
+                total=Coalesce(
+                    Sum("budget"),
+                    Decimal("0")
+                )
+            )["total"],
+
+
+
+        "total_spent":
+            sum(
+                p.total_spent
+                for p in projects
+            )
+
+    }
+
+
+    finance["remaining"] = (
+        finance["total_budget"]
+        -
+        finance["total_spent"]
     )
 
 
+    if finance["total_budget"]:
 
-    remaining_budget = (
-        total_budget -
-        total_spent
-    )
+        finance["utilization"] = (
+            finance["total_spent"]
+            /
+            finance["total_budget"]
+            *
+            100
+        )
+
+    else:
+
+        finance["utilization"] = 0
 
 
 
-    # ==================================================
-    # BUDGET VS SPENDING CHART
-    # ==================================================
-
-    budget_chart = []
+    # ==========================
+    # BUDGET CHART
+    # ==========================
 
 
-    for project in projects:
+    budget_chart = [
 
-        budget_chart.append({
-
-            "name":
-                project.name,
-
+        {
+            "name":p.name,
 
             "budget":
-                float(
-                    project.budget
-                ),
-
+                float(p.budget),
 
             "spent":
                 float(
-                    project.total_spent
+                    p.total_spent
                 )
 
-        })
+        }
+
+        for p in projects
+
+    ]
 
 
 
-    # ==================================================
-    # PROJECT PROGRESS CHART
-    # ==================================================
-
-    progress_chart = []
+    # ==========================
+    # PROGRESS CHART
+    # ==========================
 
 
-    for project in projects:
+    progress_chart=[
 
-        progress_chart.append({
+        {
 
-            "name":
-                project.name,
+        "name":p.name,
 
+        "progress":
+            p.progress_percentage
 
-            "progress":
-                project.progress_percentage
+        }
 
-        })
+        for p in projects
 
-
-
-    # ==================================================
-    # MATERIAL USAGE CHART
-    # ==================================================
-
-    material_chart = []
+    ]
 
 
-    materials = (
 
-        ConstructionMaterial.objects
+    # ==========================
+    # MATERIAL ANALYSIS
+    # ==========================
 
-        .values(
+
+    material_chart = [
+
+        {
+
+        "name":
+            x["raw_material__name"],
+
+
+        "quantity":
+            float(
+                x["total"]
+            )
+
+        }
+
+        for x in
+        ConstructionMaterial.objects.values(
             "raw_material__name"
         )
-
         .annotate(
-
-            total_quantity=
-                Sum(
-                    "quantity_used"
-                )
-
+            total=Sum(
+                "quantity_used"
+            )
         )
 
-    )
-
-
-    for item in materials:
-
-
-        material_chart.append({
-
-            "name":
-                item[
-                    "raw_material__name"
-                ],
-
-
-            "quantity":
-                float(
-                    item[
-                        "total_quantity"
-                    ]
-                )
-
-        })
+    ]
 
 
 
-    # ==================================================
-    # PROJECT ALERTS
-    # ==================================================
-
-    alerts = []
+    # ==========================
+    # ALERT SYSTEM
+    # ==========================
 
 
-    for project in projects:
+    alerts=[]
 
 
-        if project.remaining_budget < 0:
+    for p in projects:
+
+
+        if p.remaining_budget < 0:
 
             alerts.append({
 
-                "type":
-                    "budget",
+                "level":"danger",
 
                 "message":
-                    f"{project.name} exceeded budget"
+                f"{p.name} exceeded budget"
+
+            })
+
+
+        if p.progress_percentage < 30 and p.status=="ongoing":
+
+            alerts.append({
+
+                "level":"warning",
+
+                "message":
+                f"{p.name} progress is low"
 
             })
 
 
 
-        if project.status == "delayed":
+    # ==========================
+    # RETURN
+    # ==========================
 
-            alerts.append({
-
-                "type":
-                    "delay",
-
-                "message":
-                    f"{project.name} is delayed"
-
-            })
-
-
-
-    # ==================================================
-    # RECENT PROJECTS
-    # ==================================================
-
-    recent_projects = (
-        projects
-        .order_by(
-            "-created_at"
-        )[:5]
-    )
-
-
-
-    # ==================================================
-    # RETURN DASHBOARD DATA
-    # ==================================================
 
     return {
 
 
-        # Projects
-
-        "total_projects":
-            total_projects,
+        "project_summary":
+            project_summary,
 
 
-        "planning_projects":
-            planning_projects,
+        "finance":
+            finance,
 
-
-        "ongoing_projects":
-            ongoing_projects,
-
-
-        "paused_projects":
-            paused_projects,
-
-
-        "completed_projects":
-            completed_projects,
-
-
-        "cancelled_projects":
-            cancelled_projects,
-
-
-        "delayed_projects":
-            delayed_projects,
-
-
-
-        # Finance
-
-        "total_budget":
-            total_budget,
-
-
-        "total_spent":
-            total_spent,
-
-
-        "remaining_budget":
-            remaining_budget,
-
-
-
-        # Charts
 
         "budget_chart":
             budget_chart,
@@ -307,17 +251,17 @@ def get_construction_dashboard():
             material_chart,
 
 
-
-        # Alerts
-
         "alerts":
             alerts,
 
 
-
-        # Recent
-
         "recent_projects":
-            recent_projects,
+            projects.order_by(
+                "-created_at"
+            )[:5]
 
     }
+
+register_dashboard("construction", get_construction_dashboard)
+
+print("Construction dashboard loaded")

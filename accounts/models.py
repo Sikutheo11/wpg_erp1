@@ -11,7 +11,6 @@ from django.contrib.auth.models import (
 # =====================================================
 
 class UserManager(BaseUserManager):
-
     def create_user(
         self,
         email,
@@ -22,21 +21,37 @@ class UserManager(BaseUserManager):
     ):
 
         if not email:
-            raise ValueError("User must have email address")
 
-        email = self.normalize_email(email)
+            raise ValueError(
+                "Email is required"
+            )
 
-        user = self.model(
-            email=email,
-            username=username,
-            first_name=first_name,
-            last_name=last_name,
+        email = self.normalize_email(
+            email
         )
 
-        user.set_password(password)
-        user.save(using=self._db)
+        user = self.model(
+
+            email=email,
+
+            username=username,
+
+            first_name=first_name,
+
+            last_name=last_name
+
+        )
+
+        user.set_password(
+            password
+        )
+
+        user.save(
+            using=self._db
+        )
 
         return user
+
 
     def create_superuser(
         self,
@@ -44,24 +59,30 @@ class UserManager(BaseUserManager):
         username,
         first_name,
         last_name,
-        password=None
+        password
     ):
 
         user = self.create_user(
+
             email=email,
+
             username=username,
+
             first_name=first_name,
+
             last_name=last_name,
+
             password=password
+
         )
 
-        user.role = 'admin'
-        user.is_admin = True
         user.is_staff = True
         user.is_superuser = True
         user.is_active = True
 
-        user.save(using=self._db)
+        user.save(
+            using=self._db
+        )
 
         return user
 
@@ -70,17 +91,18 @@ class UserManager(BaseUserManager):
 # USER
 # =====================================================
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(
+    AbstractBaseUser,
+    PermissionsMixin
+):
 
-    ROLE_CHOICES = (
-        ('admin', 'Admin'),
-        ('manager', 'Manager'),
-        ('worker', 'Worker'),
-        ('customer', 'Customer'),
+    first_name = models.CharField(
+        max_length=50
     )
 
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
+    last_name = models.CharField(
+        max_length=50
+    )
 
     username = models.CharField(
         max_length=50,
@@ -88,36 +110,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     email = models.EmailField(
-        max_length=100,
         unique=True
     )
 
     phone = models.CharField(
         max_length=20,
         blank=True
-    )
-
-    role = models.CharField(
-        max_length=20,
-        choices=ROLE_CHOICES,
-        blank=True,
-        null=True
-    )
-
-    date_joined = models.DateTimeField(
-        auto_now_add=True
-    )
-
-    created_date = models.DateTimeField(
-        auto_now_add=True
-    )
-
-    modified_date = models.DateTimeField(
-        auto_now=True
-    )
-
-    is_admin = models.BooleanField(
-        default=False
     )
 
     is_staff = models.BooleanField(
@@ -128,51 +126,56 @@ class User(AbstractBaseUser, PermissionsMixin):
         default=True
     )
 
-    USERNAME_FIELD = 'email'
+    date_joined = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    USERNAME_FIELD = "email"
 
     REQUIRED_FIELDS = [
-        'username',
-        'first_name',
-        'last_name'
+
+        "username",
+
+        "first_name",
+
+        "last_name"
+
     ]
 
     objects = UserManager()
 
     class Meta:
-        ordering = ['first_name', 'last_name']
+
+        ordering = [
+
+            "first_name",
+
+            "last_name"
+
+        ]
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}".strip()
 
-    # ==========================================
-    # ROLE HELPERS
-    # ==========================================
-
-    @property
-    def is_manager(self):
-        return self.role == 'manager'
+        return (
+            f"{self.first_name} "
+            f"{self.last_name}"
+        )
 
     @property
-    def is_worker(self):
-        return self.role == 'worker'
+    def full_name(self):
 
-    @property
-    def is_customer(self):
-        return self.role == 'customer'
-
-    @property
-    def is_admin_user(self):
-        return self.role == 'admin'
-
-    # ==========================================
-    # DJANGO PERMISSIONS
-    # ==========================================
-
-    def has_perm(self, perm, obj=None):
-        return self.is_admin
-
-    def has_module_perms(self, app_label):
-        return True
+        return (
+            f"{self.first_name} "
+            f"{self.last_name}"
+        )
 
 
 # =====================================================
@@ -182,75 +185,87 @@ class User(AbstractBaseUser, PermissionsMixin):
 class UserProfile(models.Model):
 
     user = models.OneToOneField(
+
         User,
+
         on_delete=models.CASCADE,
-        related_name='profile'
+
+        related_name="profile"
+
     )
 
     picture_profile = models.ImageField(
-        upload_to='users/profile_pictures',
+
+        upload_to="users/profile_pictures",
+
         blank=True,
+
         null=True
+
     )
 
     cover_photo = models.ImageField(
-        upload_to='users/cover_photos',
+
+        upload_to="users/cover_photos",
+
         blank=True,
+
         null=True
+
     )
 
     country = models.CharField(
-        max_length=50,
+        max_length=100,
         blank=True,
         null=True
     )
 
     province = models.CharField(
-        max_length=50,
+        max_length=100,
         blank=True,
         null=True
     )
 
     district = models.CharField(
-        max_length=50,
+        max_length=100,
         blank=True,
         null=True
     )
 
     sector = models.CharField(
-        max_length=50,
+        max_length=100,
         blank=True,
         null=True
     )
 
     cell = models.CharField(
-        max_length=50,
+        max_length=100,
         blank=True,
         null=True
     )
 
     village = models.CharField(
-        max_length=50,
+        max_length=100,
         blank=True,
         null=True
     )
 
     personal_id = models.CharField(
-        max_length=20,
-        blank=True
+        max_length=30,
+        blank=True,
+        null=True
     )
 
     created_at = models.DateTimeField(
         auto_now_add=True
     )
 
-    modified_date = models.DateTimeField(
+    updated_at = models.DateTimeField(
         auto_now=True
     )
 
-    class Meta:
-        verbose_name = "User Profile"
-        verbose_name_plural = "User Profiles"
-
     def __str__(self):
-        return self.user.email
+
+        return (
+            self.user.full_name
+        )

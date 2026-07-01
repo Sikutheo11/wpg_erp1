@@ -111,22 +111,24 @@ class AttendanceAdmin(admin.ModelAdmin):
 class LeaveAdmin(admin.ModelAdmin):
 
     list_display = (
-        'employee',
-        'leave_type',
-        'start_date',
-        'end_date',
-        'approved'
+        "employee",
+        "leave_type",
+        "start_date",
+        "end_date",
+        "status",
+        "created_at",
     )
+
 
     list_filter = (
-        'leave_type',
-        'approved'
+        "leave_type",
+        "status",
     )
+
 
     search_fields = (
-        'employee__user__first_name',
-        'employee__user__last_name'
+        "employee__user__first_name",
+        "employee__user__last_name",
     )
-
 
 

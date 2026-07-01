@@ -5,9 +5,7 @@ from django.contrib.auth.models import Group
 # ==========================================
 # SYSTEM MODULES
 # ==========================================
-
 class Module(models.Model):
-
     name = models.CharField(
         max_length=100
     )
@@ -22,7 +20,8 @@ class Module(models.Model):
     )
 
     permission = models.CharField(
-        max_length=150
+        max_length=150,
+        blank=True
     )
 
     is_active = models.BooleanField(
@@ -31,16 +30,7 @@ class Module(models.Model):
 
 
     def __str__(self):
-
         return self.name
-
-
-
-
-# ==========================================
-# ROLE MODULE ACCESS
-# ==========================================
-
 
 class RoleModule(models.Model):
 
@@ -76,22 +66,3 @@ class RoleModule(models.Model):
     can_delete = models.BooleanField(
         default=False
     )
-
-
-
-    class Meta:
-
-        unique_together = (
-            "role",
-            "module",
-        )
-
-
-
-    def __str__(self):
-
-        return (
-            f"{self.role.name}"
-            f" - "
-            f"{self.module.name}"
-        )

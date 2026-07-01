@@ -1,24 +1,42 @@
+# sales/urls.py
+
+
 from django.urls import path
 
 from . import views
 
 
-urlpatterns = [
-    # ========================================== 
-    # DASHBOARD 
-    # ========================================== 
-    
-    path( '', views.sales_dashboard, name='sales_dashboard' ),
 
-    # ===============================
-    # CUSTOMERS
-    # ===============================
+app_name = "sales"
+
+
+
+urlpatterns = [
+
+
+    # =====================================================
+    # DASHBOARD
+    # =====================================================
+
+    path(
+        "dashboard/",
+        views.sales_dashboard,
+        name="sales_dashboard"
+    ),
+
+
+
+    # =====================================================
+    # CUSTOMER MANAGEMENT
+    # =====================================================
+
 
     path(
         "customers/",
         views.customer_list,
         name="customer_list"
     ),
+
 
     path(
         "customers/create/",
@@ -27,46 +45,40 @@ urlpatterns = [
     ),
 
 
-
-    # ===============================
-    # SALES
-    # ===============================
-
     path(
-        "sales/",
-        views.sale_list,
-        name="sale_list"
+        "customers/<int:pk>/",
+        views.customer_detail,
+        name="customer_detail"
     ),
 
-    path(
-        "sales/create/",
-        views.sale_create,
-        name="sale_create"
-    ),
 
     path(
-        "sales/<int:pk>/",
-        views.sale_detail,
-        name="sale_detail"
+        "customers/<int:pk>/update/",
+        views.customer_update,
+        name="customer_update"
     ),
 
+
     path(
-        "sales/<int:pk>/complete/",
-        views.sale_complete,
-        name="sale_complete"
+        "customers/<int:pk>/delete/",
+        views.customer_delete,
+        name="customer_delete"
     ),
 
 
 
-    # ===============================
-    # QUOTATIONS
-    # ===============================
+
+    # =====================================================
+    # SALES QUOTATION
+    # =====================================================
+
 
     path(
         "quotations/",
         views.quotation_list,
         name="quotation_list"
     ),
+
 
     path(
         "quotations/create/",
@@ -75,16 +87,54 @@ urlpatterns = [
     ),
 
 
+    path(
+        "quotations/<int:pk>/",
+        views.quotation_detail,
+        name="quotation_detail"
+    ),
 
-    # ===============================
+
+
+
+    # =====================================================
+    # SALES
+    # =====================================================
+
+
+    path(
+        "sales/",
+        views.sale_list,
+        name="sale_list"
+    ),
+
+
+    path(
+        "sales/<int:pk>/",
+        views.sale_detail,
+        name="sale_detail"
+    ),
+
+
+    path(
+        "sales/<int:pk>/complete/",
+        views.complete_sale_view,
+        name="complete_sale"
+    ),
+
+
+
+
+    # =====================================================
     # INVOICES
-    # ===============================
+    # =====================================================
+
 
     path(
         "invoices/",
         views.invoice_list,
         name="invoice_list"
     ),
+
 
     path(
         "invoices/<int:pk>/",
@@ -94,19 +144,31 @@ urlpatterns = [
 
 
 
-    # ===============================
-    # PAYMENTS
-    # ===============================
+
+    # =====================================================
+    # CUSTOMER PAYMENTS
+    # =====================================================
+
 
     path(
-        "payments/create/",
-        views.payment_create,
-        name="payment_create"
+        "payments/",
+        views.payment_list,
+        name="payment_list"
     ),
+
+
+
+
+    # =====================================================
+    # REPORTS
+    # =====================================================
+
+
     path(
-        "invoice/<int:pk>/pdf/",
-        views.invoice_pdf,
-        name="invoice_pdf"
+        "reports/",
+        views.sales_report,
+        name="sales_report"
     ),
+
 
 ]

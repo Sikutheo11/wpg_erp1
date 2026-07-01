@@ -41,7 +41,7 @@ def login(request):
             if user is not None:
                 auth_login(request, user)
 
-                return redirect(redirect_by_role(user))
+                return redirect_by_role(user)
     return render(request,'accounts/login.html',{'form':form})
 
 

@@ -1,12 +1,18 @@
+# sales/services.py
+
 from decimal import Decimal
+from datetime import timedelta
 
 from django.db import transaction
+from django.db.models import Sum, Count
 from django.utils import timezone
 
 from .models import (
+    Customer,
+    SalesQuotation,
     Sale,
     Invoice,
-    SalesQuotation,
+    CustomerPayment,
 )
 
 from inventory.models import StockMovement
@@ -55,7 +61,23 @@ def generate_invoice_number():
 
 
 # =====================================================
-# QUOTATION TOTAL CALCULATION
+# CUSTOMER SUMMARY
+# =====================================================
+
+
+def get_customer_summary():
+
+    return {
+
+        "total_customers":
+            Customer.objects.count(),
+
+    }
+
+
+
+# =====================================================
+# QUOTATION CALCULATION
 # =====================================================
 
 
@@ -74,12 +96,15 @@ def calculate_quotation_total(quotation):
 
     total = (
         subtotal
-        - quotation.discount
-        + quotation.tax
+        -
+        quotation.discount
+        +
+        quotation.tax
     )
 
 
     quotation.total_amount = total
+
 
     quotation.save(
         update_fields=[
@@ -93,7 +118,7 @@ def calculate_quotation_total(quotation):
 
 
 # =====================================================
-# SALE TOTAL CALCULATION
+# SALE CALCULATION
 # =====================================================
 
 
@@ -112,8 +137,10 @@ def calculate_sale_total(sale):
 
     total = (
         subtotal
-        - sale.discount
-        + sale.tax
+        -
+        sale.discount
+        +
+        sale.tax
     )
 
 
@@ -132,7 +159,7 @@ def calculate_sale_total(sale):
 
 
 # =====================================================
-# STOCK REDUCTION
+# INVENTORY STOCK REDUCTION
 # =====================================================
 
 
@@ -148,12 +175,10 @@ def reduce_stock_after_sale(
         product = item.product
 
 
-        # Check available stock
-
         if product.current_stock < item.quantity:
 
             raise Exception(
-                f"Not enough stock for {product.name}"
+                f"Not enough stock for {product}"
             )
 
 
@@ -172,6 +197,7 @@ def reduce_stock_after_sale(
             warehouse=sale.warehouse,
 
             created_by=user
+
         )
 
 
@@ -181,7 +207,9 @@ def reduce_stock_after_sale(
 # =====================================================
 
 
-def create_invoice_from_sale(sale):
+def create_invoice_from_sale(
+        sale
+):
 
 
     invoice = Invoice.objects.create(
@@ -195,10 +223,16 @@ def create_invoice_from_sale(sale):
             timezone.now().date(),
 
         due_date=
-            timezone.now().date(),
+            timezone.now().date()
+            +
+            timedelta(days=30),
 
         total_amount=
-            sale.total_amount
+            sale.total_amount,
+
+        amount_paid=0,
+
+        status="pending"
 
     )
 
@@ -219,14 +253,14 @@ def complete_sale(
 ):
 
 
-    # calculate total
+    # Calculate total
 
     calculate_sale_total(
         sale
     )
 
 
-    # reduce stock
+    # Reduce inventory
 
     reduce_stock_after_sale(
         sale,
@@ -234,9 +268,10 @@ def complete_sale(
     )
 
 
-    # change status
+    # Update sale status
 
     sale.status = "completed"
+
 
     sale.save(
         update_fields=[
@@ -245,7 +280,7 @@ def complete_sale(
     )
 
 
-    # create invoice
+    # Create invoice
 
     invoice = create_invoice_from_sale(
         sale
@@ -257,7 +292,7 @@ def complete_sale(
 
 
 # =====================================================
-# CREATE SALE NUMBER
+# PREPARE DOCUMENT NUMBERS
 # =====================================================
 
 
@@ -272,17 +307,13 @@ def prepare_sale(sale):
 
     sale.save()
 
-
     return sale
 
 
 
-# =====================================================
-# CREATE QUOTATION NUMBER
-# =====================================================
-
-
-def prepare_quotation(quotation):
+def prepare_quotation(
+        quotation
+):
 
     if not quotation.quotation_no:
 
@@ -293,5 +324,91 @@ def prepare_quotation(quotation):
 
     quotation.save()
 
-
     return quotation
+
+
+
+# =====================================================
+# SALES DASHBOARD SUMMARY
+# =====================================================
+
+
+def get_sales_summary():
+
+    total_sales_amount = (
+        Sale.objects.aggregate(
+            total=Sum(
+                "total_amount"
+            )
+        )["total"]
+        or Decimal("0")
+    )
+
+
+    total_invoice_amount = (
+        Invoice.objects.aggregate(
+            total=Sum(
+                "total_amount"
+            )
+        )["total"]
+        or Decimal("0")
+    )
+
+
+    total_paid_amount = (
+        Invoice.objects.aggregate(
+            total=Sum(
+                "amount_paid"
+            )
+        )["total"]
+        or Decimal("0")
+    )
+
+
+    return {
+
+
+        "total_customers":
+            Customer.objects.count(),
+
+
+        "total_quotations":
+            SalesQuotation.objects.count(),
+
+
+        "total_sales":
+            Sale.objects.count(),
+
+
+        "total_sales_amount":
+            total_sales_amount,
+
+
+        "total_invoices":
+            Invoice.objects.count(),
+
+
+        "total_invoice_amount":
+            total_invoice_amount,
+
+
+        "total_paid_amount":
+            total_paid_amount,
+
+
+        "outstanding_amount":
+            total_invoice_amount
+            -
+            total_paid_amount,
+
+
+        "recent_sales":
+            Sale.objects
+            .select_related(
+                "customer"
+            )
+            .order_by(
+                "-created_at"
+            )[:10]
+
+    }

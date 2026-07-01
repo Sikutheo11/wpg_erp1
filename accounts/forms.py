@@ -6,7 +6,7 @@ class UserForm(forms.ModelForm):
     confirm_password = forms.CharField(widget=forms.PasswordInput)
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'username', 'phone', 'role','password' ]
+        fields = ['first_name', 'last_name', 'email', 'username', 'phone','password' ]
     def clean(self):
         cleaned_data = super(UserForm, self).clean()
         password = cleaned_data.get('password')

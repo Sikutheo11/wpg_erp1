@@ -1,6 +1,3 @@
-# Construction/views.py
-
-
 from django.shortcuts import (
     render,
     redirect,
@@ -48,13 +45,8 @@ from .forms import (
 @login_required
 def construction_dashboard(request):
 
-    context = get_construction_dashboard()
-
-    return render(
-        request,
-        "construction/dashboard.html",
-        context
-    )
+    context = get_construction_dashboard(request.user)
+    return render(request, "construction/dashboard.html", context)
 
 
 

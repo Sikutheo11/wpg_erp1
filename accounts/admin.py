@@ -4,7 +4,7 @@ from .models import User, UserProfile
 
 # for Uneditable password
 class CustomUserAdmin(UserAdmin):
-    list_display = ('email', 'last_name','first_name', 'username','phone', 'is_active', 'role',)
+    list_display = ('email', 'last_name','first_name', 'username','phone', 'is_active',)
     ordering = ('-date_joined',)
     filter_horizontal = ()
     list_filter = ()

@@ -166,6 +166,8 @@ class Attendance(models.Model):
 # =========================
 # LEAVE
 # =========================
+# Employee/models.py
+
 class Leave(models.Model):
 
     LEAVE_TYPES = (
@@ -175,20 +177,48 @@ class Leave(models.Model):
         ('other', 'Other'),
     )
 
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
+    )
 
+
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     leave_type = models.CharField(max_length=50, choices=LEAVE_TYPES)
 
+
     start_date = models.DateField()
+
     end_date = models.DateField()
 
-    reason = models.TextField(blank=True)
 
-    approved = models.BooleanField(default=False)
+    reason = models.TextField(
+        blank=True
+    )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending'
+    )
+
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+
 
     def __str__(self):
+
         return f"{self.employee} - {self.leave_type}"
 
 # Employee/models.py

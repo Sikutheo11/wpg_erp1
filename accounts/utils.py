@@ -1,15 +1,54 @@
+from django.shortcuts import redirect
+
+
 def redirect_by_role(user):
 
-    if user.role == 'customer':
-        return 'customer_dashboard'
+    # Super Admin
+    if user.is_superuser:
 
-    elif user.role == 'worker':
-        return 'furniture_dashboard'
+        return redirect(
+            "core:dashboard"
+        )
 
-    elif user.role == 'manager':
-        return 'manager_dashboard'
 
-    elif user.role == 'admin':
-        return 'admin_dashboard'
+    # Groups (Roles)
 
-    return 'home'
+    groups = user.groups.values_list(
+        "name",
+        flat=True
+    )
+
+
+    if "Construction Manager" in groups:
+
+        return redirect(
+            "construction:dashboard"
+        )
+
+
+    if "Finance Manager" in groups:
+
+        return redirect(
+            "finance:dashboard"
+        )
+
+
+    if "Store Keeper" in groups:
+
+        return redirect(
+            "inventory:dashboard"
+        )
+
+
+    if "Customer" in groups:
+
+        return redirect(
+            "accounts:customer_dashboard"
+        )
+
+
+    # Default
+
+    return redirect(
+        "core:dashboard"
+    )

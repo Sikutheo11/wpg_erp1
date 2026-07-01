@@ -74,7 +74,6 @@ class SalesQuotationForm(forms.ModelForm):
 
         fields = [
             'customer',
-            'quotation_no',
             'quotation_date',
             'valid_until',
             'discount',
@@ -205,8 +204,8 @@ class SaleForm(forms.ModelForm):
 
         fields = [
             'customer',
+            'warehouse',
             'quotation',
-            'sale_no',
             'sale_date',
             'discount',
             'tax',
@@ -325,6 +324,13 @@ SaleItemFormSet = inlineformset_factory(
     extra=1,
     can_delete=True
 )
+SalesQuotationItemFormSet = inlineformset_factory(
+    SalesQuotation,
+    SalesQuotationItem,
+    form=SalesQuotationItemForm,
+    extra=1,
+    can_delete=True
+)
 
 
 
@@ -341,10 +347,8 @@ class InvoiceForm(forms.ModelForm):
 
         fields = [
             'sale',
-            'invoice_no',
             'invoice_date',
             'due_date',
-            'total_amount',
             'amount_paid',
             'status',
         ]

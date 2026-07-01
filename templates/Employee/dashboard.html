@@ -1,0 +1,444 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+
+
+<div class="container-fluid">
+
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2 class="fw-bold">
+                Employee Management Dashboard
+            </h2>
+
+            <p class="text-muted">
+                Welcome {{ request.user.first_name }} {{ request.user.last_name }}
+            </p>
+
+        </div>
+
+
+        <div>
+
+            <a href="{% url 'employee:employee_create' %}"
+               class="btn btn-primary">
+
+                <i class="fa fa-user-plus"></i>
+                Add Employee
+
+            </a>
+
+        </div>
+
+    </div>
+
+
+
+
+
+    <!-- KPI CARDS -->
+
+    <div class="row g-3 mb-4">
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow border-0">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Total Employees
+                    </h6>
+
+                    <h2 class="fw-bold">
+                        {{ total_employees }}
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow border-0">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Active Employees
+                    </h6>
+
+                    <h2 class="text-success">
+                        {{ active_employees }}
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow border-0">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Inactive Employees
+                    </h6>
+
+
+                    <h2 class="text-danger">
+                        {{ inactive_employees }}
+                    </h2>
+
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow border-0">
+
+                <div class="card-body">
+
+
+                    <h6 class="text-muted">
+                        Departments
+                    </h6>
+
+
+                    <h2>
+                        {{ total_departments }}
+                    </h2>
+
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+
+
+
+    <!-- SECOND ROW -->
+
+    <div class="row">
+
+
+        <!-- Department statistics -->
+
+        <div class="col-lg-6">
+
+
+            <div class="card shadow-sm mb-4">
+
+
+                <div class="card-header">
+
+                    Employees By Department
+
+                </div>
+
+
+
+                <div class="card-body">
+
+
+                    <table class="table table-hover">
+
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Department
+                                </th>
+
+
+                                <th>
+                                    Employees
+                                </th>
+
+                            </tr>
+
+
+                        </thead>
+
+
+
+                        <tbody>
+
+
+                        {% for item in employees_by_department %}
+
+
+                            <tr>
+
+
+                                <td>
+
+                                    {{ item.department__name }}
+
+                                </td>
+
+
+
+                                <td>
+
+                                    {{ item.total }}
+
+                                </td>
+
+
+                            </tr>
+
+
+                        {% empty %}
+
+                            <tr>
+
+                                <td colspan="2">
+
+                                    No data available
+
+                                </td>
+
+                            </tr>
+
+
+                        {% endfor %}
+
+
+
+                        </tbody>
+
+
+                    </table>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- Position statistics -->
+
+
+        <div class="col-lg-6">
+
+
+            <div class="card shadow-sm mb-4">
+
+
+                <div class="card-header">
+
+                    Employees By Position
+
+                </div>
+
+
+
+                <div class="card-body">
+
+
+                    <table class="table table-hover">
+
+
+                        <thead>
+
+
+                            <tr>
+
+                                <th>
+                                    Position
+                                </th>
+
+
+                                <th>
+                                    Employees
+                                </th>
+
+                            </tr>
+
+
+                        </thead>
+
+
+
+                        <tbody>
+
+
+
+                        {% for item in employees_by_position %}
+
+
+
+                            <tr>
+
+
+                                <td>
+
+                                    {{ item.position__title }}
+
+                                </td>
+
+
+                                <td>
+
+                                    {{ item.total }}
+
+                                </td>
+
+
+                            </tr>
+
+
+
+                        {% empty %}
+
+
+                            <tr>
+
+                                <td colspan="2">
+
+                                    No data available
+
+                                </td>
+
+                            </tr>
+
+
+                        {% endfor %}
+
+
+
+                        </tbody>
+
+
+                    </table>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+
+    </div>
+
+
+
+
+
+
+
+
+    <!-- ALERTS -->
+
+    <div class="row">
+
+
+        <div class="col-12">
+
+
+            <div class="card shadow-sm">
+
+
+                <div class="card-header">
+
+                    Notifications
+
+                </div>
+
+
+
+                <div class="card-body">
+
+
+                    {% for alert in alerts %}
+
+
+                        <div class="alert alert-warning">
+
+                            {{ alert }}
+
+                        </div>
+
+
+                    {% empty %}
+
+
+                        <div class="alert alert-success">
+
+                            No alerts
+
+                        </div>
+
+
+                    {% endfor %}
+
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+
+</div>
+
+
+
+{% endblock %}

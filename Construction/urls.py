@@ -1,14 +1,7 @@
-# Construction/urls.py
-
-
 from django.urls import path
-
 from . import views
 
-
-
-app_name = "construction"
-
+app_name = "Construction"
 
 
 urlpatterns = [
@@ -21,7 +14,7 @@ urlpatterns = [
     path(
         "dashboard/",
         views.construction_dashboard,
-        name="dashboard"
+        name="construction_dashboard"
     ),
 
 
