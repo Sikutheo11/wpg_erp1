@@ -1,0 +1,334 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+Production Outputs
+{% endblock %}
+
+{% block page_title %}
+Production Outputs
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- HEADER -->
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+            <h3 class="fw-bold mb-1">
+                Production Outputs
+            </h3>
+
+            <p class="text-muted mb-0">
+                Finished products recorded from furniture production jobs.
+            </p>
+        </div>
+
+        <a href="{% url 'furniture:production_job_list' %}"
+           class="btn btn-primary">
+
+            <i class="bi bi-list-task me-1"></i>
+            Production Jobs
+
+        </a>
+
+    </div>
+
+
+    <!-- SUMMARY -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Output Records
+                    </small>
+
+                    <h3 class="fw-bold mt-2 mb-0">
+                        {{ outputs.count|default:0 }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Total Quantity Produced
+                    </small>
+
+                    <h3 class="fw-bold mt-2 mb-0">
+                        {{ total_quantity|default:0 }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Total Production Cost
+                    </small>
+
+                    <h4 class="fw-bold text-success mt-2 mb-0">
+                        {{ total_production_cost|default:0|floatformat:0 }}
+                        RWF
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Average Cost Per Unit
+                    </small>
+
+                    <h4 class="fw-bold text-primary mt-2 mb-0">
+                        {{ average_cost_per_unit|default:0|floatformat:0 }}
+                        RWF
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- OUTPUT TABLE -->
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+            <div>
+                <h5 class="mb-1">
+                    Production Output History
+                </h5>
+
+                <small class="text-muted">
+                    Open a production job to record additional output.
+                </small>
+            </div>
+
+            <a href="{% url 'furniture:production_job_list' %}"
+               class="btn btn-sm btn-outline-primary">
+
+                <i class="bi bi-plus-circle me-1"></i>
+                Record Through Job
+
+            </a>
+
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Production Job</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Production Cost</th>
+                        <th>Cost Per Unit</th>
+                        <th>Produced By</th>
+                        <th>Produced At</th>
+                        <th>Evidence</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for output in outputs %}
+
+                    <tr>
+
+                        <td>
+                            {{ forloop.counter }}
+                        </td>
+
+                        <td>
+
+                            {% if output.production_job %}
+
+                                <a href="{% url 'furniture:production_job_detail' output.production_job.pk %}"
+                                   class="fw-semibold text-decoration-none">
+
+                                    Job #{{ output.production_job.pk }}
+
+                                </a>
+
+                                <small class="d-block text-muted">
+                                    {{ output.production_job }}
+                                </small>
+
+                            {% elif output.legacy_order %}
+
+                                <span class="fw-semibold">
+                                    Legacy Order #{{ output.legacy_order.pk }}
+                                </span>
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    No linked job
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            <strong>
+                                {{ output.product }}
+                            </strong>
+
+                        </td>
+
+                        <td>
+
+                            <strong>
+                                {{ output.quantity_produced }}
+                            </strong>
+
+                        </td>
+
+                        <td>
+                            {{ output.total_cost|default:0|floatformat:0 }}
+                            RWF
+                        </td>
+
+                        <td>
+                            {{ output.cost_per_unit|default:0|floatformat:0 }}
+                            RWF
+                        </td>
+
+                        <td>
+                            {{ output.produced_by|default:"Unknown" }}
+                        </td>
+
+                        <td>
+                            {{ output.produced_at|date:"d M Y H:i" }}
+                        </td>
+
+                        <td>
+
+                            {% if output.image %}
+
+                                <a href="{{ output.image.url }}"
+                                   target="_blank">
+
+                                    <img src="{{ output.image.url }}"
+                                         alt="Production output"
+                                         class="rounded"
+                                         style="
+                                            width: 70px;
+                                            height: 55px;
+                                            object-fit: cover;
+                                         ">
+
+                                </a>
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    -
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td class="text-end">
+
+                            {% if output.production_job %}
+
+                                <a href="{% url 'furniture:production_job_detail' output.production_job.pk %}"
+                                   class="btn btn-sm btn-outline-primary">
+
+                                    Open Job
+
+                                </a>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="10"
+                            class="text-center text-muted py-5">
+
+                            <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
+
+                            <h6>
+                                No production outputs recorded
+                            </h6>
+
+                            <p>
+                                Open a production job and record completed products.
+                            </p>
+
+                            <a href="{% url 'furniture:production_job_list' %}"
+                               class="btn btn-primary btn-sm">
+
+                                Open Production Jobs
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

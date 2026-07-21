@@ -6,6 +6,7 @@ from Employee.models import Department, Employee
 import random
 import string
 from django.utils.text import slugify
+from django.db.models import Sum
 
 
 # =========================
@@ -162,6 +163,42 @@ class Product(models.Model):
             self.slug = slugify(self.name)
 
         super().save(*args, **kwargs)
+
+
+    @property
+    def current_stock(self):
+        """
+        Calculates current stock from Stock Movements.
+        """
+
+        stock_in = (
+            self.stockmovement_set.filter(
+                movement_type="IN"
+            ).aggregate(
+                total=Sum("quantity")
+            )["total"] or 0
+        )
+
+        stock_out = (
+            self.stockmovement_set.filter(
+                movement_type="OUT"
+            ).aggregate(
+                total=Sum("quantity")
+            )["total"] or 0
+        )
+
+        adjustments = (
+            self.stockmovement_set.filter(
+                movement_type="ADJUSTMENT"
+            ).aggregate(
+                total=Sum("quantity")
+            )["total"] or 0
+        )
+
+        def __str__(self):
+            return self.name
+
+        return stock_in + adjustments - stock_out
 
 
 # =========================

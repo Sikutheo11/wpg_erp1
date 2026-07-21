@@ -1,0 +1,13 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Complete Rework{% endblock %}
+{% block page_title %}Complete Rework{% endblock %}
+{% block content %}
+<div class="container-fluid"><div class="row justify-content-center"><div class="col-xl-8"><div class="card border-0 shadow-sm">
+<div class="card-header bg-success text-white"><h5>Complete {{ rework.rework_code }}</h5></div>
+<div class="card-body"><form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+{% for field in form %}<div class="mb-3"><label class="form-label">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+<div class="text-end"><a href="{% url 'furniture:rework_order_detail' rework.pk %}" class="btn btn-outline-secondary">Cancel</a> <button class="btn btn-success">Complete Rework</button></div></form>
+</div></div></div></div></div>
+
+{% endblock %}

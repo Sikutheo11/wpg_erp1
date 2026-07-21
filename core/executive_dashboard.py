@@ -1,174 +1,45 @@
-from django.db.models import Sum
-from django.utils import timezone
-
-from .permissions import EXECUTIVE_PERMISSIONS
+from core.providers.registry import ProviderRegistry
+from core.models import ApprovalRequest, Notification, AuditLog
 
 
+class ExecutiveDashboard:
 
-def has_permission(user, permission):
+    @staticmethod
+    def get_business_summary():
+        summary = {}
 
-    if user.is_superuser:
-        return True
+        for provider in ProviderRegistry.all():
+            summary[provider.code] = {
+                "name": provider.name,
+                "summary": provider.summary(),
+                "alerts": provider.alerts(),
+            }
 
-    return user.has_perm(permission)
+        return summary
 
+    @staticmethod
+    def get_pending_approvals():
+        return ApprovalRequest.objects.filter(
+            status="PENDING"
+        ).order_by("-requested_at")[:10]
 
+    @staticmethod
+    def get_recent_notifications(user):
+        return Notification.objects.filter(
+            user=user
+        ).order_by("-created_at")[:10]
 
+    @staticmethod
+    def get_recent_activity():
+        return AuditLog.objects.select_related(
+            "user"
+        ).order_by("-created_at")[:10]
 
-def get_executive_dashboard(user):
-
-    data = {}
-
-
-
-    # ==========================
-    # SALES CARD
-    # ==========================
-
-    if has_permission(
-        user,
-        EXECUTIVE_PERMISSIONS["sales"]["card"]
-    ):
-
-        from sales.models import Sale
-
-
-        data["sales"] = {
-
-            "total_sales":
-                Sale.objects.count(),
-
-
-            "sales_amount":
-                Sale.objects.aggregate(
-                    total=Sum("total_amount")
-                )["total"] or 0,
-
-
-            "completed_sales":
-                Sale.objects.filter(
-                    status__iexact="completed"
-                ).count(),
-
+    @staticmethod
+    def get_context(user):
+        return {
+            "business_summary": ExecutiveDashboard.get_business_summary(),
+            "pending_approvals": ExecutiveDashboard.get_pending_approvals(),
+            "recent_notifications": ExecutiveDashboard.get_recent_notifications(user),
+            "recent_activity": ExecutiveDashboard.get_recent_activity(),
         }
-
-
-
-    # ==========================
-    # FINANCE CARD
-    # ==========================
-
-    if has_permission(
-        user,
-        EXECUTIVE_PERMISSIONS["finance"]["card"]
-    ):
-
-        from finance.models import Income, Expense
-
-
-        income = (
-            Income.objects.aggregate(
-                total=Sum("amount")
-            )["total"] or 0
-        )
-
-
-        expense = (
-            Expense.objects.aggregate(
-                total=Sum("amount")
-            )["total"] or 0
-        )
-
-
-        data["finance"] = {
-
-            "income":
-                income,
-
-
-            "expense":
-                expense,
-
-
-            "profit":
-                income - expense,
-
-        }
-
-
-
-
-    # ==========================
-    # INVENTORY CARD
-    # ==========================
-
-    if has_permission(
-        user,
-        EXECUTIVE_PERMISSIONS["inventory"]["card"]
-    ):
-
-        from inventory.models import Product
-
-
-        data["inventory"] = {
-
-            "products":
-                Product.objects.count(),
-
-        }
-
-
-
-
-    # ==========================
-    # HR CARD
-    # ==========================
-
-    if has_permission(
-        user,
-        EXECUTIVE_PERMISSIONS["hr"]["card"]
-    ):
-
-        from Employee.models import Employee
-
-
-        data["hr"] = {
-
-            "employees":
-                Employee.objects.count(),
-
-        }
-
-
-
-
-    # ==========================
-    # CONSTRUCTION CARD
-    # ==========================
-
-    if has_permission(
-        user,
-        EXECUTIVE_PERMISSIONS["construction"]["card"]
-    ):
-
-        from Construction.models import Project
-
-
-        data["construction"] = {
-
-            "projects":
-                Project.objects.count(),
-
-        }
-
-
-
-
-    # ==========================
-    # SYSTEM INFO
-    # ==========================
-
-    data["generated_at"] = timezone.now()
-
-
-    return data

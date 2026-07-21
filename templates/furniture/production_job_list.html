@@ -5,7 +5,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>📦 Orders</h3>
 
-    <a href="{% url 'create_order' %}" class="btn btn-primary">
+    <a href="{% url 'furniture:production_job_create' %}" class="btn btn-primary">
         + Create Order
     </a>
 </div>
@@ -50,7 +50,7 @@
 
             <!-- RESET -->
             <div class="col-md-1">
-                <a href="{% url 'order_list' %}" class="btn btn-outline-secondary w-100">
+                <a href="{% url 'furniture:production_job_list' %}" class="btn btn-outline-secondary w-100">
                     Reset
                 </a>
             </div>

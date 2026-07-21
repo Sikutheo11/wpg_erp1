@@ -1,0 +1,137 @@
+{% extends "ecommerce/base_ecommerce.html" %}
+
+{% block title %}
+Checkout
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+<div class="row">
+
+<div class="col-lg-8">
+
+<div class="card shadow">
+
+<div class="card-body">
+
+<h3 class="mb-4">
+
+Checkout
+
+</h3>
+
+<form method="POST">
+
+{% csrf_token %}
+
+<div class="row">
+
+<div class="col-md-6 mb-3">
+<label>Full Name</label>
+{{ form.full_name }}
+</div>
+
+<div class="col-md-6 mb-3">
+<label>Phone</label>
+{{ form.phone }}
+</div>
+
+<div class="col-md-6 mb-3">
+<label>Email</label>
+{{ form.email }}
+</div>
+
+<div class="col-md-6 mb-3">
+<label>Province</label>
+{{ form.province }}
+</div>
+
+<div class="col-md-6 mb-3">
+<label>District</label>
+{{ form.district }}
+</div>
+
+<div class="col-md-6 mb-3">
+<label>Sector</label>
+{{ form.sector }}
+</div>
+
+<div class="col-md-6 mb-3">
+<label>Cell</label>
+{{ form.cell }}
+</div>
+
+<div class="col-md-6 mb-3">
+<label>Village</label>
+{{ form.village }}
+</div>
+
+<div class="mb-3">
+
+<label>Delivery Address</label>
+
+{{ form.delivery_address }}
+
+</div>
+
+<div class="mb-3">
+
+<label>Notes</label>
+
+{{ form.notes }}
+
+</div>
+
+<button class="btn btn-success btn-lg w-100">
+
+Place Order
+
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-lg-4">
+
+<div class="card shadow">
+
+<div class="card-body">
+
+<h4>
+
+Order Summary
+
+</h4>
+
+<hr>
+
+<h3 class="text-primary">
+
+{{ total }} RWF
+
+</h3>
+
+<p class="text-muted">
+
+Delivery fees will be calculated later.
+
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+{% endblock %}

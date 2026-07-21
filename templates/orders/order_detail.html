@@ -1,0 +1,131 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h3 class="fw-bold mb-1">
+                Order {{ order.order_number|default:order.id }}
+            </h3>
+
+            <p class="text-muted mb-0">
+                {{ order.get_order_type_display }} | {{ order.get_status_display }}
+            </p>
+        </div>
+
+        {% if order.order_type == "CUSTOM_FURNITURE" or order.order_type == "PRODUCTION" %}
+
+            {% if order.production_job %}
+
+                <a href="{% url 'furniture:production_job_detail' order.production_job.id %}"
+                   class="btn btn-success">
+
+                    View Production Job
+
+                </a>
+
+            {% else %}
+
+                <a href="{% url 'orders:create_production_job' order.id %}"
+                   class="btn btn-warning">
+
+                    Create Production Job
+
+                </a>
+
+            {% endif %}
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="card p-3 mb-3">
+        <h5>Customer Info</h5>
+
+        <p><strong>Name:</strong> {{ order.customer_name }}</p>
+        <p><strong>Phone:</strong> {{ order.customer_phone }}</p>
+        <p><strong>Email:</strong> {{ order.customer_email|default:"-" }}</p>
+        <p><strong>Address:</strong> {{ order.delivery_address|default:"-" }}</p>
+    </div>
+
+
+    <div class="card p-3 mb-3">
+        <h5>Items</h5>
+
+        <ul class="list-group">
+
+            {% for item in order.items.all %}
+
+            <li class="list-group-item d-flex justify-content-between">
+
+                <span>
+                    {{ item.product_name|default:item.product.name }}
+                    x {{ item.quantity }}
+                </span>
+
+                <strong>
+                    {{ item.subtotal }} RWF
+                </strong>
+
+            </li>
+
+            {% empty %}
+
+            <li class="list-group-item text-muted">
+                No items found.
+            </li>
+
+            {% endfor %}
+
+        </ul>
+
+        <div class="mt-3 text-end">
+            <h5>
+                Total:
+                <span class="text-success">
+                    {{ order.total_amount }} RWF
+                </span>
+            </h5>
+        </div>
+    </div>
+
+
+    <div class="card p-3">
+
+        <h5>Update Status</h5>
+
+        <form method="POST"
+              action="{% url 'orders:update_status' order.id %}">
+
+            {% csrf_token %}
+
+            <select name="status" class="form-select">
+
+                {% for key, value in order.STATUS %}
+
+                <option value="{{ key }}"
+                    {% if order.status == key %}selected{% endif %}>
+
+                    {{ value }}
+
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+            <button class="btn btn-success mt-2">
+                Update
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

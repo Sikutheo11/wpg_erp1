@@ -1,0 +1,10 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Block Task{% endblock %}
+{% block page_title %}Block Production Task{% endblock %}
+{% block content %}
+<div class="container-fluid"><div class="row justify-content-center"><div class="col-lg-7"><div class="card border-0 shadow-sm"><div class="card-header bg-danger text-white"><h5 class="mb-0">Block {{ task.name }}</h5></div><div class="card-body">
+<div class="alert alert-warning">Provide a clear reason why work cannot continue.</div>
+<form method="post">{% csrf_token %}{% for field in form %}<div class="mb-3"><label class="form-label">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+<div class="text-end"><a href="{% url 'furniture:production_task_detail' task.pk %}" class="btn btn-outline-secondary">Cancel</a> <button class="btn btn-danger">Block Task</button></div></form>
+</div></div></div></div></div>
+{% endblock %}

@@ -1,43 +1,201 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
 
+{% block title %}
+Create Quotation
+{% endblock %}
+
+{% block page_title %}
+Create Quotation
+{% endblock %}
 
 {% block content %}
 
+<div class="container-fluid">
 
-<div class="container">
+    <div class="row justify-content-center">
 
+        <div class="col-lg-9">
 
-<h3>
-Create Quotation
-</h3>
+            <div class="card shadow-sm border-0">
 
+                <div class="card-header bg-white">
 
-<h5>
-{{order.product}}
-</h5>
+                    <h4 class="mb-1">
+                        Production Quotation
+                    </h4>
 
+                    <small class="text-muted">
+                        {% if production_job %}
+                            Production Job #{{ production_job.pk }}
+                        {% else %}
+                            Prepare production quotation
+                        {% endif %}
+                    </small>
 
+                </div>
 
-<form method="POST">
+                <div class="card-body">
 
-{% csrf_token %}
+                    {% if production_job %}
 
+                    <div class="row mb-4">
 
-{{form.as_p}}
+                        <div class="col-md-4">
+                            <strong>Product</strong><br>
+                            {{ production_job.product|default:"-" }}
+                        </div>
 
+                        <div class="col-md-4">
+                            <strong>Job Type</strong><br>
+                            {{ production_job.get_job_type_display }}
+                        </div>
 
+                        <div class="col-md-4">
+                            <strong>Quantity</strong><br>
+                            {{ production_job.quantity_to_produce }}
+                        </div>
 
-<button class="btn btn-success">
+                    </div>
 
-Submit Quotation
+                    {% endif %}
 
-</button>
+                    <form method="post">
 
+                        {% csrf_token %}
 
-</form>
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
 
+                        <div class="row">
+
+                            {% for field in form %}
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label fw-semibold">
+
+                                    {{ field.label }}
+
+                                </label>
+
+                                {{ field }}
+
+                                {% if field.help_text %}
+                                    <small class="text-muted d-block">
+                                        {{ field.help_text }}
+                                    </small>
+                                {% endif %}
+
+                                {% for error in field.errors %}
+                                    <div class="text-danger small">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                        {% if quotation %}
+
+                        <hr>
+
+                        <div class="row text-center">
+
+                            <div class="col-md-3">
+                                <small class="text-muted d-block">
+                                    Material Cost
+                                </small>
+
+                                <strong>
+                                    {{ quotation.material_cost|floatformat:0 }} RWF
+                                </strong>
+                            </div>
+
+                            <div class="col-md-3">
+                                <small class="text-muted d-block">
+                                    Labour Cost
+                                </small>
+
+                                <strong>
+                                    {{ quotation.labour_cost|floatformat:0 }} RWF
+                                </strong>
+                            </div>
+
+                            <div class="col-md-3">
+                                <small class="text-muted d-block">
+                                    Machine Cost
+                                </small>
+
+                                <strong>
+                                    {{ quotation.machine_cost|floatformat:0 }} RWF
+                                </strong>
+                            </div>
+
+                            <div class="col-md-3">
+                                <small class="text-muted d-block">
+                                    Total Cost
+                                </small>
+
+                                <strong class="text-primary">
+                                    {{ quotation.total_cost|floatformat:0 }} RWF
+                                </strong>
+                            </div>
+
+                        </div>
+
+                        {% endif %}
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+
+                            {% if production_job %}
+
+                                <a href="{% url 'furniture:production_job_detail' production_job.pk %}"
+                                   class="btn btn-outline-secondary">
+
+                                    Cancel
+
+                                </a>
+
+                            {% else %}
+
+                                <a href="{% url 'furniture:quotation_list' %}"
+                                   class="btn btn-outline-secondary">
+
+                                    Cancel
+
+                                </a>
+
+                            {% endif %}
+
+                            <button type="submit"
+                                    class="btn btn-success">
+
+                                <i class="bi bi-check-circle me-1"></i>
+
+                                Save Quotation
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
-
 
 {% endblock %}

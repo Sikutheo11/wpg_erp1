@@ -1,0 +1,13 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Rework Orders{% endblock %}
+{% block page_title %}Rework Orders{% endblock %}
+{% block content %}
+<div class="container-fluid"><div class="d-flex justify-content-between mb-4"><div><h3 class="fw-bold">Rework Orders</h3><p class="text-muted">Track rework execution and verification.</p></div><a href="{% url 'furniture:production_defect_list' %}" class="btn btn-outline-danger">Defects</a></div>
+<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+<thead><tr><th>Code</th><th>Job</th><th>Defect</th><th>Assigned To</th><th>Status</th><th>Hours</th><th></th></tr></thead><tbody>
+{% for rework in reworks %}<tr><td>{{ rework.rework_code }}</td><td>{{ rework.production_job }}</td><td>{{ rework.defect.get_defect_type_display }}</td><td>{{ rework.assigned_to|default:"Unassigned" }}</td><td>{{ rework.get_status_display }}</td><td>{{ rework.actual_hours }}</td><td class="text-end"><a href="{% url 'furniture:rework_order_detail' rework.pk %}" class="btn btn-sm btn-outline-primary">Open</a></td></tr>
+{% empty %}<tr><td colspan="7" class="text-center py-5 text-muted">No rework orders found.</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+
+{% endblock %}

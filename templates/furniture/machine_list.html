@@ -1,0 +1,357 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+Production Machines
+{% endblock %}
+
+{% block page_title %}
+Production Machines
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- ================================================= -->
+    <!-- HEADER -->
+    <!-- ================================================= -->
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+            <h3 class="fw-bold mb-1">
+                Production Machines
+            </h3>
+
+            <p class="text-muted mb-0">
+                Machine usage recorded across all furniture production jobs.
+            </p>
+        </div>
+
+        <a href="{% url 'furniture:production_job_list' %}"
+           class="btn btn-primary">
+
+            <i class="bi bi-list-task me-1"></i>
+            Production Jobs
+
+        </a>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- SUMMARY CARDS -->
+    <!-- ================================================= -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Usage Records
+                    </small>
+
+                    <h3 class="fw-bold mt-2 mb-0">
+                        {{ machines.count|default:0 }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Total Hours Used
+                    </small>
+
+                    <h3 class="fw-bold mt-2 mb-0">
+                        {{ total_hours|default:0 }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Total Machine Cost
+                    </small>
+
+                    <h4 class="fw-bold text-success mt-2 mb-0">
+                        {{ total_cost|default:0|floatformat:0 }} RWF
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Unique Machines
+                    </small>
+
+                    <h3 class="fw-bold text-primary mt-2 mb-0">
+                        {{ unique_machines|default:0 }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- MACHINE USAGE TABLE -->
+    <!-- ================================================= -->
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+            <div>
+                <h5 class="mb-1">
+                    Machine Usage
+                </h5>
+
+                <small class="text-muted">
+                    Open a production job to add or review machine usage.
+                </small>
+            </div>
+
+            <a href="{% url 'furniture:production_job_list' %}"
+               class="btn btn-sm btn-outline-primary">
+
+                <i class="bi bi-plus-circle me-1"></i>
+                Add Through Job
+
+            </a>
+
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+
+                    <tr>
+                        <th>#</th>
+                        <th>Production Job</th>
+                        <th>Machine</th>
+                        <th>Work Center</th>
+                        <th>Operator</th>
+                        <th>Hours Used</th>
+                        <th>Hourly Cost</th>
+                        <th>Total Cost</th>
+                        <th></th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for machine in machines %}
+
+                    <tr>
+
+                        <td>
+                            {{ forloop.counter }}
+                        </td>
+
+                        <td>
+
+                            {% if machine.production_job %}
+
+                                <a href="{% url 'furniture:production_job_detail' machine.production_job.pk %}"
+                                   class="fw-semibold text-decoration-none">
+
+                                    Job #{{ machine.production_job.pk }}
+
+                                </a>
+
+                                <small class="d-block text-muted">
+                                    {{ machine.production_job.product|default:"No product" }}
+                                </small>
+
+                            {% elif machine.task and machine.task.production_job %}
+
+                                <a href="{% url 'furniture:production_job_detail' machine.task.production_job.pk %}"
+                                   class="fw-semibold text-decoration-none">
+
+                                    Job #{{ machine.task.production_job.pk }}
+
+                                </a>
+
+                                <small class="d-block text-muted">
+                                    {{ machine.task.production_job.product|default:"No product" }}
+                                </small>
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    No linked job
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            {% if machine.asset %}
+
+                                <strong>
+                                    {{ machine.asset.name }}
+                                </strong>
+
+                                {% if machine.asset.asset_code %}
+                                <small class="d-block text-muted">
+                                    {{ machine.asset.asset_code }}
+                                </small>
+                                {% endif %}
+
+                            {% elif machine.machine %}
+
+                                <strong>
+                                    {{ machine.machine.name }}
+                                </strong>
+
+                                {% if machine.machine.asset_code %}
+                                <small class="d-block text-muted">
+                                    {{ machine.machine.asset_code }}
+                                </small>
+                                {% endif %}
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    Unknown machine
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ machine.work_center|default:"-" }}
+                        </td>
+
+                        <td>
+
+                            {% if machine.operator %}
+                                {{ machine.operator }}
+                            {% elif machine.employee %}
+                                {{ machine.employee }}
+                            {% else %}
+                                <span class="text-muted">Unassigned</span>
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ machine.hours_used|default:0 }}
+                        </td>
+
+                        <td>
+                            {{ machine.hourly_cost|default:0|floatformat:0 }} RWF
+                        </td>
+
+                        <td>
+
+                            <strong>
+                                {{ machine.total_cost|default:0|floatformat:0 }} RWF
+                            </strong>
+
+                        </td>
+
+                        <td class="text-end">
+
+                            {% if machine.production_job %}
+
+                                <a href="{% url 'furniture:production_job_detail' machine.production_job.pk %}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Open Job
+                                </a>
+
+                            {% elif machine.task and machine.task.production_job %}
+
+                                <a href="{% url 'furniture:production_job_detail' machine.task.production_job.pk %}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Open Job
+                                </a>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="9"
+                            class="text-center text-muted py-5">
+
+                            <i class="bi bi-gear-wide-connected fs-1 d-block mb-2"></i>
+
+                            <h6>
+                                No machine usage recorded
+                            </h6>
+
+                            <p>
+                                Open a production job and add machine usage.
+                            </p>
+
+                            <a href="{% url 'furniture:production_job_list' %}"
+                               class="btn btn-primary btn-sm">
+
+                                Open Production Jobs
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -243,7 +243,7 @@ Furniture ERP
 
 <!-- Dashboard -->
 
-<a href="{% url 'furniture_dashboard' %}">
+<a href="{% url 'furniture:furniture_dashboard' %}">
 <i class="bi bi-speedometer2"></i>
 
 Dashboard
@@ -280,7 +280,7 @@ id="ordersMenu">
 
 
 <a class="submenu"
-href="{% url 'order_list' %}">
+href="{% url 'orders:order_list' %}">
 
 
 <i class="bi bi-list"></i>
@@ -294,7 +294,7 @@ Order List
 
 
 <a class="submenu"
-href="{% url 'order_create' %}">
+href="{% url 'orders:order_create' %}">
 
 
 <i class="bi bi-plus-circle"></i>

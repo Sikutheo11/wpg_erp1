@@ -1,0 +1,138 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+
+<div class="container py-4">
+
+<h3 class="fw-bold">Order Management</h3>
+
+<!-- FILTER -->
+<form method="get" class="mb-3">
+
+    <select name="status" class="form-select w-25">
+
+        <option value="">All</option>
+
+        <option value="PENDING">Pending</option>
+
+        <option value="CONFIRMED">Confirmed</option>
+
+        <option value="PROCESSING">Processing</option>
+
+        <option value="READY">Ready</option>
+
+        <option value="DELIVERED">Delivered</option>
+
+    </select>
+
+    <button class="btn btn-primary mt-2">
+        Filter
+    </button>
+
+</form>
+<div class="d-flex justify-content-between mb-4">
+
+    <h3>
+
+        Orders
+
+    </h3>
+
+    <div>
+
+        <a href="{% url 'orders:restock_order_create' %}"
+           class="btn btn-warning">
+
+            Restock Order
+
+        </a>
+
+    </div>
+
+</div>
+
+<!-- TABLE -->
+<table class="table table-bordered">
+
+    <thead class="table-dark">
+
+        <tr>
+            <th>ID</th>
+            <th>Customer</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Total</th>
+            <th>Date</th>
+            <th></th>
+        </tr>
+
+    </thead>
+
+    <tbody>
+
+        {% for order in orders %}
+
+        <tr>
+
+            <td>#{{ order.id }}</td>
+
+            <td>{{ order.customer_name }}</td>
+
+            <td>{{ order.order_type }}</td>
+
+            <td>
+
+                <span class="badge bg-info">
+
+                    {{ order.status }}
+
+                </span>
+
+            </td>
+
+            <td class="text-primary fw-bold">
+
+                {{ order.total_amount }} RWF
+
+            </td>
+
+            <td>
+
+                {{ order.created_at|date:"Y-m-d H:i" }}
+
+            </td>
+
+            <td>
+
+                <a href="{% url 'orders:order_detail' order.id %}"
+                   class="btn btn-sm btn-dark">
+
+                    View
+
+                </a>
+
+            </td>
+
+        </tr>
+
+        {% empty %}
+
+        <tr>
+
+            <td colspan="7" class="text-center text-muted">
+
+                No orders found
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+</div>
+
+{% endblock %}

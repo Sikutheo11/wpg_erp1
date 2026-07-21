@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (
-    Order,
+    ProductionJob,
     BillOfMaterial,
     Quotation,
     ProductionMaterial,
@@ -9,43 +9,59 @@ from .models import (
     ProductionMachine,
     StockReservation,
     ProductionOutput,
+    WorkCenter,
 )
 
-
-
-# ======================================================
-# ORDER ADMIN
-# ======================================================
-
-@admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+@admin.register(WorkCenter)
+class WorkCenterAdmin(admin.ModelAdmin):
 
     list_display = (
-        'id',
-        'customer_name',
-        'product',
-        'quantity_to_produce',
-        'assigned_to',
-        'status',
-        'created_at',
+        "code",
+        "name",
+        "center_type",
+        "capacity_per_day",
+        "efficiency",
+        "is_active",
     )
-
 
     list_filter = (
-        'status',
-        'created_at',
-        'assigned_to',
+        "center_type",
+        "is_active",
     )
-
 
     search_fields = (
-        'customer_name',
-        'product__name',
+        "name",
+        "code",
     )
 
 
-    readonly_fields = (
-        'created_at',
+
+# ======================================================
+# ProductionJob ADMIN
+# ======================================================
+
+@admin.register(ProductionJob)
+class ProductionJobAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "order",
+        "product",
+        "job_type",
+        "quantity_to_produce",
+        "status",
+        "assigned_to",
+        "created_at",
+    )
+
+    list_filter = (
+        "job_type",
+        "status",
+        "created_at",
+    )
+
+    search_fields = (
+        "product__name",
+        "order__order_number",
     )
 
 
@@ -82,7 +98,7 @@ class QuotationAdmin(admin.ModelAdmin):
 
 
     list_display = (
-        'order',
+        'production_job',
         'prepared_by',
         'approved_by',
         'selling_price',
@@ -118,7 +134,7 @@ class ProductionMaterialAdmin(admin.ModelAdmin):
 
 
     list_display = (
-        'order',
+        'production_job',
         'raw_material',
         'quantity_used',
         'unit_cost',
@@ -142,7 +158,7 @@ class ProductionLabourAdmin(admin.ModelAdmin):
 
 
     list_display = (
-        'order',
+        'production_job',
         'employee',
         'hours_worked',
         'hourly_rate',
@@ -166,7 +182,7 @@ class ProductionMachineAdmin(admin.ModelAdmin):
 
 
     list_display = (
-        'order',
+        'production_job',
         'asset',
         'hours_used',
         'hourly_cost',
@@ -190,7 +206,7 @@ class StockReservationAdmin(admin.ModelAdmin):
 
 
     list_display = (
-        'order',
+        'production_job',
         'raw_material',
         'quantity',
         'status',
@@ -215,14 +231,12 @@ class StockReservationAdmin(admin.ModelAdmin):
 
 @admin.register(ProductionOutput)
 class ProductionOutputAdmin(admin.ModelAdmin):
-
-
     list_display = (
-        'order',
+        'production_job',
         'product',
         'quantity_produced',
         'produced_by',
-        'date',
+        'produced_at',
     )
 
 
@@ -233,5 +247,62 @@ class ProductionOutputAdmin(admin.ModelAdmin):
 
 
     readonly_fields = (
-        'date',
+        'produced_at',
     )
+
+from django.contrib import admin
+
+from .models import ProductionSettings
+
+
+@admin.register(ProductionSettings)
+class ProductionSettingsAdmin(admin.ModelAdmin):
+    list_display = [
+        "currency",
+        "overhead_rate",
+        "wastage_rate",
+        "vat_rate",
+        "target_profit_margin",
+        "is_active",
+        "updated_at",
+    ]
+
+    list_filter = [
+        "is_active",
+        "currency",
+    ]
+
+    fieldsets = (
+        (
+            "Costing Percentages",
+            {
+                "fields": (
+                    "overhead_rate",
+                    "wastage_rate",
+                    "vat_rate",
+                    "target_profit_margin",
+                )
+            },
+        ),
+        (
+            "Default Costs",
+            {
+                "fields": (
+                    "default_transport_cost",
+                    "default_other_cost",
+                    "default_labour_hourly_rate",
+                    "default_machine_hourly_cost",
+                )
+            },
+        ),
+        (
+            "General",
+            {
+                "fields": (
+                    "currency",
+                    "is_active",
+                )
+            },
+        ),
+    )
+

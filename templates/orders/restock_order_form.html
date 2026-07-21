@@ -1,0 +1,41 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    <h3 class="fw-bold mb-4">
+        Create Restock Order
+    </h3>
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <form method="POST">
+
+                {% csrf_token %}
+
+                <h5>Production Request</h5>
+
+                {{ order_form.as_p }}
+
+                <hr>
+
+                <h5>Product to Produce</h5>
+
+                {{ item_form.as_p }}
+
+                <button type="submit" class="btn btn-primary">
+                    Create Restock Order
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

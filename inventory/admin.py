@@ -81,6 +81,7 @@ class ProductAdmin(admin.ModelAdmin):
     @admin.display(description="Current Stock")
     def get_current_stock(self, obj):
         return obj.current_stock
+        get_current_stock.short_description = "Current Stock"
 # =========================
 # ASSET
 # =========================

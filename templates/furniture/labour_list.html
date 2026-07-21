@@ -1,0 +1,297 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+Production Labour
+{% endblock %}
+
+{% block page_title %}
+Production Labour
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- ================================================= -->
+    <!-- HEADER -->
+    <!-- ================================================= -->
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+            <h3 class="fw-bold mb-1">
+                Production Labour
+            </h3>
+
+            <p class="text-muted mb-0">
+                Labour hours and costs recorded across furniture production jobs.
+            </p>
+        </div>
+
+        <a href="{% url 'furniture:production_job_list' %}"
+           class="btn btn-primary">
+
+            <i class="bi bi-list-task me-1"></i>
+            Production Jobs
+
+        </a>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- SUMMARY CARDS -->
+    <!-- ================================================= -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Labour Records
+                    </small>
+
+                    <h3 class="fw-bold mt-2 mb-0">
+                        {{ labours.count|default:0 }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Total Hours Worked
+                    </small>
+
+                    <h3 class="fw-bold mt-2 mb-0">
+                        {{ total_hours|default:0 }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Total Labour Cost
+                    </small>
+
+                    <h4 class="fw-bold text-success mt-2 mb-0">
+                        {{ total_cost|default:0|floatformat:0 }} RWF
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Unique Workers
+                    </small>
+
+                    <h3 class="fw-bold text-primary mt-2 mb-0">
+                        {{ unique_workers|default:0 }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- LABOUR TABLE -->
+    <!-- ================================================= -->
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+            <div>
+                <h5 class="mb-1">
+                    Labour Usage
+                </h5>
+
+                <small class="text-muted">
+                    Open a production job to add or review labour records.
+                </small>
+            </div>
+
+            <a href="{% url 'furniture:production_job_list' %}"
+               class="btn btn-sm btn-outline-primary">
+
+                <i class="bi bi-plus-circle me-1"></i>
+                Add Through Job
+
+            </a>
+
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Production Job</th>
+                        <th>Employee</th>
+                        <th>Hours Worked</th>
+                        <th>Hourly Rate</th>
+                        <th>Total Cost</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for labour in labours %}
+
+                    <tr>
+
+                        <td>
+                            {{ forloop.counter }}
+                        </td>
+
+                        <td>
+
+                            {% if labour.production_job %}
+
+                                <a href="{% url 'furniture:production_job_detail' labour.production_job.pk %}"
+                                   class="fw-semibold text-decoration-none">
+
+                                    Job #{{ labour.production_job.pk }}
+
+                                </a>
+
+                                <small class="d-block text-muted">
+                                    {{ labour.production_job.product|default:"No product" }}
+                                </small>
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    No linked job
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            <strong>
+                                {{ labour.employee|default:"Unassigned" }}
+                            </strong>
+
+                            {% if labour.employee.employee_code %}
+                            <small class="d-block text-muted">
+                                {{ labour.employee.employee_code }}
+                            </small>
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ labour.hours_worked|default:0 }}
+                        </td>
+
+                        <td>
+                            {{ labour.hourly_rate|default:0|floatformat:0 }} RWF
+                        </td>
+
+                        <td>
+
+                            <strong>
+                                {{ labour.total_cost|default:0|floatformat:0 }} RWF
+                            </strong>
+
+                        </td>
+
+                        <td class="text-end">
+
+                            {% if labour.production_job %}
+
+                                <a href="{% url 'furniture:production_job_detail' labour.production_job.pk %}"
+                                   class="btn btn-sm btn-outline-primary">
+
+                                    Open Job
+
+                                </a>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="7"
+                            class="text-center text-muted py-5">
+
+                            <i class="bi bi-people fs-1 d-block mb-2"></i>
+
+                            <h6>
+                                No labour records found
+                            </h6>
+
+                            <p>
+                                Open a production job and add labour usage.
+                            </p>
+
+                            <a href="{% url 'furniture:production_job_list' %}"
+                               class="btn btn-primary btn-sm">
+
+                                Open Production Jobs
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

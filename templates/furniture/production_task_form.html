@@ -1,0 +1,12 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Production Task Form{% endblock %}
+{% block page_title %}Production Task{% endblock %}
+{% block content %}
+<div class="container-fluid"><div class="row justify-content-center"><div class="col-xl-9"><div class="card border-0 shadow-sm">
+<div class="card-header bg-white"><h5 class="mb-0">{% if task %}Edit Task{% else %}Create Task{% endif %}</h5></div>
+<div class="card-body"><form method="post" novalidate>{% csrf_token %}
+{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+<div class="row g-3">{% for field in form %}<div class="{% if field.name == 'description' %}col-12{% else %}col-md-6{% endif %}"><label class="form-label">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}</div>
+<div class="d-flex justify-content-end gap-2 mt-4"><a href="{% url 'furniture:production_task_list' %}" class="btn btn-outline-secondary">Cancel</a><button class="btn btn-primary">Save Task</button></div>
+</form></div></div></div></div></div>
+{% endblock %}

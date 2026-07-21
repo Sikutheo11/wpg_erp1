@@ -11,27 +11,28 @@ class InventoryConfig(AppConfig):
 
     def ready(self):
 
-        from core.dashboard_registry import register_dashboard
-        from core.module_registry import register_module
-        from .dashboard import get_inventory_dashboard
+        # from core.dashboard_registry import register_dashboard
+        # from core.module_registry import register_module
+        # from .dashboard import get_inventory_dashboard
 
 
 
-        # Dashboard registration
+        # # Dashboard registration
 
-        register_dashboard(
-            "inventory", get_inventory_dashboard
-        )
-        # Module registration
+        # register_dashboard(
+        #     "inventory", get_inventory_dashboard
+        # )
+        # # Module registration
 
-        register_module(
+        # register_module(
 
-            name="Inventory",
+        #     name="Inventory",
 
-            url_name="inventory:inventory_dashboard",
+        #     url_name="inventory:inventory_dashboard",
 
-            icon="fa-boxes",
+        #     icon="fa-boxes",
 
-            permission="inventory.view_dashboard"
+        #     permission="inventory.view_dashboard"
 
-        )
+        # )
+        pass

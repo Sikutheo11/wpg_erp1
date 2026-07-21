@@ -1,0 +1,589 @@
+# ======================================================
+# WPG BOS INITIAL DATA
+# Business Units, Enterprise Engines, Features, Dashboard Cards
+# ======================================================
+
+
+# ======================================================
+# BUSINESS UNITS
+# ======================================================
+
+BUSINESS_UNITS = [
+    {
+        "name": "Furniture & Manufacturing",
+        "code": "FURNITURE",
+        "description": "Furniture production, manufacturing, doors, windows, interiors and custom production.",
+        "icon": "bi bi-chair",
+        "order": 1,
+    },
+    {
+        "name": "Construction & Built Environment",
+        "code": "CONSTRUCTION",
+        "description": "House construction, blueprints, interior design, maintenance and future real estate.",
+        "icon": "bi bi-building",
+        "order": 2,
+    },
+    {
+        "name": "Agriculture / Poultry",
+        "code": "AGRICULTURE",
+        "description": "Poultry farming, eggs, chicken meat, feed and future agriculture activities.",
+        "icon": "bi bi-egg",
+        "order": 3,
+    },
+    {
+        "name": "Marketplace",
+        "code": "MARKETPLACE",
+        "description": "Online marketplace for furniture, blueprints, eggs, chicken meat, timber, doors and windows.",
+        "icon": "bi bi-shop",
+        "order": 4,
+    },
+]
+
+
+# ======================================================
+# ENTERPRISE ENGINES
+# ======================================================
+
+ENTERPRISE_ENGINES = [
+    {
+        "name": "Customer Engine",
+        "code": "CUSTOMER",
+        "description": "Central customer management used by all business units.",
+        "icon": "bi bi-person-lines-fill",
+        "order": 1,
+    },
+    {
+        "name": "Order Engine",
+        "code": "ORDER",
+        "description": "Shared order engine used by Furniture, Marketplace, Agriculture and other business units.",
+        "icon": "bi bi-cart-check",
+        "order": 2,
+    },
+    {
+        "name": "Quotation Engine",
+        "code": "QUOTATION",
+        "description": "Quotation and costing engine for furniture, construction and services.",
+        "icon": "bi bi-file-earmark-text",
+        "order": 3,
+    },
+    {
+        "name": "Inventory Engine",
+        "code": "INVENTORY",
+        "description": "Central inventory, raw materials, products, warehouses and stock movements.",
+        "icon": "bi bi-box-seam",
+        "order": 4,
+    },
+    {
+        "name": "Finance & Accounting Engine",
+        "code": "FINANCE",
+        "description": "Finance, accounting, treasury, income, expenses, payments and investor transparency.",
+        "icon": "bi bi-cash-stack",
+        "order": 5,
+    },
+    {
+        "name": "People Engine",
+        "code": "PEOPLE",
+        "description": "Employees, HR, attendance, payroll, performance and people development.",
+        "icon": "bi bi-people",
+        "order": 6,
+    },
+    {
+        "name": "Asset Engine",
+        "code": "ASSET",
+        "description": "Company assets, machines, tools, assignments and maintenance.",
+        "icon": "bi bi-tools",
+        "order": 7,
+    },
+    {
+        "name": "Approval Engine",
+        "code": "APPROVAL",
+        "description": "Approval workflows across finance, procurement, production and projects.",
+        "icon": "bi bi-check2-circle",
+        "order": 8,
+    },
+    {
+        "name": "Notification Engine",
+        "code": "NOTIFICATION",
+        "description": "System notifications and alerts.",
+        "icon": "bi bi-bell",
+        "order": 9,
+    },
+    {
+        "name": "Audit Engine",
+        "code": "AUDIT",
+        "description": "Audit trails and transparency logs across the platform.",
+        "icon": "bi bi-shield-check",
+        "order": 10,
+    },
+    {
+        "name": "Reporting Engine",
+        "code": "REPORTING",
+        "description": "Dashboards, reports, KPIs and analytics.",
+        "icon": "bi bi-graph-up-arrow",
+        "order": 11,
+    },
+]
+
+
+# ======================================================
+# LEGACY MODULES
+# Keep temporarily while old dashboard/sidebar is being refactored.
+# Later these will be removed after BusinessUnit/Engine sidebar is complete.
+# ======================================================
+
+MODULES = [
+    {
+        "name": "Furniture & Manufacturing",
+        "code": "FURNITURE",
+        "icon": "bi bi-chair",
+        "url_name": "",
+        "permission": "",
+        "order": 1,
+    },
+    {
+        "name": "Construction",
+        "code": "CONSTRUCTION",
+        "icon": "bi bi-building",
+        "url_name": "",
+        "permission": "",
+        "order": 2,
+    },
+    {
+        "name": "Agriculture",
+        "code": "AGRICULTURE",
+        "icon": "bi bi-egg",
+        "url_name": "",
+        "permission": "",
+        "order": 3,
+    },
+    {
+        "name": "Marketplace",
+        "code": "MARKETPLACE",
+        "icon": "bi bi-shop",
+        "url_name": "",
+        "permission": "",
+        "order": 4,
+    },
+    {
+        "name": "Inventory Engine",
+        "code": "INVENTORY",
+        "icon": "bi bi-box-seam",
+        "url_name": "",
+        "permission": "",
+        "order": 5,
+    },
+    {
+        "name": "Finance Engine",
+        "code": "FINANCE",
+        "icon": "bi bi-cash-stack",
+        "url_name": "",
+        "permission": "",
+        "order": 6,
+    },
+    {
+        "name": "People Engine",
+        "code": "PEOPLE",
+        "icon": "bi bi-people",
+        "url_name": "",
+        "permission": "",
+        "order": 7,
+    },
+]
+
+
+# ======================================================
+# FEATURES
+# A feature belongs either to a Business Unit or to an Enterprise Engine.
+# ======================================================
+
+BUSINESS_UNIT_FEATURES = {
+    "FURNITURE": [
+        ("Dashboard", "FURNITURE_DASHBOARD", "furniture:production_job_list", "bi bi-speedometer2", 1),
+        ("Production Jobs", "FURNITURE_PRODUCTION_JOBS", "furniture:production_job_list", "bi bi-list-task", 2),
+        ("Quotations", "FURNITURE_QUOTATIONS", "furniture:quotation_list", "bi bi-file-earmark-text", 3),
+        ("Materials", "FURNITURE_MATERIALS", "furniture:material_list", "bi bi-tree", 4),
+        ("Outputs", "FURNITURE_OUTPUTS", "furniture:output_list", "bi bi-box-arrow-up", 5),
+    ],
+    "CONSTRUCTION": [
+        ("Dashboard", "CONSTRUCTION_DASHBOARD", "Construction:construction_dashboard", "bi bi-speedometer2", 1),
+        ("Projects", "CONSTRUCTION_PROJECTS", "Construction:project_list", "bi bi-kanban", 2),
+        ("Sites", "CONSTRUCTION_SITES", "Construction:site_list", "bi bi-geo-alt", 3),
+        ("Tasks", "CONSTRUCTION_TASKS", "Construction:task_list", "bi bi-check2-square", 4),
+    ],
+    "AGRICULTURE": [
+        ("Dashboard", "AGRICULTURE_DASHBOARD", "", "bi bi-speedometer2", 1),
+        ("Poultry Batches", "AGRICULTURE_POULTRY_BATCHES", "", "bi bi-egg", 2),
+        ("Egg Production", "AGRICULTURE_EGG_PRODUCTION", "", "bi bi-basket", 3),
+        ("Mortality", "AGRICULTURE_MORTALITY", "", "bi bi-heart-pulse", 4),
+    ],
+    "MARKETPLACE": [
+        ("Dashboard", "MARKETPLACE_DASHBOARD", "ecommerce:shop", "bi bi-speedometer2", 1),
+        ("Shop", "MARKETPLACE_SHOP", "ecommerce:shop", "bi bi-shop", 2),
+        ("Online Products", "MARKETPLACE_PRODUCTS", "ecommerce:online_product_list", "bi bi-tags", 3),
+        ("Online Orders", "MARKETPLACE_ORDERS", "", "bi bi-cart-check", 4),
+    ],
+}
+
+
+ENGINE_FEATURES = {
+    "CUSTOMER": [
+        ("Customers", "CUSTOMER_LIST", "", "bi bi-people", 1),
+        ("Customer History", "CUSTOMER_HISTORY", "", "bi bi-clock-history", 2),
+    ],
+    "ORDER": [
+        ("All Orders", "ORDER_LIST", "orders:order_list", "bi bi-list-ul", 1),
+        ("Restock Orders", "ORDER_RESTOCK", "orders:restock_order_create", "bi bi-arrow-repeat", 2),
+        ("Order Detail", "ORDER_DETAIL", "", "bi bi-eye", 3),
+    ],
+    "QUOTATION": [
+        ("Quotations", "QUOTATION_LIST", "", "bi bi-file-earmark-text", 1),
+        ("Quotation Approval", "QUOTATION_APPROVAL", "", "bi bi-check-circle", 2),
+    ],
+    "INVENTORY": [
+        ("Dashboard", "INVENTORY_DASHBOARD", "inventory:inventory_dashboard", "bi bi-speedometer2", 1),
+        ("Products", "INVENTORY_PRODUCTS", "inventory:product_list", "bi bi-box", 2),
+        ("Raw Materials", "INVENTORY_RAW_MATERIALS", "inventory:rawmaterial_list", "bi bi-boxes", 3),
+        ("Stock Movements", "INVENTORY_STOCK_MOVEMENTS", "inventory:movement_list", "bi bi-arrow-left-right", 4),
+    ],
+    "FINANCE": [
+        ("Dashboard", "FINANCE_DASHBOARD", "finance:finance_dashboard", "bi bi-speedometer2", 1),
+        ("Accounts", "FINANCE_ACCOUNTS", "finance:account_list", "bi bi-bank", 2),
+        ("Income", "FINANCE_INCOME", "finance:income_list", "bi bi-arrow-down-circle", 3),
+        ("Expenses", "FINANCE_EXPENSES", "finance:expense_list", "bi bi-arrow-up-circle", 4),
+        ("Payments", "FINANCE_PAYMENTS", "finance:payment_list", "bi bi-cash", 5),
+        ("Receivables", "FINANCE_RECEIVABLES", "finance:receivable_list", "bi bi-wallet2", 6),
+        ("Payables", "FINANCE_PAYABLES", "finance:payable_list", "bi bi-receipt", 7),
+    ],
+    "PEOPLE": [
+        ("Dashboard", "PEOPLE_DASHBOARD", "employee:employee_dashboard", "bi bi-speedometer2", 1),
+        ("Employees", "PEOPLE_EMPLOYEES", "employee:employee_list", "bi bi-person-badge", 2),
+        ("Departments", "PEOPLE_DEPARTMENTS", "employee:department_list", "bi bi-diagram-3", 3),
+        ("Attendance", "PEOPLE_ATTENDANCE", "employee:attendance_list", "bi bi-calendar-check", 4),
+        ("Leave", "PEOPLE_LEAVE", "employee:leave_list", "bi bi-calendar-x", 5),
+    ],
+    "ASSET": [
+        ("Assets", "ASSET_LIST", "", "bi bi-tools", 1),
+        ("Asset Assignments", "ASSET_ASSIGNMENTS", "", "bi bi-person-check", 2),
+    ],
+    "APPROVAL": [
+        ("Pending Approvals", "APPROVAL_PENDING", "", "bi bi-hourglass-split", 1),
+        ("Approval History", "APPROVAL_HISTORY", "", "bi bi-clock-history", 2),
+    ],
+    "NOTIFICATION": [
+        ("Notifications", "NOTIFICATION_LIST", "", "bi bi-bell", 1),
+    ],
+    "AUDIT": [
+        ("Audit Logs", "AUDIT_LOGS", "", "bi bi-shield-check", 1),
+        ("Audit Logs", "AUDIT_LOGS", "core:audit_log_list", "bi bi-shield-check", 1),
+    ],
+    "REPORTING": [
+        ("Executive Dashboard", "REPORTING_EXECUTIVE_DASHBOARD", "core:dashboard", "bi bi-graph-up", 1),
+        ("Reports", "REPORTING_REPORTS", "", "bi bi-file-bar-graph", 2),
+    ],
+}
+
+
+# ======================================================
+# DASHBOARD CARDS
+# Temporary legacy cards while Reporting Engine is being improved.
+# ======================================================
+
+DASHBOARD_CARDS = {
+    "FURNITURE": [
+        ("Production Jobs", "FURNITURE_JOBS", "bi bi-list-task", "primary", 1),
+        ("Completed Outputs", "FURNITURE_OUTPUT_COUNT", "bi bi-box-arrow-up", "success", 2),
+    ],
+    "CONSTRUCTION": [
+        ("Active Projects", "CONSTRUCTION_ACTIVE_PROJECTS", "bi bi-building", "primary", 1),
+        ("Delayed Projects", "CONSTRUCTION_DELAYED_PROJECTS", "bi bi-exclamation-triangle", "danger", 2),
+    ],
+    "AGRICULTURE": [
+        ("Egg Production", "AGRICULTURE_EGG_PRODUCTION_CARD", "bi bi-basket", "success", 1),
+        ("Mortality", "AGRICULTURE_MORTALITY_CARD", "bi bi-heart-pulse", "danger", 2),
+    ],
+    "MARKETPLACE": [
+        ("Online Orders", "MARKETPLACE_ONLINE_ORDERS", "bi bi-cart-check", "primary", 1),
+        ("Online Products", "MARKETPLACE_ONLINE_PRODUCTS", "bi bi-tags", "success", 2),
+    ],
+    "INVENTORY": [
+        ("Products", "INVENTORY_PRODUCTS_COUNT", "bi bi-box", "primary", 1),
+        ("Raw Materials", "INVENTORY_RAW_MATERIALS_COUNT", "bi bi-boxes", "success", 2),
+    ],
+    "FINANCE": [
+        ("Total Income", "FINANCE_TOTAL_INCOME", "bi bi-arrow-down-circle", "success", 1),
+        ("Total Expenses", "FINANCE_TOTAL_EXPENSE", "bi bi-arrow-up-circle", "danger", 2),
+        ("Net Profit", "FINANCE_NET_PROFIT", "bi bi-graph-up", "primary", 3),
+    ],
+    "PEOPLE": [
+        ("Employees", "PEOPLE_EMPLOYEE_COUNT", "bi bi-people", "info", 1),
+        ("Attendance", "PEOPLE_ATTENDANCE_COUNT", "bi bi-calendar-check", "primary", 2),
+    ],
+}
+
+
+# ======================================================
+# KPI WIDGETS
+# New enterprise dashboard widgets
+# ======================================================
+
+KPI_WIDGETS = {
+    "business_units": {
+        "FURNITURE": [
+            ("Active Production Jobs", "FURNITURE_ACTIVE_JOBS", "NUMBER", "furniture.active_jobs", "value", "bi bi-list-task", "primary", 1),
+            ("Completed Outputs", "FURNITURE_COMPLETED_OUTPUTS", "NUMBER", "furniture.completed_outputs", "value", "bi bi-box-arrow-up", "success", 2),
+            ("Material Usage", "FURNITURE_MATERIAL_USAGE", "MONEY", "furniture.material_usage", "value", "bi bi-tree", "warning", 3),
+        ],
+
+        "CONSTRUCTION": [
+            ("Active Projects", "CONSTRUCTION_ACTIVE_PROJECTS_KPI", "NUMBER", "construction.active_projects", "value", "bi bi-building", "primary", 1),
+            ("Delayed Projects", "CONSTRUCTION_DELAYED_PROJECTS_KPI", "NUMBER", "construction.delayed_projects", "value", "bi bi-exclamation-triangle", "danger", 2),
+            ("Project Budget Used", "CONSTRUCTION_BUDGET_USED", "MONEY", "construction.budget_used", "value", "bi bi-cash-stack", "success", 3),
+        ],
+
+        "AGRICULTURE": [
+            ("Egg Production", "AGRICULTURE_EGG_PRODUCTION_KPI", "NUMBER", "agriculture.egg_production", "value", "bi bi-basket", "success", 1),
+            ("Chicken Mortality", "AGRICULTURE_MORTALITY_KPI", "NUMBER", "agriculture.mortality", "value", "bi bi-heart-pulse", "danger", 2),
+        ],
+
+        "MARKETPLACE": [
+            ("Online Orders", "MARKETPLACE_ONLINE_ORDERS_KPI", "NUMBER", "marketplace.online_orders", "value", "bi bi-cart-check", "primary", 1),
+            ("Online Products", "MARKETPLACE_ONLINE_PRODUCTS_KPI", "NUMBER", "marketplace.online_products", "value", "bi bi-tags", "success", 2),
+        ],
+    },
+
+    "engines": {
+        "FINANCE": [
+            ("Total Income", "FINANCE_TOTAL_INCOME_KPI", "MONEY", "finance.total_income", "value", "bi bi-arrow-down-circle", "success", 1),
+            ("Total Expenses", "FINANCE_TOTAL_EXPENSE_KPI", "MONEY", "finance.total_expense", "value", "bi bi-arrow-up-circle", "danger", 2),
+            ("Net Profit", "FINANCE_NET_PROFIT_KPI", "MONEY", "finance.net_profit", "value", "bi bi-graph-up", "primary", 3),
+        ],
+
+        "INVENTORY": [
+            ("Products", "INVENTORY_PRODUCTS_KPI", "NUMBER", "inventory.products", "value", "bi bi-box", "primary", 1),
+            ("Raw Materials", "INVENTORY_RAW_MATERIALS_KPI", "NUMBER", "inventory.raw_materials", "value", "bi bi-boxes", "success", 2),
+            ("Stock Alerts", "INVENTORY_STOCK_ALERTS_KPI", "ALERT", "inventory.stock_alerts", "value", "bi bi-exclamation-circle", "danger", 3),
+        ],
+
+        "ORDER": [
+            ("Total Orders", "ORDER_TOTAL_KPI", "NUMBER", "orders.total_orders", "value", "bi bi-cart-check", "primary", 1),
+            ("Pending Orders", "ORDER_PENDING_KPI", "NUMBER", "orders.pending_orders", "value", "bi bi-clock", "warning", 2),
+        ],
+
+        "PEOPLE": [
+            ("Employees", "PEOPLE_EMPLOYEES_KPI", "NUMBER", "people.employees", "value", "bi bi-people", "info", 1),
+            ("Attendance Today", "PEOPLE_ATTENDANCE_TODAY_KPI", "NUMBER", "people.attendance_today", "value", "bi bi-calendar-check", "primary", 2),
+        ],
+    },
+}
+# ======================================================
+# DEFAULT GROUPS
+# ======================================================
+
+GROUPS = [
+    "CEO",
+    "Administrator",
+    "Manager",
+
+    "Construction Manager",
+    "Construction Supervisor",
+    "Construction Worker",
+
+    "Furniture Manager",
+    "Production Supervisor",
+    "Carpentry Supervisor",
+    "Carpentry Worker",
+    "Machinist Supervisor",
+    "Machinist Worker",
+
+    "Finance Manager",
+    "Accountant",
+
+    "Inventory Manager",
+    "Store Keeper",
+
+    "HR Manager",
+    "Sales Officer",
+    "Marketplace Manager",
+
+    "Worker",
+    "Customer",
+]
+
+
+# ======================================================
+# ROLE FEATURE PERMISSIONS
+# ======================================================
+
+ROLE_FEATURES = {
+    "CEO": {
+        "ALL": {"view": True, "add": True, "edit": True, "delete": True, "approve": True}
+    },
+
+    "Administrator": {
+        "ALL": {"view": True, "add": True, "edit": True, "delete": True, "approve": True}
+    },
+
+    "Manager": {
+        "ALL": {"view": True, "add": False, "edit": False, "delete": False, "approve": False}
+    },
+
+    "Construction Manager": {
+        "CONSTRUCTION_DASHBOARD": {"view": True},
+        "CONSTRUCTION_PROJECTS": {"view": True, "add": True, "edit": True, "approve": True},
+        "CONSTRUCTION_SITES": {"view": True, "add": True, "edit": True},
+        "CONSTRUCTION_TASKS": {"view": True, "add": True, "edit": True},
+        "INVENTORY_DASHBOARD": {"view": True},
+        "INVENTORY_RAW_MATERIALS": {"view": True},
+        "FINANCE_DASHBOARD": {"view": True},
+        "FINANCE_EXPENSES": {"view": True, "add": True},
+        "CUSTOMER_LIST": {"view": True},
+    },
+
+    "Construction Supervisor": {
+        "CONSTRUCTION_DASHBOARD": {"view": True},
+        "CONSTRUCTION_PROJECTS": {"view": True, "edit": True},
+        "CONSTRUCTION_SITES": {"view": True, "edit": True},
+        "CONSTRUCTION_TASKS": {"view": True, "add": True, "edit": True},
+        "INVENTORY_RAW_MATERIALS": {"view": True},
+        "PEOPLE_ATTENDANCE": {"view": True, "add": True},
+    },
+
+    "Construction Worker": {
+        "CONSTRUCTION_DASHBOARD": {"view": True},
+        "CONSTRUCTION_TASKS": {"view": True, "edit": True},
+        "PEOPLE_ATTENDANCE": {"view": True, "add": True},
+    },
+
+    "Furniture Manager": {
+        "FURNITURE_DASHBOARD": {"view": True},
+        "FURNITURE_PRODUCTION_JOBS": {"view": True, "add": True, "edit": True, "approve": True},
+        "FURNITURE_QUOTATIONS": {"view": True, "add": True, "edit": True, "approve": True},
+        "FURNITURE_MATERIALS": {"view": True, "add": True, "edit": True},
+        "FURNITURE_OUTPUTS": {"view": True, "add": True, "edit": True},
+        "INVENTORY_DASHBOARD": {"view": True},
+        "INVENTORY_PRODUCTS": {"view": True},
+        "INVENTORY_RAW_MATERIALS": {"view": True},
+        "INVENTORY_STOCK_MOVEMENTS": {"view": True, "add": True},
+        "ORDER_LIST": {"view": True, "add": True, "edit": True},
+        "ORDER_RESTOCK": {"view": True, "add": True},
+        "QUOTATION_LIST": {"view": True},
+    },
+
+    "Production Supervisor": {
+        "FURNITURE_DASHBOARD": {"view": True},
+        "FURNITURE_PRODUCTION_JOBS": {"view": True, "add": True, "edit": True},
+        "FURNITURE_MATERIALS": {"view": True, "add": True, "edit": True},
+        "FURNITURE_OUTPUTS": {"view": True, "add": True, "edit": True},
+        "INVENTORY_RAW_MATERIALS": {"view": True},
+        "INVENTORY_STOCK_MOVEMENTS": {"view": True},
+        "PEOPLE_ATTENDANCE": {"view": True, "add": True},
+    },
+
+    "Carpentry Supervisor": {
+        "FURNITURE_DASHBOARD": {"view": True},
+        "FURNITURE_PRODUCTION_JOBS": {"view": True, "edit": True},
+        "FURNITURE_MATERIALS": {"view": True, "add": True},
+        "FURNITURE_OUTPUTS": {"view": True, "add": True},
+        "PEOPLE_ATTENDANCE": {"view": True, "add": True},
+    },
+
+    "Carpentry Worker": {
+        "FURNITURE_DASHBOARD": {"view": True},
+        "FURNITURE_PRODUCTION_JOBS": {"view": True, "edit": True},
+        "FURNITURE_MATERIALS": {"view": True, "add": True},
+        "FURNITURE_OUTPUTS": {"view": True, "add": True},
+        "PEOPLE_ATTENDANCE": {"view": True, "add": True},
+    },
+
+    "Machinist Supervisor": {
+        "FURNITURE_DASHBOARD": {"view": True},
+        "FURNITURE_PRODUCTION_JOBS": {"view": True, "edit": True},
+        "FURNITURE_OUTPUTS": {"view": True, "add": True},
+        "ASSET_LIST": {"view": True},
+        "ASSET_ASSIGNMENTS": {"view": True},
+        "PEOPLE_ATTENDANCE": {"view": True, "add": True},
+    },
+
+    "Machinist Worker": {
+        "FURNITURE_DASHBOARD": {"view": True},
+        "FURNITURE_PRODUCTION_JOBS": {"view": True, "edit": True},
+        "FURNITURE_OUTPUTS": {"view": True, "add": True},
+        "PEOPLE_ATTENDANCE": {"view": True, "add": True},
+    },
+
+    "Finance Manager": {
+        "FINANCE_DASHBOARD": {"view": True},
+        "FINANCE_ACCOUNTS": {"view": True, "add": True, "edit": True},
+        "FINANCE_INCOME": {"view": True, "add": True, "edit": True, "approve": True},
+        "FINANCE_EXPENSES": {"view": True, "add": True, "edit": True, "approve": True},
+        "FINANCE_PAYMENTS": {"view": True, "add": True, "edit": True, "approve": True},
+        "FINANCE_RECEIVABLES": {"view": True, "add": True, "edit": True},
+        "FINANCE_PAYABLES": {"view": True, "add": True, "edit": True},
+        "REPORTING_EXECUTIVE_DASHBOARD": {"view": True},
+        "ORDER_LIST": {"view": True},
+        "CUSTOMER_LIST": {"view": True},
+    },
+
+    "Accountant": {
+        "FINANCE_DASHBOARD": {"view": True},
+        "FINANCE_ACCOUNTS": {"view": True, "add": True, "edit": True},
+        "FINANCE_INCOME": {"view": True, "add": True, "edit": True},
+        "FINANCE_EXPENSES": {"view": True, "add": True, "edit": True},
+        "FINANCE_PAYMENTS": {"view": True, "add": True, "edit": True},
+        "FINANCE_RECEIVABLES": {"view": True, "add": True, "edit": True},
+        "FINANCE_PAYABLES": {"view": True, "add": True, "edit": True},
+    },
+
+    "Inventory Manager": {
+        "INVENTORY_DASHBOARD": {"view": True},
+        "INVENTORY_PRODUCTS": {"view": True, "add": True, "edit": True},
+        "INVENTORY_RAW_MATERIALS": {"view": True, "add": True, "edit": True},
+        "INVENTORY_STOCK_MOVEMENTS": {"view": True, "add": True, "edit": True, "approve": True},
+        "ASSET_LIST": {"view": True, "add": True, "edit": True},
+        "ASSET_ASSIGNMENTS": {"view": True, "add": True, "edit": True},
+    },
+
+    "Store Keeper": {
+        "INVENTORY_DASHBOARD": {"view": True},
+        "INVENTORY_PRODUCTS": {"view": True},
+        "INVENTORY_RAW_MATERIALS": {"view": True},
+        "INVENTORY_STOCK_MOVEMENTS": {"view": True, "add": True},
+        "ASSET_LIST": {"view": True},
+    },
+
+    "HR Manager": {
+        "PEOPLE_DASHBOARD": {"view": True},
+        "PEOPLE_EMPLOYEES": {"view": True, "add": True, "edit": True},
+        "PEOPLE_DEPARTMENTS": {"view": True, "add": True, "edit": True},
+        "PEOPLE_ATTENDANCE": {"view": True, "add": True, "edit": True},
+        "PEOPLE_LEAVE": {"view": True, "add": True, "edit": True, "approve": True},
+    },
+
+    "Sales Officer": {
+        "CUSTOMER_LIST": {"view": True, "add": True, "edit": True},
+        "CUSTOMER_HISTORY": {"view": True},
+        "ORDER_LIST": {"view": True, "add": True, "edit": True},
+        "MARKETPLACE_SHOP": {"view": True},
+        "MARKETPLACE_PRODUCTS": {"view": True},
+        "MARKETPLACE_ORDERS": {"view": True, "add": True, "edit": True},
+    },
+
+    "Marketplace Manager": {
+        "MARKETPLACE_DASHBOARD": {"view": True},
+        "MARKETPLACE_SHOP": {"view": True, "add": True, "edit": True},
+        "MARKETPLACE_PRODUCTS": {"view": True, "add": True, "edit": True},
+        "MARKETPLACE_ORDERS": {"view": True, "edit": True},
+        "ORDER_LIST": {"view": True},
+        "CUSTOMER_LIST": {"view": True},
+    },
+
+    "Worker": {
+        "PEOPLE_ATTENDANCE": {"view": True, "add": True},
+    },
+
+    "Customer": {
+        "MARKETPLACE_SHOP": {"view": True},
+        "MARKETPLACE_PRODUCTS": {"view": True},
+        "MARKETPLACE_ORDERS": {"view": True, "add": True},
+    },
+}

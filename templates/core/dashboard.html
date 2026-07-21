@@ -1,834 +1,335 @@
 {% extends "base_dashboard.html" %}
 
-
 {% block title %}
-Executive Dashboard - WPG ERP
+Executive Dashboard - WPG BOS
 {% endblock %}
 
-
+{% block page_title %}
+Executive Dashboard
+{% endblock %}
 
 {% block content %}
 
-
 <div class="container-fluid">
 
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold">Executive Dashboard</h3>
+            <p class="text-muted mb-0">
+                WPG BOS intelligence overview
+            </p>
+        </div>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{% url 'core:reports_home' %}"
+           class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-file-earmark-bar-graph"></i>
+            Reports
+        </a>
+    </div>
 
-<div>
 
-<h3 class="fw-bold">
-Executive Dashboard
-</h3>
+    <!-- KPI WIDGETS -->
 
-<p class="text-muted mb-0">
-Business performance overview
-</p>
+    <div class="row g-4 mb-5">
+
+        {% for widget in kpi_widgets %}
+
+            <div class="col-xl-3 col-md-4">
+
+                <div class="card shadow-sm h-100">
+
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between align-items-start">
+
+                            <div>
+                                {% if widget.business_unit %}
+                                    <small class="text-muted">
+                                        {{ widget.business_unit.name }}
+                                    </small>
+                                {% elif widget.engine %}
+                                    <small class="text-muted">
+                                        {{ widget.engine.name }}
+                                    </small>
+                                {% else %}
+                                    <small class="text-muted">
+                                        WPG BOS
+                                    </small>
+                                {% endif %}
+
+                                <h6 class="fw-bold mt-2">
+                                    {{ widget.title }}
+                                </h6>
+
+                                <h3 class="fw-bold mt-3">
+                                    {{ widget.value|default:0 }}
+                                </h3>
+                            </div>
+
+                            <div class="fs-2 text-{{ widget.color }}">
+                                {% if widget.icon %}
+                                    <i class="{{ widget.icon }}"></i>
+                                {% else %}
+                                    <i class="bi bi-bar-chart"></i>
+                                {% endif %}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        {% empty %}
+
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No KPI widgets available.
+                </div>
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+
+    <!-- BUSINESS SUMMARY -->
+
+    <h4 class="fw-bold mb-3">
+        Business Summary
+    </h4>
+
+    <div class="row g-4 mb-5">
+
+        {% for code, item in business_summary.items %}
+
+            <div class="col-xl-3 col-md-4">
+
+                <div class="card shadow-sm h-100">
+
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between align-items-start">
+
+                            <div>
+                                <small class="text-muted">
+                                    {{ code }}
+                                </small>
+
+                                <h5 class="fw-bold mt-2">
+                                    {{ item.name }}
+                                </h5>
+                            </div>
+
+                            <i class="bi bi-grid fs-2 text-primary"></i>
+
+                        </div>
+
+                        <hr>
+
+                        {% for key, value in item.summary.items %}
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">
+                                    {{ key|title }}
+                                </span>
+                                <strong>
+                                    {{ value }}
+                                </strong>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted mb-0">
+                                No summary available.
+                            </p>
+                        {% endfor %}
+
+                        {% if item.alerts %}
+                            <hr>
+                            {% for alert in item.alerts %}
+                                <div class="alert alert-warning py-2 mb-2">
+                                    {{ alert }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        {% empty %}
+
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No business summary available.
+                </div>
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+
+    <div class="row g-4">
+
+        <!-- PENDING APPROVALS -->
+
+        <div class="col-xl-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        Pending Approvals
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    {% for approval in pending_approvals %}
+
+                        <div class="border-bottom pb-2 mb-2">
+                            <strong>
+                                {{ approval.object_model }}
+                            </strong>
+
+                            <br>
+
+                            <small class="text-muted">
+                                {{ approval.from_step }} → {{ approval.to_step }}
+                            </small>
+
+                            <br>
+
+                            <span class="badge bg-warning text-dark">
+                                {{ approval.status }}
+                            </span>
+                        </div>
+
+                    {% empty %}
+
+                        <p class="text-muted mb-0">
+                            No pending approvals.
+                        </p>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- RECENT NOTIFICATIONS -->
+
+        <div class="col-xl-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        Recent Notifications
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    {% for note in recent_notifications %}
+
+                        <div class="border-bottom pb-2 mb-2">
+                            <strong>
+                                {{ note.title }}
+                            </strong>
+
+                            <br>
+
+                            <small class="text-muted">
+                                {{ note.message }}
+                            </small>
+
+                            <br>
+
+                            {% if note.is_read %}
+                                <span class="badge bg-secondary">
+                                    Read
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger">
+                                    Unread
+                                </span>
+                            {% endif %}
+                        </div>
+
+                    {% empty %}
+
+                        <p class="text-muted mb-0">
+                            No recent notifications.
+                        </p>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- RECENT ACTIVITY -->
+
+        <div class="col-xl-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        Recent Activity
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    {% for log in recent_activity %}
+
+                        <div class="border-bottom pb-2 mb-2">
+
+                            <strong>
+                                {{ log.action }}
+                            </strong>
+
+                            <br>
+
+                            <small class="text-muted">
+                                {{ log.description }}
+                            </small>
+
+                            <br>
+
+                            <small class="text-muted">
+                                {{ log.created_at|date:"d M Y H:i" }}
+                            </small>
+
+                        </div>
+
+                    {% empty %}
+
+                        <p class="text-muted mb-0">
+                            No recent activity.
+                        </p>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
-
-
-<div class="text-muted">
-
-<i class="bi bi-clock"></i>
-
-{{ executive.generated_at|date:"d M Y H:i" }}
-
-</div>
-
-
-</div>
-
-
-
-
-
-<div class="row g-4">
-
-
-
-<!-- ================= SALES ================= -->
-
-{% if executive.sales %}
-
-<div class="col-xl-3 col-md-6">
-
-<a href="{% url 'sales:sales_dashboard' %}"
-class="text-decoration-none text-dark">
-
-
-<div class="card shadow-sm h-100 dashboard-card">
-
-
-<div class="card-body">
-
-
-<div class="d-flex justify-content-between">
-
-
-<div>
-
-<h6 class="text-muted">
-Sales
-</h6>
-
-
-<h3 class="fw-bold">
-
-{{ executive.sales.total_sales|default:0 }}
-
-</h3>
-
-
-<p class="mb-0">
-
-Completed:
-
-<strong>
-{{ executive.sales.completed_sales|default:0 }}
-</strong>
-
-</p>
-
-
-</div>
-
-
-<div class="fs-1 text-primary">
-
-<i class="bi bi-cart-check"></i>
-
-</div>
-
-
-</div>
-
-
-<hr>
-
-
-<h6 class="text-muted">
-Sales Amount
-</h6>
-
-
-<h5 class="fw-bold">
-
-{{ executive.sales.sales_amount|default:0 }}
-
-RWF
-
-</h5>
-
-
-</div>
-
-
-</div>
-
-
-</a>
-
-</div>
-
-{% endif %}
-
-
-
-
-
-<!-- ================= FINANCE ================= -->
-
-
-{% if executive.finance %}
-
-
-<div class="col-xl-3 col-md-6">
-
-
-<a href="{% url 'finance:finance_dashboard' %}"
-class="text-decoration-none text-dark">
-
-
-<div class="card shadow-sm h-100 dashboard-card">
-
-
-<div class="card-body">
-
-
-<div class="d-flex justify-content-between">
-
-
-<div>
-
-<h6 class="text-muted">
-Finance
-</h6>
-
-
-<h3 class="fw-bold">
-
-{{ executive.finance.profit|default:0 }}
-
-</h3>
-
-
-<p>
-Profit
-</p>
-
-
-</div>
-
-
-<div class="fs-1 text-success">
-
-<i class="bi bi-cash-stack"></i>
-
-</div>
-
-
-</div>
-
-
-
-<hr>
-
-
-<p>
-Income:
-
-<strong>
-{{ executive.finance.income|default:0 }}
-</strong>
-
-</p>
-
-
-<p>
-Expense:
-
-<strong>
-{{ executive.finance.expense|default:0 }}
-</strong>
-
-</p>
-
-
-
-</div>
-
-
-</div>
-
-
-</a>
-
-
-</div>
-
-
-{% endif %}
-
-
-
-
-
-
-
-<!-- ================= INVENTORY ================= -->
-
-
-{% if executive.inventory %}
-
-
-<div class="col-xl-3 col-md-6">
-
-
-<a href="{% url 'inventory:dashboard' %}"
-class="text-decoration-none text-dark">
-
-
-<div class="card shadow-sm h-100 dashboard-card">
-
-
-<div class="card-body">
-
-
-<div class="d-flex justify-content-between">
-
-
-<div>
-
-
-<h6 class="text-muted">
-Inventory
-</h6>
-
-
-<h3 class="fw-bold">
-
-{{ executive.inventory.products|default:0 }}
-
-</h3>
-
-
-<p>
-Products
-</p>
-
-
-</div>
-
-
-
-<div class="fs-1 text-warning">
-
-<i class="bi bi-box-seam"></i>
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-</a>
-
-
-</div>
-
-
-{% endif %}
-
-
-
-
-
-
-
-<!-- ================= HR ================= -->
-
-
-{% if executive.hr %}
-
-
-<div class="col-xl-3 col-md-6">
-
-
-<a href="{% url 'employee:employee_dashboard' %}"
-class="text-decoration-none text-dark">
-
-
-<div class="card shadow-sm h-100 dashboard-card">
-
-
-<div class="card-body">
-
-
-<div class="d-flex justify-content-between">
-
-
-<div>
-
-
-<h6 class="text-muted">
-Human Resource
-</h6>
-
-
-<h3 class="fw-bold">
-
-{{ executive.hr.employees|default:0 }}
-
-</h3>
-
-
-<p>
-Employees
-</p>
-
-
-</div>
-
-
-
-<div class="fs-1 text-info">
-
-<i class="bi bi-people"></i>
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-</a>
-
-
-</div>
-
-
-{% endif %}
-
-
-
-
-
-
-
-<!-- ================= CONSTRUCTION ================= -->
-
-
-{% if executive.construction %}
-
-
-<div class="col-xl-3 col-md-6">
-
-
-<a href="{% url 'Construction:construction_dashboard' %}"
-class="text-decoration-none text-dark">
-
-
-<div class="card shadow-sm h-100 dashboard-card">
-
-
-<div class="card-body">
-
-
-<div class="d-flex justify-content-between">
-
-
-<div>
-
-
-<h6 class="text-muted">
-Construction
-</h6>
-
-
-<h3 class="fw-bold">
-
-{{ executive.construction.projects|default:0 }}
-
-</h3>
-
-
-<p>
-Projects
-</p>
-
-
-</div>
-
-
-<div class="fs-1 text-danger">
-
-<i class="bi bi-building"></i>
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-</a>
-
-
-</div>
-
-
-{% endif %}
-
-
-
-</div>
-
-
-
-
-
-
-<!-- ================= MODULES ================= -->
-
-
-<hr class="my-5">
-
-
-
-<h4 class="fw-bold mb-3">
-
-Available Modules
-
-</h4>
-
-
-
-<div class="row g-4">
-
-
-{% for module in modules %}
-
-
-<div class="col-xl-3 col-md-4">
-
-
-<div class="card shadow-sm h-100 dashboard-card">
-
-
-<div class="card-body">
-
-
-<div class="d-flex justify-content-between align-items-center">
-
-
-<h5 class="text-capitalize mb-0">
-
-{{ module.name }}
-
-</h5>
-
-
-<i class="bi bi-grid fs-3"></i>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-
-{% empty %}
-
-
-<p class="text-muted">
-No modules available.
-</p>
-
-
-{% endfor %}
-
-
-</div>
-
-
-
-</div>
-<!-- ==============================
-CHARTS SECTION
-============================== -->
-
-<hr class="my-5">
-
-
-<h4 class="fw-bold mb-4">
-
-Business Analytics
-
-</h4>
-
-
-
-<div class="row g-4">
-
-
-<!-- SALES TREND -->
-
-<div class="col-xl-6">
-
-
-<div class="card shadow-sm">
-
-
-<div class="card-body">
-
-
-<h5 class="mb-3">
-
-Sales Trend
-
-</h5>
-
-
-<canvas id="salesChart"></canvas>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-<!-- PROFIT ANALYSIS -->
-
-<div class="col-xl-6">
-
-
-<div class="card shadow-sm">
-
-
-<div class="card-body">
-
-
-<h5 class="mb-3">
-
-Profit Analysis
-
-</h5>
-
-
-<canvas id="profitChart"></canvas>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-
-
-<!-- INVENTORY -->
-
-<div class="col-xl-4">
-
-
-<div class="card shadow-sm">
-
-
-<div class="card-body">
-
-
-<h5>
-
-Inventory Status
-
-</h5>
-
-
-<canvas id="inventoryChart"></canvas>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-
-</div>
-<script>
-
-
-// ============================
-// SALES TREND
-// ============================
-
-
-const salesCtx =
-document.getElementById(
-"salesChart"
-);
-
-
-
-new Chart(
-salesCtx,
-{
-
-
-type:"line",
-
-
-data:{
-
-
-labels:
-{{ charts.sales_trend.labels|safe }},
-
-
-datasets:[{
-
-
-label:"Sales Amount",
-
-
-data:
-{{ charts.sales_trend.data|safe }},
-
-
-borderWidth:2,
-
-
-tension:0.3
-
-
-}]
-
-
-}
-
-
-});
-
-
-
-
-
-
-// ============================
-// PROFIT
-// ============================
-
-
-const profitCtx =
-document.getElementById(
-"profitChart"
-);
-
-
-
-new Chart(
-profitCtx,
-{
-
-
-type:"bar",
-
-
-data:{
-
-
-labels:[
-"Income",
-"Expense",
-"Profit"
-],
-
-
-datasets:[{
-
-
-label:"RWF",
-
-
-data:[
-
-
-{{ charts.profit.income }},
-
-
-{{ charts.profit.expense }},
-
-
-{{ charts.profit.profit }}
-
-
-],
-
-
-borderWidth:1
-
-
-}]
-
-
-}
-
-
-});
-
-
-
-
-
-
-
-// ============================
-// INVENTORY
-// ============================
-
-
-const inventoryCtx =
-document.getElementById(
-"inventoryChart"
-);
-
-
-
-new Chart(
-inventoryCtx,
-{
-
-
-type:"doughnut",
-
-
-data:{
-
-
-labels:[
-"Products"
-],
-
-
-datasets:[{
-
-
-data:[
-
-{{ charts.inventory.products }}
-
-]
-
-
-}]
-
-
-}
-
-
-});
-
-
-
-</script>
-
 
 {% endblock %}

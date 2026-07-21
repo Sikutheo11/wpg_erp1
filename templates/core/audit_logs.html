@@ -1,0 +1,99 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+Audit Logs - WPG BOS
+{% endblock %}
+
+{% block page_title %}
+Audit Logs
+{% endblock %}
+
+{% block content %}
+
+<div class="card shadow-sm">
+
+    <div class="card-header">
+        <h5 class="mb-0">
+            System Audit Logs
+        </h5>
+    </div>
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>App</th>
+                        <th>Model</th>
+                        <th>Object ID</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for log in logs %}
+
+                        <tr>
+                            <td>
+                                {{ log.created_at|date:"d M Y H:i" }}
+                            </td>
+
+                            <td>
+                                {% if log.user %}
+                                    {{ log.user.get_full_name|default:log.user.username }}
+                                {% else %}
+                                    System
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ log.action }}
+                                </span>
+                            </td>
+
+                            <td>
+                                {{ log.app_label }}
+                            </td>
+
+                            <td>
+                                {{ log.model_name }}
+                            </td>
+
+                            <td>
+                                {{ log.object_id }}
+                            </td>
+
+                            <td>
+                                {{ log.description }}
+                            </td>
+                        </tr>
+
+                    {% empty %}
+
+                        <tr>
+                            <td colspan="7" class="text-muted text-center">
+                                No audit logs found.
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

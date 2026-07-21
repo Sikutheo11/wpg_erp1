@@ -1,0 +1,593 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+Production Cost Report
+{% endblock %}
+
+{% block page_title %}
+Production Cost Report
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- ================================================= -->
+    <!-- HEADER -->
+    <!-- ================================================= -->
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+
+        <div>
+
+            <h3 class="fw-bold mb-1">
+                Production Cost Report
+            </h3>
+
+            <p class="text-muted mb-0">
+                Production Job #{{ job.pk }}
+                {% if job.product %}
+                    · {{ job.product }}
+                {% endif %}
+            </p>
+
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+            <a href="{% url 'furniture:production_job_detail' job.pk %}"
+               class="btn btn-outline-secondary">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Job
+
+            </a>
+
+            <button type="button"
+                    class="btn btn-outline-primary"
+                    onclick="window.print()">
+
+                <i class="bi bi-printer me-1"></i>
+                Print Report
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- JOB SUMMARY -->
+    <!-- ================================================= -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Job Type
+                    </small>
+
+                    <h5 class="fw-bold mt-2 mb-0">
+                        {{ job.get_job_type_display }}
+                    </h5>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Quantity Planned
+                    </small>
+
+                    <h3 class="fw-bold mt-2 mb-0">
+                        {{ cost_summary.planned_quantity|default:job.quantity_to_produce }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Quantity Produced
+                    </small>
+
+                    <h3 class="fw-bold mt-2 mb-0">
+                        {{ cost_summary.output_quantity|default:0 }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Completion Rate
+                    </small>
+
+                    <h3 class="fw-bold mt-2 mb-0">
+                        {{ cost_summary.completion_rate|default:0 }}%
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- COST SUMMARY -->
+    <!-- ================================================= -->
+
+    <div class="card border-0 shadow-sm mb-4">
+
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+            <div>
+
+                <h5 class="mb-0">
+                    Cost Summary
+                </h5>
+
+                <small class="text-muted">
+                    Actual production cost by cost component
+                </small>
+
+            </div>
+
+            {% if cost_summary.is_profitable %}
+
+                <span class="badge bg-success">
+                    Profitable
+                </span>
+
+            {% elif cost_summary.is_loss_making %}
+
+                <span class="badge bg-danger">
+                    Loss Making
+                </span>
+
+            {% else %}
+
+                <span class="badge bg-secondary">
+                    No Profit Status
+                </span>
+
+            {% endif %}
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="row g-3">
+
+                <div class="col-xl-3 col-md-6">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <small class="text-muted d-block">
+                            Material Cost
+                        </small>
+
+                        <h5 class="fw-bold mt-2 mb-0">
+                            {{ cost_summary.material_cost|default:0|floatformat:0 }}
+                            RWF
+                        </h5>
+
+                    </div>
+
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <small class="text-muted d-block">
+                            Labour Cost
+                        </small>
+
+                        <h5 class="fw-bold mt-2 mb-0">
+                            {{ cost_summary.labour_cost|default:0|floatformat:0 }}
+                            RWF
+                        </h5>
+
+                    </div>
+
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <small class="text-muted d-block">
+                            Machine Cost
+                        </small>
+
+                        <h5 class="fw-bold mt-2 mb-0">
+                            {{ cost_summary.machine_cost|default:0|floatformat:0 }}
+                            RWF
+                        </h5>
+
+                    </div>
+
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <small class="text-muted d-block">
+                            Direct Cost
+                        </small>
+
+                        <h5 class="fw-bold mt-2 mb-0">
+                            {{ cost_summary.direct_cost|default:0|floatformat:0 }}
+                            RWF
+                        </h5>
+
+                    </div>
+
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <small class="text-muted d-block">
+                            Overhead Cost
+                        </small>
+
+                        <h5 class="fw-bold mt-2 mb-0">
+                            {{ cost_summary.overhead_cost|default:0|floatformat:0 }}
+                            RWF
+                        </h5>
+
+                    </div>
+
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <small class="text-muted d-block">
+                            Wastage Cost
+                        </small>
+
+                        <h5 class="fw-bold mt-2 mb-0">
+                            {{ cost_summary.wastage_cost|default:0|floatformat:0 }}
+                            RWF
+                        </h5>
+
+                    </div>
+
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <small class="text-muted d-block">
+                            Additional Cost
+                        </small>
+
+                        <h5 class="fw-bold mt-2 mb-0">
+                            {{ cost_summary.additional_cost|default:0|floatformat:0 }}
+                            RWF
+                        </h5>
+
+                    </div>
+
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <small class="text-muted d-block">
+                            Actual Total Cost
+                        </small>
+
+                        <h5 class="fw-bold text-primary mt-2 mb-0">
+                            {{ cost_summary.actual_total_cost|default:0|floatformat:0 }}
+                            RWF
+                        </h5>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- UNIT ECONOMICS -->
+    <!-- ================================================= -->
+
+    <div class="row g-4 mb-4">
+
+        <div class="col-xl-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-white">
+
+                    <h5 class="mb-0">
+                        Unit Economics
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between border-bottom py-2">
+
+                        <span>Cost per Unit</span>
+
+                        <strong>
+                            {{ cost_summary.cost_per_unit|default:0|floatformat:0 }}
+                            RWF
+                        </strong>
+
+                    </div>
+
+                    <div class="d-flex justify-content-between border-bottom py-2">
+
+                        <span>Profit per Unit</span>
+
+                        <strong class="{% if cost_summary.profit_per_unit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ cost_summary.profit_per_unit|default:0|floatformat:0 }}
+                            RWF
+                        </strong>
+
+                    </div>
+
+                    <div class="d-flex justify-content-between border-bottom py-2">
+
+                        <span>Expected Revenue</span>
+
+                        <strong>
+                            {{ cost_summary.expected_revenue|default:0|floatformat:0 }}
+                            RWF
+                        </strong>
+
+                    </div>
+
+                    <div class="d-flex justify-content-between border-bottom py-2">
+
+                        <span>Actual Profit</span>
+
+                        <strong class="{% if cost_summary.actual_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ cost_summary.actual_profit|default:0|floatformat:0 }}
+                            RWF
+                        </strong>
+
+                    </div>
+
+                    <div class="d-flex justify-content-between py-2">
+
+                        <span>Profit Margin</span>
+
+                        <strong>
+                            {{ cost_summary.profit_margin|default:0 }}%
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- QUOTATION COMPARISON -->
+        <!-- ================================================= -->
+
+        <div class="col-xl-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-white">
+
+                    <h5 class="mb-0">
+                        Quotation Comparison
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    {% if cost_summary.has_quotation %}
+
+                        <div class="d-flex justify-content-between border-bottom py-2">
+
+                            <span>Quotation Cost</span>
+
+                            <strong>
+                                {{ cost_summary.quotation_cost|default:0|floatformat:0 }}
+                                RWF
+                            </strong>
+
+                        </div>
+
+                        <div class="d-flex justify-content-between border-bottom py-2">
+
+                            <span>Quotation Selling Price</span>
+
+                            <strong>
+                                {{ cost_summary.quotation_selling_price|default:0|floatformat:0 }}
+                                RWF
+                            </strong>
+
+                        </div>
+
+                        <div class="d-flex justify-content-between border-bottom py-2">
+
+                            <span>Cost Variance</span>
+
+                            <strong class="{% if cost_summary.cost_variance > 0 %}text-danger{% else %}text-success{% endif %}">
+                                {{ cost_summary.cost_variance|default:0|floatformat:0 }}
+                                RWF
+                            </strong>
+
+                        </div>
+
+                        <div class="d-flex justify-content-between border-bottom py-2">
+
+                            <span>Cost Variance Percentage</span>
+
+                            <strong class="{% if cost_summary.cost_variance_percentage > 0 %}text-danger{% else %}text-success{% endif %}">
+                                {{ cost_summary.cost_variance_percentage|default:0 }}%
+                            </strong>
+
+                        </div>
+
+                        <div class="d-flex justify-content-between py-2">
+
+                            <span>Profit Variance</span>
+
+                            <strong>
+                                {{ cost_summary.profit_variance|default:0|floatformat:0 }}
+                                RWF
+                            </strong>
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="alert alert-warning mb-0">
+
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+
+                            No approved quotation is linked to this production job.
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- PERFORMANCE STATUS -->
+    <!-- ================================================= -->
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white">
+
+            <h5 class="mb-0">
+                Cost Performance
+            </h5>
+
+        </div>
+
+        <div class="card-body">
+
+            {% if cost_summary.is_over_budget %}
+
+                <div class="alert alert-danger mb-0">
+
+                    <strong>Over budget.</strong>
+
+                    Actual production cost exceeds the quotation cost by
+
+                    {{ cost_summary.cost_variance|default:0|floatformat:0 }}
+
+                    RWF.
+
+                </div>
+
+            {% elif cost_summary.has_quotation %}
+
+                <div class="alert alert-success mb-0">
+
+                    <strong>Within budget.</strong>
+
+                    Actual production cost is within the approved quotation cost.
+
+                </div>
+
+            {% else %}
+
+                <div class="alert alert-light border mb-0">
+
+                    Cost performance cannot be compared because no approved quotation is available.
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<style>
+@media print {
+    .sidebar,
+    .navbar,
+    .btn,
+    form {
+        display: none !important;
+    }
+
+    .container-fluid {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #dee2e6 !important;
+        break-inside: avoid;
+    }
+}
+</style>
+
+{% endblock %}

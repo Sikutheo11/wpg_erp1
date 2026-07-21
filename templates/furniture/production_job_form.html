@@ -1,22 +1,18 @@
-{% extends 'furniture/base_furniture.html' %}
-
-
+{% extends 'base_dashboard.html' %}
 {% block content %}
-
 <div class="container">
 
-
 <h3>Create Customer Order</h3>
+{% if form.errors %}
 
+<div class="alert alert-danger">
+    {{ form.errors }}
+</div>
 
+{% endif %}
 <form method="POST">
-
 {% csrf_token %}
-
-
 {{form.as_p}}
-
-
 <button class="btn btn-primary">
 
 Save Order

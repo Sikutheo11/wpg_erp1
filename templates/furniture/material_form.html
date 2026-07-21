@@ -1,35 +1,140 @@
-{% extends 'furniture/base_furniture.html' %}
+{% extends "base_dashboard.html" %}
 
+{% block title %}
+Material Consumption
+{% endblock %}
+
+{% block page_title %}
+Material Consumption
+{% endblock %}
 
 {% block content %}
 
+<div class="container-fluid">
 
-<div class="container">
+    <div class="row justify-content-center">
 
+        <div class="col-lg-8">
 
-<h3>
-Material Consumption
-</h3>
+            <div class="card shadow-sm border-0">
 
+                <div class="card-header bg-white">
 
-<form method="POST">
+                    <h4 class="mb-1">
 
-{% csrf_token %}
+                        Record Material Consumption
 
-{{form.as_p}}
+                    </h4>
 
+                    <small class="text-muted">
 
-<button class="btn btn-primary">
+                        {% if production_job %}
+                            Production Job #{{ production_job.pk }}
+                        {% else %}
+                            Add material used during production.
+                        {% endif %}
 
-Save Material
+                    </small>
 
-</button>
+                </div>
 
+                <div class="card-body">
 
-</form>
+                    <form method="post">
 
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+
+                            <div class="alert alert-danger">
+
+                                {{ form.non_field_errors }}
+
+                            </div>
+
+                        {% endif %}
+
+                        {% for field in form %}
+
+                            <div class="mb-3">
+
+                                <label class="form-label fw-semibold">
+
+                                    {{ field.label }}
+
+                                </label>
+
+                                {{ field }}
+
+                                {% if field.help_text %}
+
+                                    <small class="text-muted d-block">
+
+                                        {{ field.help_text }}
+
+                                    </small>
+
+                                {% endif %}
+
+                                {% for error in field.errors %}
+
+                                    <div class="text-danger small">
+
+                                        {{ error }}
+
+                                    </div>
+
+                                {% endfor %}
+
+                            </div>
+
+                        {% endfor %}
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+
+                            {% if production_job %}
+
+                                <a href="{% url 'furniture:production_job_detail' production_job.pk %}"
+                                   class="btn btn-outline-secondary">
+
+                                    Cancel
+
+                                </a>
+
+                            {% else %}
+
+                                <a href="{% url 'furniture:material_list' %}"
+                                   class="btn btn-outline-secondary">
+
+                                    Cancel
+
+                                </a>
+
+                            {% endif %}
+
+                            <button type="submit"
+                                    class="btn btn-primary">
+
+                                <i class="bi bi-check-circle me-1"></i>
+
+                                Save Material
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
-
 
 {% endblock %}

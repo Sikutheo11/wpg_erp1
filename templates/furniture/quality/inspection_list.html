@@ -1,0 +1,44 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Quality Inspections{% endblock %}
+{% block page_title %}Quality Inspections{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h3 class="fw-bold mb-1">Quality Inspections</h3><p class="text-muted mb-0">Track pending, passed and failed inspections.</p></div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'furniture:production_defect_list' %}" class="btn btn-outline-danger">Defects</a>
+      <a href="{% url 'furniture:rework_order_list' %}" class="btn btn-outline-warning">Reworks</a>
+    </div>
+  </div>
+  <div class="row g-3 mb-4">
+    <div class="col"><div class="card border-0 shadow-sm"><div class="card-body"><small>Total</small><h3>{{ summary.total|default:0 }}</h3></div></div></div>
+    <div class="col"><div class="card border-0 shadow-sm"><div class="card-body"><small>Pending</small><h3 class="text-warning">{{ summary.pending|default:0 }}</h3></div></div></div>
+    <div class="col"><div class="card border-0 shadow-sm"><div class="card-body"><small>Passed</small><h3 class="text-success">{{ summary.passed|default:0 }}</h3></div></div></div>
+    <div class="col"><div class="card border-0 shadow-sm"><div class="card-body"><small>Failed</small><h3 class="text-danger">{{ summary.failed|default:0 }}</h3></div></div></div>
+  </div>
+  <div class="card border-0 shadow-sm">
+    <div class="card-body border-bottom">
+      <form method="get" class="row g-2">
+        <div class="col-md-5"><input name="q" value="{{ query }}" class="form-control" placeholder="Search"></div>
+        <div class="col-md-3"><select name="result" class="form-select"><option value="">All results</option><option value="PENDING">Pending</option><option value="PASSED">Passed</option><option value="FAILED">Failed</option><option value="CONDITIONAL">Conditional</option></select></div>
+        <div class="col-md-3"><select name="inspection_type" class="form-select"><option value="">All types</option><option value="IN_PROCESS">In-process</option><option value="FINAL">Final</option><option value="RE_INSPECTION">Re-inspection</option></select></div>
+        <div class="col-md-1"><button class="btn btn-primary w-100">Go</button></div>
+      </form>
+    </div>
+    <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+      <thead><tr><th>ID</th><th>Job</th><th>Type</th><th>Inspector</th><th>Score</th><th>Result</th><th></th></tr></thead>
+      <tbody>
+      {% for inspection in inspections %}
+      <tr>
+        <td>#{{ inspection.pk }}</td><td>{{ inspection.production_job }}</td><td>{{ inspection.get_inspection_type_display }}</td><td>{{ inspection.inspector|default:"Unassigned" }}</td><td>{{ inspection.score }}/100</td>
+        <td><span class="badge bg-secondary">{{ inspection.get_result_display }}</span></td>
+        <td class="text-end"><a href="{% url 'furniture:quality_inspection_detail' inspection.pk %}" class="btn btn-sm btn-outline-primary">Open</a></td>
+      </tr>
+      {% empty %}<tr><td colspan="7" class="text-center py-5 text-muted">No inspections found.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+{% endblock %}

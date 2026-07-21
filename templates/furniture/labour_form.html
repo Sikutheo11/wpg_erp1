@@ -1,34 +1,137 @@
-{% extends 'furniture/base_furniture.html' %}
+{% extends "base_dashboard.html" %}
 
+{% block title %}
+Labour Cost
+{% endblock %}
+
+{% block page_title %}
+Labour Cost
+{% endblock %}
 
 {% block content %}
 
+<div class="container-fluid">
 
-<div class="container">
+    <div class="row justify-content-center">
 
-<h3>
-Labour Cost
-</h3>
+        <div class="col-lg-8">
 
+            <div class="card border-0 shadow-sm">
 
-<form method="POST">
+                <div class="card-header bg-white">
 
-{% csrf_token %}
+                    <h4 class="mb-1">
+                        Record Labour Cost
+                    </h4>
 
-{{form.as_p}}
+                    <small class="text-muted">
 
+                        {% if production_job %}
+                            Production Job #{{ production_job.pk }}
+                        {% else %}
+                            Add labour used during production
+                        {% endif %}
 
-<button class="btn btn-primary">
+                    </small>
 
-Save Labour
+                </div>
 
-</button>
+                <div class="card-body">
 
+                    <form method="post" novalidate>
 
-</form>
+                        {% csrf_token %}
 
+                        {% if form.non_field_errors %}
+
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+
+                        {% endif %}
+
+                        {% for field in form %}
+
+                            <div class="mb-3">
+
+                                <label class="form-label fw-semibold"
+                                       for="{{ field.id_for_label }}">
+
+                                    {{ field.label }}
+
+                                    {% if field.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+
+                                </label>
+
+                                {{ field }}
+
+                                {% if field.help_text %}
+
+                                    <small class="text-muted d-block mt-1">
+                                        {{ field.help_text }}
+                                    </small>
+
+                                {% endif %}
+
+                                {% for error in field.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+
+                                {% endfor %}
+
+                            </div>
+
+                        {% endfor %}
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between align-items-center">
+
+                            {% if production_job %}
+
+                                <a href="{% url 'furniture:production_job_detail' production_job.pk %}"
+                                   class="btn btn-outline-secondary">
+
+                                    Cancel
+
+                                </a>
+
+                            {% else %}
+
+                                <a href="{% url 'furniture:labour_list' %}"
+                                   class="btn btn-outline-secondary">
+
+                                    Cancel
+
+                                </a>
+
+                            {% endif %}
+
+                            <button type="submit"
+                                    class="btn btn-primary">
+
+                                <i class="bi bi-check-circle me-1"></i>
+
+                                Save Labour
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
-
 
 {% endblock %}

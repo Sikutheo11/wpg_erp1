@@ -1,60 +1,102 @@
-from .services import get_user_modules
-from .dashboard_registry import DASHBOARD_REGISTRY
-from .executive_dashboard import get_executive_dashboard
-from .charts import get_dashboard_charts
+from collections import defaultdict
+
+from .models import (
+    BusinessUnit,
+    EnterpriseEngine,
+)
+
+from .permissions import PermissionService
+from .bi_engine import BIEngine
 
 
+class DashboardService:
+    """
+    WPG BOS Dashboard Engine.
 
-def get_dashboard_context(user):
+    Responsibilities:
+    - Build sidebar from Business Units and Enterprise Engines
+    - Get KPI widgets from BI Engine
+    """
 
+    @staticmethod
+    def get_business_unit_sidebar(user):
+        features = PermissionService.get_allowed_business_unit_features(user)
 
-    context = {
+        grouped = defaultdict(list)
 
+        for feature in features:
+            if feature.business_unit:
+                grouped[feature.business_unit].append(feature)
 
-        "modules": [],
-        "dashboards": {},
-        "executive": {},
-        "charts":{}
+        sidebar = []
 
-
-    }
-
-
-
-    modules = get_user_modules(user)
-
-
-    context["modules"] = modules
-
-
-
-    for module in modules:
-
-
-        module_name = module.name.lower()
-
-
-
-        dashboard_function = (
-            DASHBOARD_REGISTRY.get(module_name)
+        business_units = BusinessUnit.objects.filter(
+            id__in=[bu.id for bu in grouped.keys()],
+            is_active=True,
+        ).order_by(
+            "order",
+            "name",
         )
 
-
-
-        if dashboard_function:
-
-
-            context["dashboards"][module_name] = (
-                dashboard_function(user)
+        for business_unit in business_units:
+            sidebar.append(
+                {
+                    "owner": business_unit,
+                    "features": grouped[business_unit],
+                    "type": "business_unit",
+                }
             )
 
+        return sidebar
 
+    @staticmethod
+    def get_engine_sidebar(user):
+        features = PermissionService.get_allowed_engine_features(user)
 
-    # CEO DASHBOARD
+        grouped = defaultdict(list)
 
-    context["executive"] = get_executive_dashboard(user)
-    context["charts"] = get_dashboard_charts(user)
+        for feature in features:
+            if feature.engine:
+                grouped[feature.engine].append(feature)
 
+        sidebar = []
 
+        engines = EnterpriseEngine.objects.filter(
+            id__in=[engine.id for engine in grouped.keys()],
+            is_active=True,
+        ).order_by(
+            "order",
+            "name",
+        )
 
-    return context
+        for engine in engines:
+            sidebar.append(
+                {
+                    "owner": engine,
+                    "features": grouped[engine],
+                    "type": "engine",
+                }
+            )
+
+        return sidebar
+
+    @staticmethod
+    def get_sidebar(user):
+        return {
+            "business_units": DashboardService.get_business_unit_sidebar(user),
+            "engines": DashboardService.get_engine_sidebar(user),
+        }
+
+    @staticmethod
+    def get_kpi_widgets(user):
+        return BIEngine.get_dashboard_widgets(user)
+
+    @staticmethod
+    def get_dashboard_context(user):
+        sidebar = DashboardService.get_sidebar(user)
+
+        return {
+            "business_unit_sidebar": sidebar["business_units"],
+            "engine_sidebar": sidebar["engines"],
+            "kpi_widgets": DashboardService.get_kpi_widgets(user),
+        }

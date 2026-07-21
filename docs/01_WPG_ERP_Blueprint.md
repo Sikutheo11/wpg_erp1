@@ -1,0 +1,481 @@
+# WPG ERP BLUEPRINT
+## Official Enterprise Architecture Document
+
+**Project:** Wisdom Palace Group Enterprise Resource Planning (WPG ERP)
+
+**Version:** 1.0
+
+**Status:** Official Architecture Blueprint
+
+**Owner:** Wisdom Palace Group
+
+**Prepared By:** WPG ERP Development Team
+
+---
+
+# 1. Introduction
+
+The WPG ERP is an integrated enterprise management platform designed to support all operational activities of Wisdom Palace Group.
+
+The ERP connects manufacturing, inventory, ecommerce, sales, finance, construction projects, employee management, and customer services into one unified system.
+
+This document is the official architectural blueprint of the project.
+
+Every new feature, database model, workflow, and module must comply with this blueprint.
+
+---
+
+# 2. Vision
+
+To build a modern enterprise platform that digitizes every business process within Wisdom Palace Group while remaining scalable, maintainable, and adaptable to future growth.
+
+---
+
+# 3. Mission
+
+The ERP aims to provide one integrated platform capable of managing:
+
+- Manufacturing
+- Inventory
+- Ecommerce
+- Construction
+- Sales
+- Finance
+- Human Resources
+- Customer Services
+
+through a single centralized system.
+
+---
+
+# 4. Core Principles
+
+The ERP follows these principles.
+
+## Principle 1
+Business Before Code
+
+Every feature begins with business analysis before implementation.
+
+No feature is implemented before its workflow is approved.
+
+---
+
+## Principle 2
+Single Source of Truth
+
+Every business object has only one owner.
+
+Example
+
+Inventory owns stock.
+
+Finance owns accounting.
+
+Employee owns HR information.
+
+Accounts owns authentication.
+
+---
+
+## Principle 3
+No Duplicate Business Logic
+
+Business rules are implemented once.
+
+Other modules reuse existing services instead of rewriting the same logic.
+
+---
+
+## Principle 4
+Loose Module Coupling
+
+Modules communicate through well-defined interfaces.
+
+No module should directly manage another module's responsibilities.
+
+---
+
+## Principle 5
+Scalable Architecture
+
+The ERP must support future expansion including:
+
+- Mobile Application
+- CRM
+- Procurement
+- Supplier Portal
+- Customer Portal
+- Analytics
+- API Integrations
+
+without major restructuring.
+
+---
+
+# 5. Business Domains
+
+The ERP consists of independent business domains.
+
+## Accounts
+
+Responsible for:
+
+- Authentication
+- Authorization
+- Users
+- Roles
+
+---
+
+## Employees
+
+Responsible for:
+
+- Departments
+- Positions
+- Attendance
+- Leave
+- Payroll Integration
+
+---
+
+## Inventory
+
+Responsible for:
+
+- Products
+- Raw Materials
+- Warehouses
+- Assets
+- Suppliers
+- Stock Movements
+
+Inventory is the central source of truth for stock.
+
+---
+
+## Furniture
+
+Responsible for manufacturing.
+
+Includes:
+
+- Production Orders
+- Bill of Materials
+- Labour
+- Machines
+- Material Consumption
+- Production Outputs
+- Quality Control (Future)
+
+Furniture never performs sales.
+
+---
+
+## Construction
+
+Responsible for:
+
+- Projects
+- Sites
+- Tasks
+- Construction Materials
+- Construction Labour
+- Construction Expenses
+
+---
+
+## Ecommerce
+
+Responsible for:
+
+- Online Product Catalog
+- Product Details
+- Shopping Cart
+- Checkout
+- Customer Accounts
+- Online Orders
+
+Ecommerce never manufactures products.
+
+---
+
+## Sales
+
+Responsible for:
+
+- Walk-in Customers
+- Quotations
+- POS
+- Invoices
+- Payments
+
+---
+
+## Finance
+
+Responsible for:
+
+- Accounting
+- Income
+- Expenses
+- Receivables
+- Payables
+- Payroll Accounting
+
+---
+
+## Core
+
+Responsible for:
+
+- Dashboard Registry
+- Shared Utilities
+- Common Services
+
+---
+
+# 6. Product Lifecycle
+
+Every product follows the same lifecycle.
+
+Idea
+
+↓
+
+Design
+
+↓
+
+Bill of Materials
+
+↓
+
+Production Order
+
+↓
+
+Manufacturing
+
+↓
+
+Finished Goods Inventory
+
+↓
+
+Published to Ecommerce
+
+↓
+
+Customer Purchase
+
+↓
+
+Delivery
+
+---
+
+# 7. Production Types
+
+The ERP supports three production scenarios.
+
+## Stock Replenishment
+
+Existing products are reproduced to increase inventory.
+
+---
+
+## New Product Development
+
+A completely new product is designed and manufactured.
+
+---
+
+## Customer Custom Production
+
+A customer requests a unique product.
+
+The product is manufactured, enters Finished Goods Inventory, and is then delivered.
+
+---
+
+# 8. Inventory Philosophy
+
+Inventory is the heart of the ERP.
+
+All finished goods enter inventory before being sold or delivered.
+
+Only Inventory manages stock quantities.
+
+Stock changes occur exclusively through Stock Movements.
+
+---
+
+# 9. Sales Philosophy
+
+Products are sold through two channels.
+
+## Ecommerce
+
+Online customer purchases.
+
+---
+
+## Offline Sales
+
+Walk-in customer purchases.
+
+Both reduce inventory through Stock OUT transactions.
+
+---
+
+# 10. Finance Philosophy
+
+Finance never creates transactions.
+
+Finance receives transactions generated by business activities.
+
+Examples:
+
+- Sales
+- Ecommerce
+- Payroll
+- Purchases
+
+---
+
+# 11. Integration Rules
+
+Furniture → Inventory
+
+Inventory → Ecommerce
+
+Inventory → Sales
+
+Sales → Finance
+
+Ecommerce → Finance
+
+Payroll → Finance
+
+Construction → Finance
+
+---
+
+# 12. Development Rules
+
+Every new feature must satisfy:
+
+✔ Business requirement documented
+
+✔ Workflow approved
+
+✔ Database designed
+
+✔ Module responsibility identified
+
+✔ Integrated with existing architecture
+
+---
+
+# 13. Folder Standards
+
+Every application should contain:
+
+models.py
+
+views.py
+
+urls.py
+
+forms.py
+
+admin.py
+
+services.py (when business logic grows)
+
+dashboard.py (if dashboard exists)
+
+templates/
+
+static/
+
+---
+
+# 14. Coding Standards
+
+Business logic should remain outside templates.
+
+Complex workflows should move into services.
+
+Views should remain lightweight.
+
+Models should contain business rules related to the entity.
+
+---
+
+# 15. Future Expansion
+
+Future modules include:
+
+- CRM
+- Procurement
+- Supplier Portal
+- Customer Portal
+- Delivery Management
+- Notification Service
+- Mobile Application
+- Reporting & Business Intelligence
+
+The architecture must support these additions without redesign.
+
+---
+
+# 16. Official Development Workflow
+
+Business Analysis
+
+↓
+
+Blueprint Update
+
+↓
+
+Database Design
+
+↓
+
+Implementation
+
+↓
+
+Testing
+
+↓
+
+Documentation Update
+
+↓
+
+Deployment
+
+---
+
+# 17. Architecture Governance
+
+This document is the official architectural authority of WPG ERP.
+
+Every future modification must comply with this blueprint.
+
+Any architectural change requires updating this document before implementation.
+
+---
+
+**End of Document**
+
+**Version:** 1.0
+
+**Status:** Approved
+
+**Document Owner:** Wisdom Palace Group ERP

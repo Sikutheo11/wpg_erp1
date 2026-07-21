@@ -1,0 +1,302 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+Furniture Production Reports
+{% endblock %}
+
+{% block page_title %}
+Production Reports
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+            <h3 class="fw-bold mb-1">
+                Furniture Production Reports
+            </h3>
+
+            <p class="text-muted mb-0">
+                Production, cost, quality and output performance summary.
+            </p>
+        </div>
+
+        <a href="{% url 'furniture:production_job_list' %}"
+           class="btn btn-outline-primary">
+            <i class="bi bi-list-task me-1"></i>
+            Production Jobs
+        </a>
+
+    </div>
+
+
+    <!-- SUMMARY CARDS -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted d-block">
+                        Total Production Jobs
+                    </small>
+
+                    <h3 class="fw-bold mb-0 mt-2">
+                        {{ total_jobs|default:0 }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted d-block">
+                        In Production
+                    </small>
+
+                    <h3 class="fw-bold text-primary mb-0 mt-2">
+                        {{ in_production_jobs|default:0 }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted d-block">
+                        Finished Goods
+                    </small>
+
+                    <h3 class="fw-bold text-success mb-0 mt-2">
+                        {{ finished_goods_jobs|default:0 }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted d-block">
+                        Delivered
+                    </small>
+
+                    <h3 class="fw-bold text-success mb-0 mt-2">
+                        {{ delivered_jobs|default:0 }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- SECOND SUMMARY ROW -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted d-block">
+                        Total Output
+                    </small>
+
+                    <h4 class="fw-bold mb-0 mt-2">
+                        {{ total_output|default:0 }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted d-block">
+                        Material Cost
+                    </small>
+
+                    <h4 class="fw-bold mb-0 mt-2">
+                        {{ total_material_cost|default:0|floatformat:0 }} RWF
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted d-block">
+                        Labour Cost
+                    </small>
+
+                    <h4 class="fw-bold mb-0 mt-2">
+                        {{ total_labour_cost|default:0|floatformat:0 }} RWF
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted d-block">
+                        Machine Cost
+                    </small>
+
+                    <h4 class="fw-bold mb-0 mt-2">
+                        {{ total_machine_cost|default:0|floatformat:0 }} RWF
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCTION JOB TABLE -->
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white">
+
+            <div>
+                <h5 class="mb-0">
+                    Production Job Performance
+                </h5>
+
+                <small class="text-muted">
+                    Current production status and output by job
+                </small>
+            </div>
+
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Job</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                        <th>Assigned Worker</th>
+                        <th>Expected End</th>
+                        <th>Tasks</th>
+                        <th>Output</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for job in jobs %}
+
+                    <tr>
+
+                        <td>
+                            <strong>
+                                #{{ job.id }}
+                            </strong>
+                        </td>
+
+                        <td>
+                            {{ job.product|default:"No product" }}
+                        </td>
+
+                        <td>
+                            {{ job.quantity_to_produce }}
+                        </td>
+
+                        <td>
+                            {% if job.status == "DELIVERED" %}
+                                <span class="badge bg-success">
+                                    Delivered
+                                </span>
+                            {% elif job.status == "FINISHED_GOODS" %}
+                                <span class="badge bg-success">
+                                    Finished Goods
+                                </span>
+                            {% elif job.status == "QUALITY_CHECK" %}
+                                <span class="badge bg-info text-dark">
+                                    Quality Check
+                                </span>
+                            {% elif job.status == "IN_PRODUCTION" %}
+                                <span class="badge bg-primary">
+                                    In Production
+                                </span>
+                            {% elif job.status == "CANCELLED" %}
+                                <span class="badge bg-danger">
+                                    Cancelled
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    {{ job.get_status_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ job.assigned_to|default:"Not assigned" }}
+                        </td>
+
+                        <td>
+                            {{ job.expected_end_date|date:"d M Y"|default:"-" }}
+                        </td>
+
+                        <td>
+                            {{ job.tasks.count }}
+                        </td>
+
+                        <td>
+                            {% with first_output=job.outputs.first %}
+                                {% if first_output %}
+                                    {{ first_output.quantity_produced }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+
+                        <td class="text-end">
+                            <a href="{% url 'furniture:production_job_detail' job.pk %}"
+                               class="btn btn-sm btn-outline-primary">
+                                Open
+                            </a>
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="9"
+                            class="text-center text-muted py-5">
+
+                            <i class="bi bi-bar-chart fs-2 d-block mb-2"></i>
+
+                            No production report data is available.
+
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Update Progress{% endblock %}
+{% block page_title %}Production Task Progress{% endblock %}
+{% block content %}
+<div class="container-fluid"><div class="row g-4">
+<div class="col-lg-4"><div class="card border-0 shadow-sm"><div class="card-header bg-primary text-white"><strong>Task Information</strong></div><div class="card-body"><strong>{{ task.name }}</strong><small class="d-block text-muted">{{ task.production_job }}</small><hr><div class="d-flex justify-content-between"><span>Progress</span><strong>{{ task.progress_percentage }}%</strong></div><div class="progress mt-2"><div class="progress-bar" style="width:{{ task.progress_percentage }}%;"></div></div><small class="d-block mt-3">Worker: {{ task.assigned_to|default:"Unassigned" }}</small></div></div></div>
+<div class="col-lg-8"><div class="card border-0 shadow-sm"><div class="card-header bg-success text-white"><strong>Submit Progress Update</strong></div><div class="card-body"><form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+{% for field in form %}<div class="mb-3"><label class="form-label">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+<div class="text-end"><a href="{% url 'furniture:production_task_detail' task.pk %}" class="btn btn-outline-secondary">Cancel</a> <button class="btn btn-success">Save Progress</button></div></form></div></div></div>
+</div>
+<div class="card border-0 shadow-sm mt-4"><div class="card-header bg-white"><strong>Progress History</strong></div><div class="card-body">{% for update in task.progress_updates.all %}<div class="row g-3 border-bottom py-3"><div class="col-md-8"><strong>{{ update.progress_percentage }}%</strong><small class="float-end text-muted">{{ update.created_at|date:"d M Y H:i" }}</small><p class="mt-2 mb-1">{{ update.note|default:"No note." }}</p><small class="text-muted">{{ update.employee|default:"Unknown" }} · {{ update.hours_worked }}h</small></div><div class="col-md-4">{% if update.image %}<img src="{{ update.image.url }}" class="img-fluid rounded" style="max-height:200px;width:100%;object-fit:cover;">{% endif %}</div></div>{% empty %}<p class="text-muted">No progress updates yet.</p>{% endfor %}</div></div>
+</div>
+{% endblock %}

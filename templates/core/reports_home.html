@@ -1,0 +1,102 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+Reports - WPG BOS
+{% endblock %}
+
+{% block page_title %}
+Reports
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold">Reports Center</h3>
+            <p class="text-muted mb-0">
+                WPG BOS business unit and enterprise engine reports
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        {% for report in reports %}
+
+            <div class="col-xl-3 col-md-4">
+
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <small class="text-muted">
+                                    {{ report.code }}
+                                </small>
+
+                                <h5 class="fw-bold mt-2">
+                                    {{ report.name }}
+                                </h5>
+                            </div>
+
+                            <i class="bi bi-file-earmark-bar-graph fs-2 text-primary"></i>
+                        </div>
+
+                        <hr>
+
+                        {% if report.code == "EXECUTIVE" %}
+                            <a href="{% url 'core:executive_report' %}" class="btn btn-outline-primary btn-sm">
+                                Open Report
+                            </a>
+                        {% elif report.code == "FINANCE" %}
+                            <a href="{% url 'core:finance_report' %}" class="btn btn-outline-primary btn-sm">
+                                Open Report
+                            </a>
+                        {% elif report.code == "INVENTORY" %}
+                            <a href="{% url 'core:inventory_report' %}" class="btn btn-outline-primary btn-sm">
+                                Open Report
+                            </a>
+                        {% elif report.code == "FURNITURE" %}
+                            <a href="{% url 'core:furniture_report' %}" class="btn btn-outline-primary btn-sm">
+                                Open Report
+                            </a>
+                        {% elif report.code == "CONSTRUCTION" %}
+                            <a href="{% url 'core:construction_report' %}" class="btn btn-outline-primary btn-sm">
+                                Open Report
+                            </a>
+                        {% elif report.code == "AGRICULTURE" %}
+                            <a href="{% url 'core:agriculture_report' %}" class="btn btn-outline-primary btn-sm">
+                                Open Report
+                            </a>
+                        {% elif report.code == "MARKETPLACE" %}
+                            <a href="{% url 'core:marketplace_report' %}" class="btn btn-outline-primary btn-sm">
+                                Open Report
+                            </a>
+                        {% else %}
+                            <button class="btn btn-outline-secondary btn-sm" disabled>
+                                Coming Soon
+                            </button>
+                        {% endif %}
+
+                    </div>
+                </div>
+
+            </div>
+
+        {% empty %}
+
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No reports registered.
+                </div>
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+{% endblock %}

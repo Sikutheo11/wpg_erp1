@@ -1,0 +1,129 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+Machine Usage
+{% endblock %}
+
+{% block page_title %}
+Machine Usage
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-8">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white">
+
+                    <h4 class="mb-1">
+                        Record Machine Usage
+                    </h4>
+
+                    <small class="text-muted">
+                        {% if production_job %}
+                            Production Job #{{ production_job.pk }}
+                        {% else %}
+                            Add machine usage during production
+                        {% endif %}
+                    </small>
+
+                </div>
+
+                <div class="card-body">
+
+                    <form method="post" novalidate>
+
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        {% for field in form %}
+
+                            <div class="mb-3">
+
+                                <label class="form-label fw-semibold"
+                                       for="{{ field.id_for_label }}">
+
+                                    {{ field.label }}
+
+                                    {% if field.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+
+                                </label>
+
+                                {{ field }}
+
+                                {% if field.help_text %}
+                                    <small class="text-muted d-block mt-1">
+                                        {{ field.help_text }}
+                                    </small>
+                                {% endif %}
+
+                                {% for error in field.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+
+                            </div>
+
+                        {% endfor %}
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between align-items-center">
+
+                            {% if production_job %}
+
+                                <a href="{% url 'furniture:production_job_detail' production_job.pk %}"
+                                   class="btn btn-outline-secondary">
+
+                                    Cancel
+
+                                </a>
+
+                            {% else %}
+
+                                <a href="{% url 'furniture:machine_list' %}"
+                                   class="btn btn-outline-secondary">
+
+                                    Cancel
+
+                                </a>
+
+                            {% endif %}
+
+                            <button type="submit"
+                                    class="btn btn-primary">
+
+                                <i class="bi bi-check-circle me-1"></i>
+
+                                Save Machine Usage
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

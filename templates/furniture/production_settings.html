@@ -1,0 +1,184 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+Furniture Production Settings
+{% endblock %}
+
+{% block page_title %}
+Furniture Production Settings
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <div class="row justify-content-center">
+
+        <div class="col-xl-10">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white">
+
+                    <h5 class="mb-1">
+                        Costing and Production Settings
+                    </h5>
+
+                    <p class="text-muted mb-0">
+                        Configure the default costing rules used by
+                        furniture production reports and profitability
+                        calculations.
+                    </p>
+
+                </div>
+
+                <div class="card-body">
+
+                    <form method="post"
+                          novalidate>
+
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <h6 class="border-bottom pb-2 mb-3">
+                            Costing Percentages
+                        </h6>
+
+                        <div class="row g-3 mb-4">
+
+                            <div class="col-md-3">
+                                <label class="form-label">
+                                    Overhead Rate %
+                                </label>
+                                {{ form.overhead_rate }}
+                                {{ form.overhead_rate.errors }}
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">
+                                    Wastage Rate %
+                                </label>
+                                {{ form.wastage_rate }}
+                                {{ form.wastage_rate.errors }}
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">
+                                    VAT Rate %
+                                </label>
+                                {{ form.vat_rate }}
+                                {{ form.vat_rate.errors }}
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">
+                                    Target Profit Margin %
+                                </label>
+                                {{ form.target_profit_margin }}
+                                {{ form.target_profit_margin.errors }}
+                            </div>
+
+                        </div>
+
+                        <h6 class="border-bottom pb-2 mb-3">
+                            Default Costs
+                        </h6>
+
+                        <div class="row g-3 mb-4">
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Default Transport Cost
+                                </label>
+                                {{ form.default_transport_cost }}
+                                {{ form.default_transport_cost.errors }}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Default Other Cost
+                                </label>
+                                {{ form.default_other_cost }}
+                                {{ form.default_other_cost.errors }}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Default Labour Hourly Rate
+                                </label>
+                                {{ form.default_labour_hourly_rate }}
+                                {{ form.default_labour_hourly_rate.errors }}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Default Machine Hourly Cost
+                                </label>
+                                {{ form.default_machine_hourly_cost }}
+                                {{ form.default_machine_hourly_cost.errors }}
+                            </div>
+
+                        </div>
+
+                        <h6 class="border-bottom pb-2 mb-3">
+                            General Settings
+                        </h6>
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Currency
+                                </label>
+                                {{ form.currency }}
+                                {{ form.currency.errors }}
+                            </div>
+
+                            <div class="col-md-6 d-flex align-items-end">
+
+                                <div class="form-check mb-2">
+
+                                    {{ form.is_active }}
+
+                                    <label class="form-check-label"
+                                           for="{{ form.is_active.id_for_label }}">
+                                        Active settings
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+
+                            <button type="submit"
+                                    class="btn btn-primary">
+
+                                <i class="bi bi-save me-1"></i>
+
+                                Save Settings
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

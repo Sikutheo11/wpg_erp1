@@ -1,0 +1,65 @@
+{% extends "base_dashboard.html" %}
+{% block title %}{{ task.name }}{% endblock %}
+{% block page_title %}Production Task Detail{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div><h3 class="fw-bold mb-1">{{ task.sequence }}. {{ task.name }}</h3><p class="text-muted mb-0">{{ task.production_job }}</p></div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'furniture:production_task_update' task.pk %}" class="btn btn-outline-secondary">Edit</a>
+      <a href="{% url 'furniture:production_task_assign' task.pk %}" class="btn btn-outline-primary">Assign</a>
+      <a href="{% url 'furniture:production_task_progress' task.pk %}" class="btn btn-primary">Update Progress</a>
+    </div>
+  </div>
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <div class="card border-0 shadow-sm mb-4"><div class="card-body">
+        <div class="d-flex justify-content-between mb-2"><strong>Progress</strong><strong>{{ task.progress_percentage }}%</strong></div>
+        <div class="progress mb-3"><div class="progress-bar" style="width:{{ task.progress_percentage }}%;"></div></div>
+        <div class="row g-3">
+          <div class="col-md-4"><small class="text-muted d-block">Worker</small><strong>{{ task.assigned_to|default:"Unassigned" }}</strong></div>
+          <div class="col-md-4"><small class="text-muted d-block">Status</small><strong>{{ task.get_status_display }}</strong></div>
+          <div class="col-md-4"><small class="text-muted d-block">Priority</small><strong>{{ task.get_priority_display }}</strong></div>
+          <div class="col-md-4"><small class="text-muted d-block">Planned Hours</small><strong>{{ task.planned_hours }}</strong></div>
+          <div class="col-md-4"><small class="text-muted d-block">Actual Hours</small><strong>{{ task.actual_hours }}</strong></div>
+          <div class="col-md-4"><small class="text-muted d-block">Planned End</small><strong>{{ task.planned_end|date:"d M Y H:i"|default:"-" }}</strong></div>
+        </div>
+      </div></div>
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between"><strong>Checklist</strong><a href="{% url 'furniture:production_task_checklist' task.pk %}" class="btn btn-sm btn-outline-primary">Manage</a></div>
+        <div class="list-group list-group-flush">
+        {% for item in task.checklist_items.all %}
+          <div class="list-group-item d-flex justify-content-between">
+            <span>{% if item.is_completed %}<i class="bi bi-check-circle-fill text-success me-2"></i>{% else %}<i class="bi bi-circle me-2"></i>{% endif %}{{ item.title }}</span>
+            <form method="post" action="{% url 'furniture:production_checklist_toggle' item.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">Toggle</button></form>
+          </div>
+        {% empty %}<div class="p-4 text-center text-muted">No checklist items.</div>{% endfor %}
+        </div>
+      </div>
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white"><strong>Progress History</strong></div>
+        <div class="card-body">
+        {% for update in task.progress_updates.all %}
+          <div class="row g-3 border-bottom py-3">
+            <div class="col-md-8"><strong>{{ update.progress_percentage }}%</strong><small class="float-end text-muted">{{ update.created_at|date:"d M Y H:i" }}</small><p class="mt-2 mb-1">{{ update.note|default:"No note." }}</p><small class="text-muted">{{ update.employee|default:"Unknown" }} · {{ update.hours_worked }}h</small></div>
+            <div class="col-md-4">{% if update.image %}<img src="{{ update.image.url }}" class="img-fluid rounded" style="max-height:180px;width:100%;object-fit:cover;">{% endif %}</div>
+          </div>
+        {% empty %}<p class="text-muted">No progress updates yet.</p>{% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-4">
+      <div class="card border-0 shadow-sm"><div class="card-header bg-white"><strong>Actions</strong></div><div class="card-body d-grid gap-2">
+        {% if task.status == "PENDING" or task.status == "READY" %}<form method="post" action="{% url 'furniture:production_task_start' task.pk %}">{% csrf_token %}<button class="btn btn-success w-100">Start</button></form>{% endif %}
+        {% if task.status == "IN_PROGRESS" %}<form method="post" action="{% url 'furniture:production_task_pause' task.pk %}">{% csrf_token %}<button class="btn btn-warning w-100">Pause</button></form>{% endif %}
+        {% if task.status == "PAUSED" %}<form method="post" action="{% url 'furniture:production_task_resume' task.pk %}">{% csrf_token %}<button class="btn btn-success w-100">Resume</button></form>{% endif %}
+        {% if task.status != "COMPLETED" and task.status != "CANCELLED" %}
+          <a href="{% url 'furniture:production_task_block' task.pk %}" class="btn btn-outline-danger">Block</a>
+          <a href="{% url 'furniture:production_task_complete' task.pk %}" class="btn btn-outline-success">Complete</a>
+          <a href="{% url 'furniture:production_task_delete' task.pk %}" class="btn btn-outline-dark">Cancel Task</a>
+        {% endif %}
+      </div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

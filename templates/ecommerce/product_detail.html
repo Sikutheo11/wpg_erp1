@@ -1,0 +1,319 @@
+{% extends "ecommerce/base_ecommerce.html" %}
+
+{% block title %}
+{{ product.title|default:product.product.name }} - WPG Ecommerce
+{% endblock %}
+
+
+{% block content %}
+
+<div class="container py-4">
+
+
+
+
+<!-- ================= BREADCRUMB ================= -->
+
+<nav class="mb-4 text-muted small">
+
+    <a href="{% url 'ecommerce:shop' %}" class="text-decoration-none">
+        Shop
+    </a>
+
+    <span> / </span>
+
+    <span class="text-dark">
+        {{ product.title|default:product.product.name }}
+    </span>
+
+</nav>
+
+
+
+
+
+<div class="row g-4">
+
+
+
+
+<!-- ================= IMAGE ================= -->
+
+<div class="col-md-5">
+
+    <div class="card shadow-sm">
+
+        {% if product.image %}
+
+        <img src="{{ product.image.url }}"
+             class="img-fluid rounded"
+             style="height:420px; object-fit:cover;">
+
+        {% else %}
+
+        <div class="bg-light d-flex align-items-center justify-content-center"
+             style="height:420px;">
+
+            <i class="bi bi-image fs-1 text-muted"></i>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+
+
+
+<!-- ================= INFO ================= -->
+
+<div class="col-md-7">
+
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+
+            <!-- TITLE -->
+
+            <h3 class="fw-bold">
+                {{ product.title|default:product.product.name }}
+            </h3>
+
+
+
+
+            <!-- FEATURED -->
+
+            {% if product.is_featured %}
+
+            <span class="badge bg-warning text-dark mb-2">
+                Featured
+            </span>
+
+            {% endif %}
+
+
+
+
+            <!-- PRICE -->
+
+            <h4 class="text-primary fw-bold mt-2">
+
+                {{ product.selling_price }} RWF
+
+            </h4>
+
+
+
+
+            <!-- VIEWS -->
+
+            <p class="text-muted small">
+
+                <i class="bi bi-eye"></i>
+
+                {{ product.views }} views
+
+            </p>
+
+
+
+
+            <!-- STOCK SAFE CHECK -->
+
+            {% with stock=product.product.current_stock %}
+
+                {% if stock|default:0 > 10 %}
+
+                    <span class="badge bg-success">
+                        In Stock
+                    </span>
+
+                {% elif stock|default:0 > 0 %}
+
+                    <span class="badge bg-warning text-dark">
+                        Low Stock ({{ stock }})
+                    </span>
+
+                {% else %}
+
+                    <span class="badge bg-danger">
+                        Out of Stock
+                    </span>
+
+                {% endif %}
+
+            {% endwith %}
+
+
+
+
+
+            <hr>
+
+
+
+
+            <!-- DESCRIPTION -->
+
+            <p class="text-muted">
+
+                {{ product.short_description }}
+
+            </p>
+
+
+
+
+
+            <!-- ================= ADD TO CART ================= -->
+
+            <form method="POST"
+                  action="{% url 'ecommerce:add_to_cart' product.id %}">
+
+                {% csrf_token %}
+
+                <div class="d-flex align-items-center gap-3 mb-3">
+
+                    <label class="fw-bold">Qty:</label>
+
+                    <input type="number"
+                           name="quantity"
+                           value="1"
+                           min="1"
+                           class="form-control w-25">
+
+                </div>
+
+
+
+
+                <button type="submit"
+                        class="btn btn-primary w-100">
+
+                    <i class="bi bi-cart-plus"></i>
+
+                    Add to Cart
+
+                </button>
+
+            </form>
+
+
+
+
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+
+
+
+
+<!-- ================= DESCRIPTION ================= -->
+
+<div class="row mt-4">
+
+    <div class="col-12">
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+                <h5 class="fw-bold mb-3">
+                    Product Description
+                </h5>
+
+                <p>
+                    {{ product.description|default:"No description available." }}
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+<!-- ================= RELATED PRODUCTS ================= -->
+
+<div class="mt-5">
+
+    <h5 class="fw-bold mb-3">
+        Related Products
+    </h5>
+
+    <div class="row g-3">
+
+        {% for item in related_products %}
+
+        <div class="col-md-3">
+
+            <a href="{% url 'ecommerce:product_detail' item.slug %}"
+               class="text-decoration-none text-dark">
+
+                <div class="card shadow-sm product-card">
+
+                    {% if item.image %}
+
+                    <img src="{{ item.image.url }}"
+                         class="card-img-top"
+                         style="height:180px; object-fit:cover;">
+
+                    {% else %}
+
+                    <div class="bg-light d-flex align-items-center justify-content-center"
+                         style="height:180px;">
+
+                        <i class="bi bi-image text-muted fs-3"></i>
+
+                    </div>
+
+                    {% endif %}
+
+                    <div class="card-body">
+
+                        <h6 class="mb-1">
+                            {{ item.title|default:item.product.name }}
+                        </h6>
+
+                        <span class="fw-bold text-primary">
+                            {{ item.selling_price }} RWF
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </a>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+
+
+
+
+</div>
+
+{% endblock %}

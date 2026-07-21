@@ -1,0 +1,9 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Assign Task{% endblock %}
+{% block page_title %}Assign Worker{% endblock %}
+{% block content %}
+<div class="container-fluid"><div class="row justify-content-center"><div class="col-lg-7"><div class="card border-0 shadow-sm"><div class="card-header bg-white"><h5 class="mb-0">Assign {{ task.name }}</h5></div><div class="card-body">
+<form method="post">{% csrf_token %}{% for field in form %}<div class="mb-3"><label class="form-label">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+<div class="text-end"><a href="{% url 'furniture:production_task_detail' task.pk %}" class="btn btn-outline-secondary">Cancel</a> <button class="btn btn-primary">Assign</button></div></form>
+</div></div></div></div></div>
+{% endblock %}

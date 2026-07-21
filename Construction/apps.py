@@ -11,7 +11,6 @@ class ConstructionConfig(AppConfig):
     def ready(self):
 
         from core.dashboard_registry import register_dashboard
-        from core.module_registry import register_module
         from .dashboard import get_construction_dashboard
 
 
@@ -23,11 +22,4 @@ class ConstructionConfig(AppConfig):
         )
 
 
-        # Register module
-
-        register_module(
-            name="Construction",
-            url_name="construction_dashboard",
-            icon="fa-building",
-            permission="construction.view_dashboard"
-        )
+       

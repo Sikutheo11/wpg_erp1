@@ -1,0 +1,1205 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+Production Job Detail
+{% endblock %}
+
+{% block page_title %}
+Production Job
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- ================================================= -->
+    <!-- HEADER -->
+    <!-- ================================================= -->
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+
+        <div>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                <h3 class="fw-bold mb-0">
+                    Production Job #{{ job.id }}
+                </h3>
+
+                {% if job.status == "DELIVERED" %}
+                    <span class="badge bg-success">Delivered</span>
+                {% elif job.status == "FINISHED_GOODS" %}
+                    <span class="badge bg-success">Finished Goods</span>
+                {% elif job.status == "QUALITY_CHECK" %}
+                    <span class="badge bg-info text-dark">Quality Check</span>
+                {% elif job.status == "IN_PRODUCTION" %}
+                    <span class="badge bg-primary">In Production</span>
+                {% elif job.status == "CANCELLED" %}
+                    <span class="badge bg-danger">Cancelled</span>
+                {% elif job.status == "APPROVED" %}
+                    <span class="badge bg-success">Approved</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark">
+                        {{ job.get_status_display }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <p class="text-muted mb-0">
+                {{ job.product|default:"No product selected" }}
+                ·
+                Quantity: {{ job.quantity_to_produce }}
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+            <a href="{% url 'furniture:production_task_create' %}?production_job={{ job.id }}"
+               class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>
+                Add Task
+            </a>
+
+            <a href="{% url 'furniture:production_job_quotation' job.id %}"
+               class="btn btn-outline-warning">
+                <i class="bi bi-file-earmark-text me-1"></i>
+                Quotation
+            </a>
+
+            <a href="{% url 'furniture:add_material' job.id %}"
+               class="btn btn-outline-success">
+                <i class="bi bi-tree me-1"></i>
+                Add Material
+            </a>
+
+            <a href="{% url 'furniture:add_labour' job.id %}"
+               class="btn btn-outline-info">
+                <i class="bi bi-people me-1"></i>
+                Add Labour
+            </a>
+
+            <a href="{% url 'furniture:add_machine' job.id %}"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-gear-wide-connected me-1"></i>
+                Add Machine
+            </a>
+
+            <a href="{% url 'furniture:add_output' job.id %}"
+               class="btn btn-outline-dark">
+                <i class="bi bi-box-seam me-1"></i>
+                Record Output
+            </a>
+            <a href="{% url 'furniture:production_job_cost_report' job.id %}"
+               class="btn btn-outline-dark">
+            <i class="fas fa-calculator"></i>
+            Cost Report
+            </a>
+            <form method="post"
+                action="{% url 'furniture:production_schedule' job.id %}"
+                class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-outline-primary">
+                    <i class="bi bi-calendar-check me-1"></i>
+                    Generate Schedule
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- JOB SUMMARY -->
+    <!-- ================================================= -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted">Assigned Worker</small>
+                    <h5 class="fw-bold mt-2 mb-0">
+                        {{ job.assigned_to|default:"Not assigned" }}
+                    </h5>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted">Expected End Date</small>
+                    <h5 class="fw-bold mt-2 mb-0">
+                        {{ job.expected_end_date|date:"d M Y"|default:"Not set" }}
+                    </h5>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted">Total Tasks</small>
+                    <h3 class="fw-bold mt-2 mb-0">
+                        {{ job.tasks.count }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted">Completed Tasks</small>
+                    <h3 class="fw-bold mt-2 mb-0">
+                        {{ completed_tasks_count|default:0 }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- OVERALL PROGRESS -->
+    <!-- ================================================= -->
+
+    <div class="card border-0 shadow-sm mb-4">
+
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">Overall Job Progress</h5>
+                    <small class="text-muted">
+                        Calculated from production tasks
+                    </small>
+                </div>
+
+                <strong class="fs-4">
+                    {{ overall_progress|default:0 }}%
+                </strong>
+            </div>
+        </div>
+
+        <div class="card-body">
+
+            <div class="progress"
+                 style="height: 16px;">
+
+                <div class="progress-bar"
+                     role="progressbar"
+                     style="width: {{ overall_progress|default:0 }}%;">
+
+                    {{ overall_progress|default:0 }}%
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- PRODUCTION PLANNING -->
+    <!-- ================================================= -->
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h5 class="mb-0">Production Planning</h5>
+                <small class="text-muted">
+                    Sequential schedule generated from task planned hours
+                </small>
+            </div>
+
+            <form method="post"
+                  action="{% url 'furniture:production_schedule' job.id %}"
+                  class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-calendar-check me-1"></i>
+                    Generate Schedule
+                </button>
+            </form>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block">Total Tasks</small>
+                        <h5 class="fw-bold mb-0">{{ job.tasks.count }}</h5>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block">Planning Method</small>
+                        <h6 class="fw-bold mb-0">Sequential</h6>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block">Schedule Status</small>
+                        {% if job.tasks.first.planned_start %}
+                            <span class="badge bg-success mt-1">Generated</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark mt-1">Not Generated</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">Production Cost Analysis</h5>
+                <small class="text-muted">
+                    Actual costs, unit economics and profitability
+                </small>
+            </div>
+
+            {% if cost_summary.is_profitable %}
+                <span class="badge bg-success">Profitable</span>
+            {% else %}
+                <span class="badge bg-danger">Loss Making</span>
+            {% endif %}
+        </div>
+
+        <div class="card-body">
+
+            <div class="row g-3 mb-4">
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block">Material Cost</small>
+                        <h5 class="fw-bold mb-0">
+                            {{ cost_summary.material_cost|floatformat:0 }} RWF
+                        </h5>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block">Labour Cost</small>
+                        <h5 class="fw-bold mb-0">
+                            {{ cost_summary.labour_cost|floatformat:0 }} RWF
+                        </h5>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block">Machine Cost</small>
+                        <h5 class="fw-bold mb-0">
+                            {{ cost_summary.machine_cost|floatformat:0 }} RWF
+                        </h5>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block">Actual Total Cost</small>
+                        <h5 class="fw-bold mb-0">
+                            {{ cost_summary.actual_total_cost|floatformat:0 }} RWF
+                        </h5>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Cost Per Unit</small>
+                    <strong>
+                        {{ cost_summary.cost_per_unit|floatformat:0 }} RWF
+                    </strong>
+                </div>
+
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Expected Revenue</small>
+                    <strong>
+                        {{ cost_summary.expected_revenue|floatformat:0 }} RWF
+                    </strong>
+                </div>
+
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Actual Profit</small>
+                    <strong class="{% if cost_summary.actual_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ cost_summary.actual_profit|floatformat:0 }} RWF
+                    </strong>
+                </div>
+
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Profit Per Unit</small>
+                    <strong>
+                        {{ cost_summary.profit_per_unit|floatformat:0 }} RWF
+                    </strong>
+                </div>
+
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Profit Margin</small>
+                    <strong>
+                        {{ cost_summary.profit_margin }}%
+                    </strong>
+                </div>
+
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Completion Rate</small>
+                    <strong>
+                        {{ cost_summary.completion_rate }}%
+                    </strong>
+                </div>
+
+            </div>
+
+            {% if not cost_summary.has_quotation %}
+            <div class="alert alert-warning mt-4 mb-0">
+                No quotation is linked to this production job. Revenue currently uses
+                the product catalogue price as a fallback.
+            </div>
+            {% elif cost_summary.is_over_budget %}
+            <div class="alert alert-danger mt-4 mb-0">
+                Actual production cost exceeds the quotation cost by
+                {{ cost_summary.cost_variance|floatformat:0 }} RWF.
+            </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- QUALITY CONTROL -->
+    <!-- ================================================= -->
+
+    <div class="card border-0 shadow-sm mb-4">
+
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+            <div>
+                <h5 class="mb-0">Quality Control</h5>
+                <small class="text-muted">
+                    Inspection, defects, rework and final approval
+                </small>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+
+                <a href="{% url 'furniture:quality_inspection_list' %}"
+                   class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-list-check me-1"></i>
+                    All Inspections
+                </a>
+
+                {% if not inspection %}
+
+                    {% if job.status == "IN_PRODUCTION" or job.status == "QUALITY_CHECK" %}
+                    <a href="{% url 'furniture:quality_inspection_create' job.pk %}"
+                       class="btn btn-sm btn-primary">
+                        <i class="bi bi-shield-plus me-1"></i>
+                        Create Inspection
+                    </a>
+                    {% endif %}
+
+                {% elif inspection.result == "PENDING" %}
+
+                    <a href="{% url 'furniture:quality_inspection_result' inspection.pk %}"
+                       class="btn btn-sm btn-warning">
+                        <i class="bi bi-clipboard-check me-1"></i>
+                        Record Result
+                    </a>
+
+                    <a href="{% url 'furniture:quality_inspection_detail' inspection.pk %}"
+                       class="btn btn-sm btn-outline-primary">
+                        View Inspection
+                    </a>
+
+                {% elif inspection.result == "FAILED" or inspection.result == "CONDITIONAL" %}
+
+                    <a href="{% url 'furniture:quality_inspection_detail' inspection.pk %}"
+                       class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        View Inspection
+                    </a>
+
+                    <a href="{% url 'furniture:production_defect_create' inspection.pk %}"
+                       class="btn btn-sm btn-danger">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Add Defect
+                    </a>
+
+                {% elif inspection.result == "PASSED" and not inspection.approved_at %}
+
+                    <a href="{% url 'furniture:quality_inspection_detail' inspection.pk %}"
+                       class="btn btn-sm btn-outline-success">
+                        View Inspection
+                    </a>
+
+                    <form method="post"
+                          action="{% url 'furniture:quality_inspection_approve' inspection.pk %}"
+                          class="d-inline">
+                        {% csrf_token %}
+
+                        <button type="submit"
+                                class="btn btn-sm btn-success">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Approve Finished Goods
+                        </button>
+                    </form>
+
+                {% elif inspection.result == "PASSED" and inspection.approved_at %}
+
+                    <a href="{% url 'furniture:quality_inspection_detail' inspection.pk %}"
+                       class="btn btn-sm btn-outline-success">
+                        View Approved Inspection
+                    </a>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        <div class="card-body">
+
+            {% if not inspection %}
+
+                <div class="text-center py-4">
+                    <i class="bi bi-shield-exclamation fs-1 text-muted"></i>
+
+                    <h6 class="mt-3 mb-1">
+                        No quality inspection has been created
+                    </h6>
+
+                    <p class="text-muted mb-3">
+                        A final inspection must be completed before the job can be approved as finished goods.
+                    </p>
+
+                    {% if job.status == "IN_PRODUCTION" or job.status == "QUALITY_CHECK" %}
+                    <a href="{% url 'furniture:quality_inspection_create' job.pk %}"
+                       class="btn btn-primary">
+                        <i class="bi bi-shield-plus me-1"></i>
+                        Create Inspection
+                    </a>
+                    {% else %}
+                    <div class="alert alert-light border mb-0">
+                        Inspection is unavailable while the job status is
+                        <strong>{{ job.get_status_display }}</strong>.
+                    </div>
+                    {% endif %}
+                </div>
+
+            {% else %}
+
+                <div class="row g-3">
+
+                    <div class="col-xl-3 col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <small class="text-muted d-block">
+                                Latest Inspection
+                            </small>
+
+                            <a href="{% url 'furniture:quality_inspection_detail' inspection.pk %}"
+                               class="fw-bold text-decoration-none">
+                                Inspection #{{ inspection.pk }}
+                            </a>
+
+                            <small class="d-block text-muted mt-1">
+                                {{ inspection.get_inspection_type_display }}
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <small class="text-muted d-block">
+                                Result
+                            </small>
+
+                            <div class="mt-2">
+                                {% if inspection.result == "PASSED" %}
+                                    <span class="badge bg-success">Passed</span>
+                                {% elif inspection.result == "FAILED" %}
+                                    <span class="badge bg-danger">Failed</span>
+                                {% elif inspection.result == "CONDITIONAL" %}
+                                    <span class="badge bg-info text-dark">
+                                        Conditional
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">
+                                        Pending
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <small class="text-muted d-block">
+                                Quality Score
+                            </small>
+
+                            <h5 class="fw-bold mb-0 mt-2">
+                                {{ inspection.score|default:0 }}/100
+                            </h5>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <small class="text-muted d-block">
+                                Defects
+                            </small>
+
+                            <h5 class="fw-bold mb-0 mt-2">
+                                {{ inspection.defects.count }}
+                            </h5>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">
+                            Inspector
+                        </small>
+                        <strong>
+                            {{ inspection.inspector|default:"Unassigned" }}
+                        </strong>
+                    </div>
+
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">
+                            Quantity Inspected
+                        </small>
+                        <strong>
+                            {{ inspection.quantity_inspected }}
+                        </strong>
+                    </div>
+
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">
+                            Final Approval
+                        </small>
+
+                        {% if inspection.approved_at %}
+                            <strong class="text-success">
+                                Approved by {{ inspection.approved_by|default:"Manager" }}
+                            </strong>
+
+                            <small class="d-block text-muted">
+                                {{ inspection.approved_at|date:"d M Y H:i" }}
+                            </small>
+                        {% else %}
+                            <strong class="text-muted">
+                                Not approved
+                            </strong>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                {% if inspection.result == "FAILED" or inspection.result == "CONDITIONAL" %}
+                <div class="alert alert-danger mt-4 mb-0 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <strong>Quality action required.</strong>
+                        Review the recorded defects and create rework orders where necessary.
+                    </div>
+
+                    <a href="{% url 'furniture:quality_inspection_detail' inspection.pk %}"
+                       class="btn btn-sm btn-light">
+                        Review Quality Issues
+                    </a>
+                </div>
+                {% elif inspection.result == "PASSED" and not inspection.approved_at %}
+                <div class="alert alert-success mt-4 mb-0">
+                    The inspection passed. Final managerial approval is required before finished-goods processing.
+                </div>
+                {% elif inspection.approved_at %}
+                <div class="alert alert-success mt-4 mb-0">
+                    Quality approval is complete and the production job is approved as finished goods.
+                </div>
+                {% endif %}
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- PRODUCTION TASKS -->
+    <!-- ================================================= -->
+
+    <div class="card border-0 shadow-sm mb-4">
+
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+
+            <div>
+                <h5 class="mb-0">Production Tasks</h5>
+                <small class="text-muted">
+                    Task execution, workers and progress
+                </small>
+            </div>
+
+            <a href="{% url 'furniture:production_task_create' %}?production_job={{ job.id }}"
+               class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>
+                New Task
+            </a>
+
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Sequence</th>
+                        <th>Task</th>
+                        <th>Work Center</th>
+                        <th>Worker</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Schedule</th>
+                        <th>Hours</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for task in job.tasks.all %}
+
+                    <tr>
+
+                        <td>
+                            {{ task.sequence }}
+                        </td>
+
+                        <td>
+                            <a href="{% url 'furniture:production_task_detail' task.id %}"
+                               class="fw-semibold text-decoration-none">
+                                {{ task.name }}
+                            </a>
+
+                            <small class="d-block text-muted">
+                                {{ task.get_task_type_display }}
+                            </small>
+                        </td>
+
+                        <td>
+                            {% if task.work_center %}
+                                <span class="badge bg-light text-dark border">
+                                    {{ task.work_center.name }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ task.assigned_to|default:"Unassigned" }}
+                        </td>
+
+                        <td>
+                            {% if task.status == "COMPLETED" %}
+                                <span class="badge bg-success">Completed</span>
+                            {% elif task.status == "IN_PROGRESS" %}
+                                <span class="badge bg-primary">In Progress</span>
+                            {% elif task.status == "PAUSED" %}
+                                <span class="badge bg-warning text-dark">Paused</span>
+                            {% elif task.status == "BLOCKED" %}
+                                <span class="badge bg-danger">Blocked</span>
+                            {% elif task.status == "CANCELLED" %}
+                                <span class="badge bg-dark">Cancelled</span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    {{ task.get_status_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td style="min-width: 170px;">
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar"
+                                     role="progressbar"
+                                     style="width: {{ task.progress_percentage }}%;"
+                                     aria-valuenow="{{ task.progress_percentage }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+
+                            <small class="text-muted">
+                                {{ task.progress_percentage }}%
+                            </small>
+                        </td>
+
+                        <td style="min-width: 150px;">
+                            {% if task.planned_start and task.planned_end %}
+                                <small class="d-block fw-semibold">
+                                    {{ task.planned_start|date:"d M Y H:i" }}
+                                </small>
+                                <small class="text-muted">
+                                    → {{ task.planned_end|date:"d M Y H:i" }}
+                                </small>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">
+                                    Not Scheduled
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <small class="d-block">
+                                Planned: {{ task.planned_hours }} h
+                            </small>
+
+                            <small class="text-muted">
+                                Actual: {{ task.actual_hours }} h
+                            </small>
+                        </td>
+
+                        <td class="text-end">
+                            <div class="btn-group">
+                                <a href="{% url 'furniture:production_task_detail' task.id %}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Open
+                                </a>
+
+                                {% if task.status != "COMPLETED" and task.status != "CANCELLED" %}
+                                    <a href="{% url 'furniture:production_task_progress' task.id %}"
+                                       class="btn btn-sm btn-primary">
+                                        Update
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="9"
+                            class="text-center text-muted py-5">
+
+                            <i class="bi bi-list-task fs-2 d-block mb-2"></i>
+
+                            No production tasks created for this job.
+
+                            <div class="mt-3">
+
+                                <a href="{% url 'furniture:production_task_create' %}?production_job={{ job.id }}"
+                                   class="btn btn-primary btn-sm">
+                                    Create First Task
+                                </a>
+
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <div class="row g-4 mb-4">
+
+        <!-- ================================================= -->
+        <!-- MATERIALS -->
+        <!-- ================================================= -->
+
+        <div class="col-xl-4">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-white d-flex justify-content-between">
+                    <strong>Materials Used</strong>
+
+                    <a href="{% url 'furniture:add_material' job.id %}"
+                       class="btn btn-sm btn-outline-success">
+                        Add
+                    </a>
+                </div>
+
+                <div class="card-body">
+
+                    {% for material in job.materials.all %}
+
+                    <div class="border-bottom py-2">
+
+                        <strong>
+                            {{ material.raw_material }}
+                        </strong>
+
+                        <small class="d-block text-muted">
+                            Quantity: {{ material.quantity_used }}
+                        </small>
+
+                        <small class="d-block">
+                            Cost: {{ material.total_cost|floatformat:0 }} RWF
+                        </small>
+
+                    </div>
+
+                    {% empty %}
+
+                    <p class="text-muted mb-0">
+                        No material consumption recorded.
+                    </p>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- LABOUR -->
+        <!-- ================================================= -->
+
+        <div class="col-xl-4">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-white d-flex justify-content-between">
+                    <strong>Labour</strong>
+
+                    <a href="{% url 'furniture:add_labour' job.id %}"
+                       class="btn btn-sm btn-outline-info">
+                        Add
+                    </a>
+                </div>
+
+                <div class="card-body">
+
+                    {% for labour in job.labours.all %}
+
+                    <div class="border-bottom py-2">
+
+                        <strong>
+                            {{ labour.employee }}
+                        </strong>
+
+                        <small class="d-block text-muted">
+                            {{ labour.hours_worked }} hour(s)
+                        </small>
+
+                        <small class="d-block">
+                            Cost: {{ labour.total_cost|floatformat:0 }} RWF
+                        </small>
+
+                    </div>
+
+                    {% empty %}
+
+                    <p class="text-muted mb-0">
+                        No labour records.
+                    </p>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- MACHINES -->
+        <!-- ================================================= -->
+
+        <div class="col-xl-4">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-white d-flex justify-content-between">
+                    <strong>Machines</strong>
+
+                    <a href="{% url 'furniture:add_machine' job.id %}"
+                       class="btn btn-sm btn-outline-secondary">
+                        Add
+                    </a>
+                </div>
+
+                <div class="card-body">
+
+                    {% for machine in job.machines.all %}
+
+                    <div class="border-bottom py-2">
+
+                        <strong>
+                            {{ machine.asset }}
+                        </strong>
+
+                        <small class="d-block text-muted">
+                            {{ machine.hours_used }} hour(s)
+                        </small>
+
+                        <small class="d-block">
+                            Cost: {{ machine.total_cost|floatformat:0 }} RWF
+                        </small>
+
+                    </div>
+
+                    {% empty %}
+
+                    <p class="text-muted mb-0">
+                        No machine usage records.
+                    </p>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="row g-4 mb-4">
+
+        <!-- ================================================= -->
+        <!-- QUOTATION -->
+        <!-- ================================================= -->
+
+        <div class="col-xl-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-white">
+                    <strong>Quotation</strong>
+                </div>
+
+                <div class="card-body">
+
+                    {% if job.quotation %}
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">
+                                    Material Cost
+                                </small>
+                                <strong>
+                                    {{ job.quotation.material_cost|floatformat:0 }} RWF
+                                </strong>
+                            </div>
+
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">
+                                    Labour Cost
+                                </small>
+                                <strong>
+                                    {{ job.quotation.labour_cost|floatformat:0 }} RWF
+                                </strong>
+                            </div>
+
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">
+                                    Machine Cost
+                                </small>
+                                <strong>
+                                    {{ job.quotation.machine_cost|floatformat:0 }} RWF
+                                </strong>
+                            </div>
+
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">
+                                    Selling Price
+                                </small>
+                                <strong>
+                                    {{ job.quotation.selling_price|floatformat:0 }} RWF
+                                </strong>
+                            </div>
+
+                            <div class="col-12">
+                                <span class="badge bg-secondary">
+                                    {{ job.quotation.get_status_display }}
+                                </span>
+                            </div>
+
+                        </div>
+
+                    {% else %}
+
+                        <p class="text-muted">
+                            No quotation created.
+                        </p>
+
+                        <a href="{% url 'furniture:production_job_quotation' job.id %}"
+                           class="btn btn-outline-warning btn-sm">
+                            Create Quotation
+                        </a>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- OUTPUTS -->
+        <!-- ================================================= -->
+
+        <div class="col-xl-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-white d-flex justify-content-between">
+                    <strong>Production Outputs</strong>
+
+                    <a href="{% url 'furniture:add_output' job.id %}"
+                       class="btn btn-sm btn-outline-dark">
+                        Record Output
+                    </a>
+                </div>
+
+                <div class="card-body">
+
+                    {% for output in job.outputs.all %}
+
+                    <div class="row g-3 border-bottom py-2">
+
+                        <div class="col-md-8">
+
+                            <strong>
+                                {{ output.product }}
+                            </strong>
+
+                            <small class="d-block text-muted">
+                                Quantity: {{ output.quantity_produced }}
+                            </small>
+
+                            <small class="d-block text-muted">
+                                {{ output.produced_at|date:"d M Y H:i" }}
+                            </small>
+
+                        </div>
+
+                        <div class="col-md-4">
+
+                            {% if output.image %}
+
+                            <img src="{{ output.image.url }}"
+                                 class="img-fluid rounded"
+                                 alt="Production output"
+                                 style="max-height: 100px; width: 100%; object-fit: cover;">
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                    {% empty %}
+
+                    <p class="text-muted mb-0">
+                        No production outputs recorded.
+                    </p>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- TIMELINE -->
+    <!-- ================================================= -->
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white">
+            <strong>Production Timeline</strong>
+        </div>
+
+        <div class="card-body">
+
+            {% for event in job.timeline.all %}
+
+            <div class="d-flex border-bottom py-3">
+
+                <div class="me-3">
+                    <span class="badge rounded-pill bg-primary">
+                        <i class="bi bi-clock-history"></i>
+                    </span>
+                </div>
+
+                <div>
+
+                    <strong>
+                        {{ event.action }}
+                    </strong>
+
+                    {% if event.from_status or event.to_status %}
+                    <small class="d-block">
+                        {{ event.from_status|default:"-" }}
+                        →
+                        {{ event.to_status|default:"-" }}
+                    </small>
+                    {% endif %}
+
+                    {% if event.note %}
+                    <p class="small mb-1 mt-1">
+                        {{ event.note }}
+                    </p>
+                    {% endif %}
+
+                    <small class="text-muted">
+                        {{ event.created_at|date:"d M Y H:i" }}
+                        {% if event.performed_by %}
+                            · {{ event.performed_by }}
+                        {% endif %}
+                    </small>
+
+                </div>
+
+            </div>
+
+            {% empty %}
+
+            <p class="text-muted mb-0">
+                No production timeline available.
+            </p>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
