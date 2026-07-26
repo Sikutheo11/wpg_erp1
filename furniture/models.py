@@ -2088,3 +2088,5 @@ class ReworkOrder(models.Model):
 
     def __str__(self):
         return self.rework_code
+
+

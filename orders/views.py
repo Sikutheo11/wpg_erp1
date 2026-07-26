@@ -1,155 +1,1134 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
+from urllib.parse import urlencode
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.db.models import Q
 
-from .models import Order
-from .forms import RestockOrderForm, RestockOrderItemForm
-from .services import OrderService
+from django.shortcuts import (
+    get_object_or_404,
+    redirect,
+    render,
+)
+from django.urls import reverse
+from .forms import (
+    OrderForm,
+    OrderItemForm,
+)
+from .models import (
+    Order,
+    OrderItem,
+)
+from orders.services import DeliveryService
+from .services import (
+    OrderService,
+    OrderItemService,
+    OrderRoutingService,
+    OrderFulfilmentService,
+    DeliveryService,
+)
 
+
+# =========================================================
+# BUSINESS UNIT CONFIGURATION
+# =========================================================
+
+BUSINESS_UNITS_CONFIG = [
+    {
+        "code": "FURNITURE",
+        "name": "Furniture & Manufacturing",
+        "description": (
+            "Furniture sales, custom furniture, "
+            "restocking and product development."
+        ),
+        "icon": "bi bi-hammer",
+    },
+    {
+        "code": "CONSTRUCTION",
+        "name": "Construction",
+        "description": (
+            "Construction projects, renovation, "
+            "installation and contract services."
+        ),
+        "icon": "bi bi-building",
+    },
+    {
+        "code": "AGRICULTURE",
+        "name": "Agriculture / Poultry",
+        "description": (
+            "Eggs, chicks, chickens, feed, manure "
+            "and other poultry products."
+        ),
+        "icon": "bi bi-egg",
+    },
+    {
+        "code": "MARKETPLACE",
+        "name": "Marketplace",
+        "description": (
+            "Online orders for products from "
+            "different WPG business units."
+        ),
+        "icon": "bi bi-shop",
+    },
+]
+
+
+# =========================================================
+# ORDER TYPES BY BUSINESS UNIT
+# =========================================================
+
+ORDER_TYPES_BY_UNIT = {
+    "FURNITURE": [
+        {
+            "code": "ECOMMERCE",
+            "name": "Ecommerce Order",
+            "description": "Online furniture order.",
+            "icon": "bi bi-cart",
+        },
+        {
+            "code": "CUSTOM_FURNITURE",
+            "name": "Custom Furniture Order",
+            "description": (
+                "Furniture made according to "
+                "customer specifications."
+            ),
+            "icon": "bi bi-rulers",
+        },
+        {
+            "code": "RESTOCK",
+            "name": "Restock Existing Product",
+            "description": (
+                "Produce furniture to replenish stock."
+            ),
+            "icon": "bi bi-box-seam",
+        },
+        {
+            "code": "NEW_PRODUCT",
+            "name": "New Product Development",
+            "description": (
+                "Develop or prototype a new product."
+            ),
+            "icon": "bi bi-lightbulb",
+        },
+        {
+            "code": "POS",
+            "name": "Point of Sale",
+            "description": (
+                "Direct sale from showroom or shop."
+            ),
+            "icon": "bi bi-shop-window",
+        },
+    ],
+
+    "CONSTRUCTION": [
+        {
+            "code": "PROJECT",
+            "name": "Construction Project",
+            "description": (
+                "New building or construction contract."
+            ),
+            "icon": "bi bi-building",
+        },
+        {
+            "code": "CUSTOM_ORDER",
+            "name": "Custom Construction Order",
+            "description": (
+                "Customer-specific construction work."
+            ),
+            "icon": "bi bi-tools",
+        },
+        {
+            "code": "MAINTENANCE",
+            "name": "Renovation / Maintenance",
+            "description": (
+                "Repair, renovation or maintenance work."
+            ),
+            "icon": "bi bi-wrench-adjustable",
+        },
+    ],
+
+    "AGRICULTURE": [
+        {
+            "code": "ECOMMERCE",
+            "name": "Ecommerce Order",
+            "description": (
+                "Online order for poultry products."
+            ),
+            "icon": "bi bi-cart",
+        },
+        {
+            "code": "RESTOCK",
+            "name": "Restock Order",
+            "description": (
+                "Produce or acquire poultry products "
+                "to replenish stock."
+            ),
+            "icon": "bi bi-box-seam",
+        },
+        {
+            "code": "CUSTOM_ORDER",
+            "name": "Customer Supply Order",
+            "description": (
+                "Special supply request from a customer."
+            ),
+            "icon": "bi bi-clipboard-check",
+        },
+        {
+            "code": "POS",
+            "name": "Point of Sale",
+            "description": (
+                "Direct poultry product sale."
+            ),
+            "icon": "bi bi-shop",
+        },
+    ],
+
+    "MARKETPLACE": [
+        {
+            "code": "ECOMMERCE",
+            "name": "Marketplace Order",
+            "description": (
+                "Online order routed to the owning "
+                "business unit."
+            ),
+            "icon": "bi bi-bag",
+        },
+    ],
+}
+
+
+def _order_type_url(business_unit):
+    """
+    Build the order type selection URL with its query parameter.
+    """
+
+    base_url = reverse(
+        "orders:order_type_select"
+    )
+
+    query_string = urlencode(
+        {
+            "business_unit": business_unit,
+        }
+    )
+
+    return f"{base_url}?{query_string}"
+
+
+def _validation_message(error):
+    """
+    Convert Django ValidationError into one readable message.
+    """
+
+    if hasattr(error, "messages"):
+        return "; ".join(error.messages)
+
+    return str(error)
+
+
+# =========================================================
+# SELECT BUSINESS UNIT
+# =========================================================
+
+@login_required
+def business_unit_select(request):
+    return render(
+        request,
+        "orders/business_unit_select.html",
+        {
+            "business_units": BUSINESS_UNITS_CONFIG,
+        },
+    )
+
+
+# =========================================================
+# SELECT ORDER TYPE
+# =========================================================
+
+@login_required
+def order_type_select(request):
+    business_unit = request.GET.get(
+        "business_unit",
+        "",
+    ).strip().upper()
+
+    valid_business_units = {
+        value
+        for value, label in Order.BUSINESS_UNITS
+    }
+
+    if business_unit not in valid_business_units:
+        messages.info(
+            request,
+            "Select a valid business unit first.",
+        )
+
+        return redirect(
+            "orders:business_unit_select"
+        )
+
+    order_types = ORDER_TYPES_BY_UNIT.get(
+        business_unit,
+        [],
+    )
+
+    if not order_types:
+        messages.warning(
+            request,
+            (
+                "No order types are configured "
+                "for the selected business unit."
+            ),
+        )
+
+        return redirect(
+            "orders:business_unit_select"
+        )
+
+    return render(
+        request,
+        "orders/order_type_select.html",
+        {
+            "business_unit": business_unit,
+            "business_unit_display": dict(
+                Order.BUSINESS_UNITS
+            ).get(
+                business_unit,
+                business_unit,
+            ),
+            "order_types": order_types,
+        },
+    )
+
+
+# =========================================================
+# CREATE ORDER
+# =========================================================
+
+@login_required
+def order_create(request):
+    business_unit = (
+        request.GET.get("business_unit")
+        or request.POST.get("business_unit")
+        or ""
+    ).strip().upper()
+
+    order_type = (
+        request.GET.get("type")
+        or request.POST.get("order_type")
+        or ""
+    ).strip().upper()
+
+    valid_business_units = {
+        value
+        for value, label in Order.BUSINESS_UNITS
+    }
+
+    valid_model_order_types = {
+        value
+        for value, label in Order.ORDER_TYPES
+    }
+
+    if business_unit not in valid_business_units:
+        messages.info(
+            request,
+            "Select a valid business unit first.",
+        )
+
+        return redirect(
+            "orders:business_unit_select"
+        )
+
+    configured_types = {
+        item["code"]
+        for item in ORDER_TYPES_BY_UNIT.get(
+            business_unit,
+            [],
+        )
+    }
+
+    if order_type not in configured_types:
+        messages.info(
+            request,
+            (
+                "Select an order type that belongs "
+                "to the selected business unit."
+            ),
+        )
+
+        return redirect(
+            _order_type_url(
+                business_unit
+            )
+        )
+
+    if order_type not in valid_model_order_types:
+        messages.error(
+            request,
+            (
+                f"The order type '{order_type}' is not yet "
+                "registered in Order.ORDER_TYPES."
+            ),
+        )
+
+        return redirect(
+            _order_type_url(
+                business_unit
+            )
+        )
+
+    if request.method == "POST":
+        form = OrderForm(
+            request.POST,
+            order_type=order_type,
+            business_unit=business_unit,
+        )
+
+        if form.is_valid():
+            data = form.cleaned_data
+
+            try:
+                order = OrderService.create_order(
+                    user=request.user,
+                    business_unit=business_unit,
+                    order_type=order_type,
+                    customer_name=data.get("customer_name", ""),
+                    customer_phone=data.get("customer_phone", ""),
+                    customer_email=data.get("customer_email", ""),
+                    province=data.get("province", ""),
+                    district=data.get("district", ""),
+                    sector=data.get("sector", ""),
+                    cell=data.get("cell", ""),
+                    village=data.get("village", ""),
+                    delivery_address=data.get("delivery_address", ""),
+                    notes=data.get("notes", ""),
+                    discount=data.get("discount", 0),
+                    tax=data.get("tax", 0),
+                    expected_delivery_date=data.get(
+                        "expected_delivery_date"
+                    ),
+                )
+
+            except ValidationError as error:
+                form.add_error(
+                    None,
+                    _validation_message(error),
+                )
+
+            else:
+                messages.success(
+                    request,
+                    (
+                        f"Order {order.order_number} "
+                        "created successfully."
+                    ),
+                )
+
+                return redirect(
+                    "orders:order_detail",
+                    pk=order.pk,
+                )
+
+    else:
+        form = OrderForm(
+            order_type=order_type,
+            business_unit=business_unit,
+        )
+
+    return render(
+        request,
+        "orders/order_form.html",
+        {
+            "form": form,
+            "business_unit": business_unit,
+            "order_type": order_type,
+            "business_unit_display": dict(
+                Order.BUSINESS_UNITS
+            ).get(
+                business_unit,
+                business_unit,
+            ),
+            "order_type_display": dict(
+                Order.ORDER_TYPES
+            ).get(
+                order_type,
+                order_type,
+            ),
+        },
+    )
+
+# =========================================================
+# ORDER LIST
+# =========================================================
 
 @login_required
 def order_list(request):
+    orders = (
+        Order.objects
+        .select_related(
+            "user",
+            "delivered_by",
+        )
+        .prefetch_related(
+            "items",
+        )
+        .order_by("-created_at")
+    )
 
-    status = request.GET.get("status")
+    search = (
+        request.GET.get("q", "")
+        .strip()
+    )
 
-    orders = Order.objects.all().order_by("-created_at")
+    status = (
+        request.GET.get("status", "")
+        .strip()
+        .upper()
+    )
 
-    if status:
-        orders = orders.filter(status=status)
+    business_unit = (
+        request.GET.get("business_unit", "")
+        .strip()
+        .upper()
+    )
+
+    order_type = (
+        request.GET.get("order_type", "")
+        .strip()
+        .upper()
+    )
+
+    if search:
+        orders = orders.filter(
+            Q(order_number__icontains=search)
+            | Q(customer_name__icontains=search)
+            | Q(customer_phone__icontains=search)
+            | Q(customer_email__icontains=search)
+        )
+
+    valid_statuses = {
+        value
+        for value, label in Order.STATUS
+    }
+
+    if status in valid_statuses:
+        orders = orders.filter(
+            status=status
+        )
+
+    valid_business_units = {
+        value
+        for value, label in Order.BUSINESS_UNITS
+    }
+
+    if business_unit in valid_business_units:
+        orders = orders.filter(
+            business_unit=business_unit
+        )
+
+    valid_order_types = {
+        value
+        for value, label in Order.ORDER_TYPES
+    }
+
+    if order_type in valid_order_types:
+        orders = orders.filter(
+            order_type=order_type
+        )
+
+    summary = {
+        "total_orders": orders.count(),
+        "draft_orders": orders.filter(
+            status="DRAFT"
+        ).count(),
+        "pending_orders": orders.filter(
+            status="PENDING"
+        ).count(),
+        "confirmed_orders": orders.filter(
+            status="CONFIRMED"
+        ).count(),
+        "in_production_orders": orders.filter(
+            status="IN_PRODUCTION"
+        ).count(),
+        "ready_orders": orders.filter(
+            status="READY"
+        ).count(),
+        "delivered_orders": orders.filter(
+            status="DELIVERED"
+        ).count(),
+    }
 
     return render(
         request,
         "orders/order_list.html",
         {
             "orders": orders,
-            "status": status,
-        }
+            "summary": summary,
+            "search": search,
+            "selected_status": status,
+            "selected_business_unit": business_unit,
+            "selected_order_type": order_type,
+            "status_choices": Order.STATUS,
+            "business_unit_choices": (
+                Order.BUSINESS_UNITS
+            ),
+            "order_type_choices": (
+                Order.ORDER_TYPES
+            ),
+        },
     )
 
+
+# =========================================================
+# ORDER DETAIL
+# =========================================================
 
 @login_required
-def order_detail(request, order_id):
-
+def order_detail(request, pk):
     order = get_object_or_404(
-        Order,
-        id=order_id
+        Order.objects.select_related(
+            "user",
+            "delivered_by",
+        ).prefetch_related(
+            "items__product",
+        ),
+        pk=pk,
     )
+
+    items = order.items.all()
+
+    item_form = OrderItemForm(
+        order_type=order.order_type,
+        business_unit=order.business_unit,
+    )
+
+    can_edit_items = order.status in {
+        "DRAFT",
+        "PENDING",
+    }
+
+    can_submit = (
+        order.status == "DRAFT"
+        and items.exists()
+    )
+
+    can_confirm = (
+        order.status == "PENDING"
+    )
+
+    can_cancel = order.status not in {
+        "DELIVERED",
+        "COMPLETED",
+        "CANCELLED",
+    }
 
     return render(
         request,
         "orders/order_detail.html",
         {
-            "order": order
-        }
+            "order": order,
+            "items": items,
+            "item_form": item_form,
+            "can_edit_items": can_edit_items,
+            "can_submit": can_submit,
+            "can_confirm": can_confirm,
+            "can_cancel": can_cancel,
+        },
     )
 
+
+# =========================================================
+# ADD ORDER ITEM
+# =========================================================
 
 @login_required
-def update_order_status(request, order_id):
-
+def add_order_item(request, pk):
     order = get_object_or_404(
         Order,
-        id=order_id
+        pk=pk,
     )
 
-    if request.method == "POST":
-
-        new_status = request.POST.get("status")
-
-        OrderService.update_status(
-            order=order,
-            new_status=new_status,
-            user=request.user
+    if order.status not in {
+        "DRAFT",
+        "PENDING",
+    }:
+        messages.error(
+            request,
+            (
+                "Items cannot be added to an order "
+                "in its current status."
+            ),
         )
 
-        messages.success(
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    if request.method != "POST":
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    form = OrderItemForm(
+        request.POST,
+        order_type=order.order_type,
+        business_unit=order.business_unit,
+    )
+
+    if form.is_valid():
+        data = form.cleaned_data
+
+        try:
+            item = OrderItemService.add_item(
+                order=order,
+                product=data.get("product"),
+                product_name=data.get(
+                    "product_name",
+                    "",
+                ),
+                quantity=data.get(
+                    "quantity"
+                ),
+                specifications=data.get(
+                    "specifications",
+                    "",
+                ),
+                actor=request.user,
+            )
+
+        except ValidationError as error:
+            messages.error(
+                request,
+                _validation_message(error),
+            )
+
+        else:
+            messages.success(
+                request,
+                (
+                    f"{item.product_name} was added "
+                    f"to order {order.order_number}."
+                ),
+            )
+
+    else:
+        error_messages = []
+
+        for errors in form.errors.values():
+            for error in errors:
+                error_messages.append(
+                    str(error)
+                )
+
+        messages.error(
             request,
-            "Order status updated successfully."
+            "; ".join(error_messages),
         )
 
     return redirect(
         "orders:order_detail",
-        order_id=order.id
+        pk=order.pk,
     )
 
+# =========================================================
+# EDIT ORDER ITEM
+# =========================================================
 
 @login_required
-def restock_order_create(request):
+def edit_order_item(request, pk):
+    item = get_object_or_404(
+        OrderItem.objects.select_related(
+            "order",
+            "product",
+        ),
+        pk=pk,
+    )
 
-    order_form = RestockOrderForm(request.POST or None)
-    item_form = RestockOrderItemForm(request.POST or None)
+    order = item.order
+
+    if order.status not in {
+        "DRAFT",
+        "PENDING",
+    }:
+        messages.error(
+            request,
+            (
+                "Items cannot be edited after "
+                "the order has been confirmed."
+            ),
+        )
+
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
 
     if request.method == "POST":
+        form = OrderItemForm(
+            request.POST,
+            instance=item,
+            order_type=order.order_type,
+            business_unit=order.business_unit,
+        )
 
-        if order_form.is_valid() and item_form.is_valid():
+        if form.is_valid():
+            data = form.cleaned_data
 
-            order = order_form.save(commit=False)
+            product = data.get("product")
 
-            order.user = request.user
-            order.order_type = "PRODUCTION"
-            order.status = "PENDING"
+            product_name = (
+                data.get("product_name")
+                or getattr(
+                    product,
+                    "name",
+                    "",
+                )
+            )
 
-            order.save()
+            item.product = product
+            item.product_name = product_name
+            item.quantity = data["quantity"]
+            item.specifications = data.get(
+                "specifications",
+                "",
+            )
 
-            item = item_form.save(commit=False)
-
-            item.order = order
-            item.product_name = item.product.name
+            if product:
+                item.price = getattr(
+                    product,
+                    "selling_price",
+                    item.price,
+                )
 
             item.save()
 
-            order.subtotal = item.subtotal
-            order.save()
-
-            job = OrderService.create_production_job_from_order(
-                order=order,
-                user=request.user
+            OrderService.recalculate_totals(
+                order
             )
 
             messages.success(
                 request,
-                "Restock order and production job created successfully."
+                "Order item updated successfully.",
             )
 
             return redirect(
-                "furniture:production_job_detail",
-                pk=job.id
+                "orders:order_detail",
+                pk=order.pk,
             )
 
-        messages.error(
-            request,
-            "Please correct the errors below."
+    else:
+        form = OrderItemForm(
+            instance=item,
+            order_type=order.order_type,
+            business_unit=order.business_unit,
         )
 
     return render(
         request,
-        "orders/restock_order_form.html",
+        "orders/order_item_form.html",
         {
-            "order_form": order_form,
-            "item_form": item_form,
-        }
+            "form": form,
+            "order": order,
+            "item": item,
+            "page_title": "Edit Order Item",
+        },
     )
-
+# =========================================================
+# REMOVE ORDER ITEM
+# =========================================================
 
 @login_required
-def create_production_job(request, order_id):
+def remove_order_item(request, pk):
+    item = get_object_or_404(
+        OrderItem.objects.select_related(
+            "order",
+        ),
+        pk=pk,
+    )
+
+    order = item.order
+
+    if request.method != "POST":
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    try:
+        OrderService.remove_item(
+            item
+        )
+
+    except ValidationError as error:
+        messages.error(
+            request,
+            _validation_message(error),
+        )
+
+    else:
+        messages.success(
+            request,
+            "Order item removed successfully.",
+        )
+
+    return redirect(
+        "orders:order_detail",
+        pk=order.pk,
+    )
+
+# =========================================================
+# SUBMIT ORDER
+# =========================================================
+
+@login_required
+def submit_order(request, pk):
+    order = get_object_or_404(
+        Order,
+        pk=pk,
+    )
+
+    if request.method != "POST":
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    try:
+        OrderService.submit(
+            order=order,
+            actor=request.user,
+        )
+
+    except ValidationError as error:
+        messages.error(
+            request,
+            _validation_message(error),
+        )
+
+    else:
+        messages.success(
+            request,
+            (
+                f"Order {order.order_number} "
+                "submitted successfully."
+            ),
+        )
+
+    return redirect(
+        "orders:order_detail",
+        pk=order.pk,
+    )
+
+# =========================================================
+# CONFIRM ORDER
+# =========================================================
+
+@login_required
+def confirm_order(request, pk):
+    order = get_object_or_404(
+        Order,
+        pk=pk,
+    )
+
+    if request.method != "POST":
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    try:
+        order, routing_result = (
+            OrderService.confirm(
+                order=order,
+                actor=request.user,
+            )
+        )
+
+    except ValidationError as error:
+        messages.error(
+            request,
+            _validation_message(error),
+        )
+
+    else:
+        messages.success(
+            request,
+            (
+                f"Order {order.order_number} "
+                "confirmed successfully. "
+                f"{routing_result['message']}"
+            ),
+        )
+
+    return redirect(
+        "orders:order_detail",
+        pk=order.pk,
+    )
+# =========================================================
+# CANCEL ORDER
+# =========================================================
+
+@login_required
+def cancel_order(request, pk):
+    order = get_object_or_404(
+        Order,
+        pk=pk,
+    )
+
+    if request.method != "POST":
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    reason = (
+        request.POST.get(
+            "reason",
+            "",
+        )
+        .strip()
+    )
+
+    try:
+        OrderService.cancel(
+            order=order,
+            actor=request.user,
+            reason=reason,
+        )
+
+    except ValidationError as error:
+        messages.error(
+            request,
+            _validation_message(error),
+        )
+
+    else:
+        messages.warning(
+            request,
+            (
+                f"Order {order.order_number} "
+                "was cancelled."
+            ),
+        )
+
+    return redirect(
+        "orders:order_detail",
+        pk=order.pk,
+    )
+
+@login_required
+def deliver_order(request, pk):
 
     order = get_object_or_404(
         Order,
-        id=order_id
+        pk=pk,
     )
 
-    job = OrderService.create_production_job_from_order(
-        order=order,
-        user=request.user
-    )
+    if request.method != "POST":
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
 
-    messages.success(
-        request,
-        "Production job created successfully."
-    )
+    try:
+        result = DeliveryService.deliver_order(
+            order=order,
+            delivered_by=request.user,
+        )
+
+    except ValidationError as error:
+
+        messages.error(
+            request,
+            _validation_message(error),
+        )
+
+    else:
+
+        messages.success(
+            request,
+            result["message"],
+        )
 
     return redirect(
-        "furniture:production_job_detail",
-        pk=job.id
+        "orders:order_detail",
+        pk=order.pk,
+    )
+@login_required
+def mark_shipped(request, pk):
+    order = get_object_or_404(
+        Order,
+        pk=pk,
+    )
+
+    if request.method != "POST":
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    try:
+        DeliveryService.mark_shipped(
+            order=order,
+            actor=request.user,
+        )
+
+    except ValidationError as error:
+        messages.error(
+            request,
+            _validation_message(error),
+        )
+
+    else:
+        messages.success(
+            request,
+            f"Order {order.order_number} marked as shipped.",
+        )
+
+    return redirect(
+        "orders:order_detail",
+        pk=order.pk,
+    )
+
+@login_required
+def deliver_order(request, pk):
+    order = get_object_or_404(
+        Order,
+        pk=pk,
+    )
+
+    if request.method != "POST":
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    note = (
+        request.POST.get("note", "")
+        .strip()
+    )
+
+    try:
+        result = DeliveryService.deliver_order(
+            order=order,
+            delivered_by=request.user,
+            note=note,
+        )
+
+    except ValidationError as error:
+        messages.error(
+            request,
+            _validation_message(error),
+        )
+
+    else:
+        messages.success(
+            request,
+            result["message"],
+        )
+
+    return redirect(
+        "orders:order_detail",
+        pk=order.pk,
     )

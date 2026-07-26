@@ -1,0 +1,511 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+{{ receivable.invoice_number }}
+{% endblock %}
+
+{% block page_title %}
+Receivable Detail
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- ================================================= -->
+    <!-- HEADER -->
+    <!-- ================================================= -->
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+
+        <div>
+            <h3 class="fw-bold mb-1">
+                {{ receivable.invoice_number }}
+            </h3>
+
+            <p class="text-muted mb-0">
+                Receivable created on {{ receivable.created_at|date:"d M Y" }}
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+            <a href="{% url 'finance:receivable_list' %}"
+               class="btn btn-outline-secondary">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Receivables
+            </a>
+
+            {% if receivable.order %}
+
+                <a href="{% url 'orders:order_detail' receivable.order.pk %}"
+                   class="btn btn-outline-primary">
+
+                    <i class="bi bi-box-seam me-1"></i>
+                    View Order
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- SUMMARY CARDS -->
+    <!-- ================================================= -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Total Amount
+                    </small>
+
+                    <h4 class="fw-bold mt-2 mb-0">
+                        {{ receivable.total_amount|default:0|floatformat:0 }} RWF
+                    </h4>
+
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Amount Paid
+                    </small>
+
+                    <h4 class="fw-bold text-success mt-2 mb-0">
+                        {{ receivable.amount_paid|default:0|floatformat:0 }} RWF
+                    </h4>
+
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Outstanding Balance
+                    </small>
+
+                    <h4 class="fw-bold
+                        {% if receivable.balance > 0 %}
+                            text-danger
+                        {% else %}
+                            text-success
+                        {% endif %}
+                        mt-2 mb-0">
+
+                        {{ receivable.balance|default:0|floatformat:0 }} RWF
+                    </h4>
+
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Status
+                    </small>
+
+                    <span class="badge mt-2
+                        {% if receivable.status == 'paid' %}
+                            bg-success
+                        {% elif receivable.status == 'partial' %}
+                            bg-warning text-dark
+                        {% elif receivable.status == 'overdue' %}
+                            bg-danger
+                        {% else %}
+                            bg-secondary
+                        {% endif %}
+                    ">
+                        {{ receivable.get_status_display }}
+                    </span>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="row g-4">
+
+        <!-- ================================================= -->
+        <!-- LEFT COLUMN -->
+        <!-- ================================================= -->
+
+        <div class="col-xl-8">
+
+            <!-- RECEIVABLE INFORMATION -->
+
+            <div class="card border-0 shadow-sm mb-4">
+
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        Receivable Information
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">
+                                Invoice Number
+                            </small>
+
+                            <strong>
+                                {{ receivable.invoice_number }}
+                            </strong>
+                        </div>
+
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">
+                                Due Date
+                            </small>
+
+                            <strong>
+                                {{ receivable.due_date|date:"d M Y" }}
+                            </strong>
+
+                            {% if receivable.status == "overdue" %}
+                                <small class="text-danger d-block mt-1">
+                                    Payment is overdue.
+                                </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">
+                                Customer
+                            </small>
+
+                            {% if receivable.order %}
+
+                                <strong>
+                                    {{ receivable.order.customer_name|default:"-" }}
+                                </strong>
+
+                                <small class="text-muted d-block">
+                                    {{ receivable.order.customer_phone|default:"-" }}
+                                </small>
+
+                                {% if receivable.order.customer_email %}
+                                    <small class="text-muted d-block">
+                                        {{ receivable.order.customer_email }}
+                                    </small>
+                                {% endif %}
+
+                            {% elif receivable.customer %}
+
+                                <strong>
+                                    {{ receivable.customer.get_full_name|default:receivable.customer.username }}
+                                </strong>
+
+                                <small class="text-muted d-block">
+                                    {{ receivable.customer.email|default:"-" }}
+                                </small>
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    No customer linked
+                                </span>
+
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">
+                                Related Order
+                            </small>
+
+                            {% if receivable.order %}
+
+                                <a href="{% url 'orders:order_detail' receivable.order.pk %}"
+                                   class="text-decoration-none fw-semibold">
+
+                                    {{ receivable.order.order_number }}
+                                </a>
+
+                                <small class="text-muted d-block">
+                                    {{ receivable.order.get_business_unit_display }}
+                                    · {{ receivable.order.get_order_type_display }}
+                                </small>
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    Manual receivable
+                                </span>
+
+                            {% endif %}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- PAYMENT HISTORY -->
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+                    <div>
+                        <h5 class="mb-1">
+                            Payment History
+                        </h5>
+
+                        <small class="text-muted">
+                            Payments recorded against this receivable.
+                        </small>
+                    </div>
+
+                    <span class="badge bg-light text-dark border">
+                        {{ payments|length }} payment{{ payments|length|pluralize }}
+                    </span>
+
+                </div>
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Method</th>
+                                <th>Amount</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for payment in payments %}
+
+                                <tr>
+
+                                    <td>
+                                        {{ payment.date|date:"d M Y" }}
+                                    </td>
+
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            {{ payment.get_method_display }}
+                                        </span>
+                                    </td>
+
+                                    <td class="fw-bold text-success">
+                                        {{ payment.amount|default:0|floatformat:0 }} RWF
+                                    </td>
+
+                                    <td>
+                                        {{ payment.notes|default:"-"|linebreaksbr }}
+                                    </td>
+
+                                </tr>
+
+                            {% empty %}
+
+                                <tr>
+                                    <td colspan="4"
+                                        class="text-center text-muted py-5">
+
+                                        <i class="bi bi-wallet2 fs-1 d-block mb-2"></i>
+
+                                        No payments have been recorded yet.
+
+                                    </td>
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- RIGHT COLUMN -->
+        <!-- ================================================= -->
+
+        <div class="col-xl-4">
+
+            <!-- PAYMENT STATUS -->
+
+            <div class="card border-0 shadow-sm mb-4">
+
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        Payment Summary
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">
+                            Total
+                        </span>
+
+                        <strong>
+                            {{ receivable.total_amount|default:0|floatformat:0 }} RWF
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">
+                            Paid
+                        </span>
+
+                        <strong class="text-success">
+                            {{ receivable.amount_paid|default:0|floatformat:0 }} RWF
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between border-top pt-3">
+                        <span class="fw-semibold">
+                            Balance
+                        </span>
+
+                        <strong class="{% if receivable.balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ receivable.balance|default:0|floatformat:0 }} RWF
+                        </strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- RECORD PAYMENT -->
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white">
+                    <h5 class="mb-1">
+                        Record Payment
+                    </h5>
+
+                    <small class="text-muted">
+                        Add a payment received from the customer.
+                    </small>
+                </div>
+
+                <div class="card-body">
+
+                    {% if can_record_payment %}
+
+                        <form method="post"
+                              action="{% url 'finance:record_receivable_payment' receivable.pk %}"
+                              novalidate>
+
+                            {% csrf_token %}
+
+                            {% if payment_form.non_field_errors %}
+
+                                <div class="alert alert-danger">
+
+                                    {% for error in payment_form.non_field_errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+
+                                </div>
+
+                            {% endif %}
+
+                            {% for field in payment_form %}
+
+                                <div class="mb-3">
+
+                                    <label for="{{ field.id_for_label }}"
+                                           class="form-label fw-semibold">
+
+                                        {{ field.label }}
+
+                                        {% if field.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+
+                                    {{ field }}
+
+                                    {% if field.help_text %}
+                                        <small class="text-muted d-block mt-1">
+                                            {{ field.help_text }}
+                                        </small>
+                                    {% endif %}
+
+                                    {% for error in field.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+
+                                </div>
+
+                            {% endfor %}
+
+                            <button type="submit"
+                                    class="btn btn-success w-100"
+                                    onclick="return confirm('Record this customer payment?');">
+
+                                <i class="bi bi-cash-coin me-1"></i>
+                                Record Payment
+                            </button>
+
+                        </form>
+
+                    {% else %}
+
+                        <div class="alert alert-success mb-0">
+
+                            <i class="bi bi-check-circle-fill me-1"></i>
+
+                            This receivable has been fully paid.
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

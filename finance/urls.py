@@ -86,6 +86,24 @@ urlpatterns = [
         name='payable_list'
     ),
 
+    path(
+        "payables/create/",
+        views.payable_create,
+        name="payable_create",
+    ),
+
+    path(
+        "payables/<int:pk>/",
+        views.payable_detail,
+        name="payable_detail",
+    ),
+
+    path(
+        "payables/<int:pk>/payment/",
+        views.payable_payment,
+        name="payable_payment",
+    ),
+
 
 
 
@@ -126,6 +144,17 @@ urlpatterns = [
         'reports/',
         views.financial_report,
         name='financial_report'
+    ),
+    path(
+        "receivables/<int:pk>/",
+        views.receivable_detail,
+        name="receivable_detail",
+    ),
+
+    path(
+        "receivables/<int:pk>/payments/add/",
+        views.record_receivable_payment,
+        name="record_receivable_payment",
     ),
 
 ]

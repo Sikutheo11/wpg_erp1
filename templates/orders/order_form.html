@@ -1,0 +1,177 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+Create {{ order_type_display }}
+{% endblock %}
+
+{% block page_title %}
+Create Order
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <div class="row justify-content-center">
+
+        <div class="col-xl-10">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white">
+
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+                        <div>
+                            <h4 class="mb-1">
+                                Create {{ order_type_display }}
+                            </h4>
+
+                            <small class="text-muted">
+                                {{ business_unit_display }}
+                            </small>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2">
+
+                            <span class="badge bg-light text-dark border">
+                                {{ business_unit_display }}
+                            </span>
+
+                            <span class="badge bg-primary">
+                                {{ order_type_display }}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="alert alert-light border">
+
+                        <i class="bi bi-info-circle me-1"></i>
+
+                        Create the order header first. Products, services or
+                        special customer requests will be added on the next page.
+
+                    </div>
+
+                    <form method="post" novalidate>
+
+                        {% csrf_token %}
+
+                        <input type="hidden"
+                               name="business_unit"
+                               value="{{ business_unit }}">
+
+                        <input type="hidden"
+                               name="order_type"
+                               value="{{ order_type }}">
+
+                        {% if form.non_field_errors %}
+
+                            <div class="alert alert-danger">
+
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+
+                            </div>
+
+                        {% endif %}
+
+                        <div class="row g-3">
+
+                            {% for field in form %}
+
+                                <div class="
+                                    {% if field.name == 'delivery_address' or field.name == 'notes' %}
+                                        col-12
+                                    {% else %}
+                                        col-md-6
+                                    {% endif %}
+                                ">
+
+                                    <label for="{{ field.id_for_label }}"
+                                           class="form-label fw-semibold">
+
+                                        {{ field.label }}
+
+                                        {% if field.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+
+                                    </label>
+
+                                    {{ field }}
+
+                                    {% if field.help_text %}
+
+                                        <small class="text-muted d-block mt-1">
+                                            {{ field.help_text }}
+                                        </small>
+
+                                    {% endif %}
+
+                                    {% for error in field.errors %}
+
+                                        <div class="text-danger small mt-1">
+                                            {{ error }}
+                                        </div>
+
+                                    {% endfor %}
+
+                                </div>
+
+                            {% empty %}
+
+                                <div class="col-12">
+
+                                    <div class="alert alert-warning">
+                                        No fields are available for this order type.
+                                    </div>
+
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex flex-wrap justify-content-between gap-2">
+
+                            <a href="{% url 'orders:order_type_select' %}?business_unit={{ business_unit }}"
+                               class="btn btn-outline-secondary">
+
+                                <i class="bi bi-arrow-left me-1"></i>
+                                Change Order Type
+
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-success">
+
+                                <i class="bi bi-check-circle me-1"></i>
+                                Create and Add Items
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

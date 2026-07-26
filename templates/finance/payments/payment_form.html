@@ -1,110 +1,148 @@
 {% extends "base_dashboard.html" %}
 
-
 {% block title %}
-Payment Form
+Record Payment
 {% endblock %}
 
-
+{% block page_title %}
+Record Payment
+{% endblock %}
 
 {% block content %}
 
+<div class="container-fluid">
 
-<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
 
+        <div>
+            <h3 class="fw-bold mb-1">
+                Record Payment
+            </h3>
 
-<div class="card shadow">
+            <p class="text-muted mb-0">
+                Add a customer receipt or supplier payment.
+            </p>
+        </div>
 
+        <a href="{% url 'finance:payment_list' %}"
+           class="btn btn-outline-secondary">
 
-<div class="card-body">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Payments
+        </a>
 
-
-<h3 class="mb-4">
-
-💳 Record Payment
-
-</h3>
-
-
-
-<form method="POST">
-
-
-{% csrf_token %}
-
-
-
-<div class="row">
+    </div>
 
 
-{% for field in form %}
+    <div class="row justify-content-center">
+
+        <div class="col-xl-8 col-lg-10">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white">
+
+                    <h5 class="mb-1">
+                        Payment Information
+                    </h5>
+
+                    <small class="text-muted">
+                        Select either a receivable or a payable, not both.
+                    </small>
+
+                </div>
+
+                <div class="card-body">
+
+                    <form method="post"
+                          novalidate>
+
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+
+                            <div class="alert alert-danger">
+
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+
+                            </div>
+
+                        {% endif %}
 
 
-<div class="col-md-6 mb-3">
+                        <div class="row g-3">
+
+                            {% for field in form %}
+
+                                <div class="
+                                    {% if field.name == 'notes' %}
+                                        col-12
+                                    {% else %}
+                                        col-md-6
+                                    {% endif %}
+                                ">
+
+                                    <label for="{{ field.id_for_label }}"
+                                           class="form-label fw-semibold">
+
+                                        {{ field.label }}
+
+                                        {% if field.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+
+                                    </label>
+
+                                    {{ field }}
+
+                                    {% if field.help_text %}
+                                        <small class="text-muted d-block mt-1">
+                                            {{ field.help_text }}
+                                        </small>
+                                    {% endif %}
+
+                                    {% for error in field.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
 
 
-<label class="form-label">
+                        <div class="d-flex flex-wrap gap-2 mt-4">
 
-{{field.label}}
+                            <button type="submit"
+                                    class="btn btn-primary">
 
-</label>
+                                <i class="bi bi-check-circle me-1"></i>
+                                Save Payment
+                            </button>
 
+                            <a href="{% url 'finance:payment_list' %}"
+                               class="btn btn-outline-secondary">
 
-{{field}}
+                                Cancel
+                            </a>
 
+                        </div>
 
+                    </form>
 
-{% if field.errors %}
+                </div>
 
-<div class="text-danger">
+            </div>
 
-{{field.errors}}
+        </div>
+
+    </div>
 
 </div>
-
-{% endif %}
-
-
-</div>
-
-
-
-{% endfor %}
-
-
-</div>
-
-
-
-
-<button class="btn btn-primary">
-
-Save Payment
-
-</button>
-
-
-
-<a href="{% url 'finance:payment_list' %}"
-class="btn btn-secondary">
-
-Cancel
-
-</a>
-
-
-
-</form>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
 
 {% endblock %}

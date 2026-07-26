@@ -1,0 +1,479 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+{{ payable.reference }}
+{% endblock %}
+
+{% block page_title %}
+Payable Detail
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- ================================================= -->
+    <!-- HEADER -->
+    <!-- ================================================= -->
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+
+        <div>
+            <h3 class="fw-bold mb-1">
+                {{ payable.reference }}
+            </h3>
+
+            <p class="text-muted mb-0">
+                Supplier payable created on
+                {{ payable.created_at|date:"d M Y" }}
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+            <a href="{% url 'finance:payable_list' %}"
+               class="btn btn-outline-secondary">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Payables
+            </a>
+
+            {% if payable.status != "paid" %}
+
+                <a href="{% url 'finance:payable_payment' payable.pk %}"
+                   class="btn btn-success">
+
+                    <i class="bi bi-cash-stack me-1"></i>
+                    Pay Supplier
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- SUMMARY CARDS -->
+    <!-- ================================================= -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Total Amount
+                    </small>
+
+                    <h4 class="fw-bold mt-2 mb-0">
+                        {{ payable.total_amount|default:0|floatformat:0 }} RWF
+                    </h4>
+
+                </div>
+
+            </div>
+        </div>
+
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Amount Paid
+                    </small>
+
+                    <h4 class="fw-bold text-success mt-2 mb-0">
+                        {{ payable.amount_paid|default:0|floatformat:0 }} RWF
+                    </h4>
+
+                </div>
+
+            </div>
+        </div>
+
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Outstanding Balance
+                    </small>
+
+                    <h4 class="fw-bold
+                        {% if payable.balance > 0 %}
+                            text-danger
+                        {% else %}
+                            text-success
+                        {% endif %}
+                        mt-2 mb-0">
+
+                        {{ payable.balance|default:0|floatformat:0 }} RWF
+                    </h4>
+
+                </div>
+
+            </div>
+        </div>
+
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Status
+                    </small>
+
+                    <span class="badge mt-2
+                        {% if payable.status == 'paid' %}
+                            bg-success
+                        {% elif payable.status == 'partial' %}
+                            bg-warning text-dark
+                        {% elif payable.status == 'overdue' %}
+                            bg-danger
+                        {% else %}
+                            bg-secondary
+                        {% endif %}
+                    ">
+                        {{ payable.get_status_display }}
+                    </span>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="row g-4">
+
+        <!-- ================================================= -->
+        <!-- LEFT COLUMN -->
+        <!-- ================================================= -->
+
+        <div class="col-xl-8">
+
+            <!-- PAYABLE INFORMATION -->
+
+            <div class="card border-0 shadow-sm mb-4">
+
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        Payable Information
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block">
+                                Reference
+                            </small>
+
+                            <strong>
+                                {{ payable.reference }}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block">
+                                Due Date
+                            </small>
+
+                            <strong>
+                                {{ payable.due_date|date:"d M Y" }}
+                            </strong>
+
+                            {% if payable.status == "overdue" %}
+
+                                <small class="text-danger d-block mt-1">
+                                    Payment is overdue.
+                                </small>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block">
+                                Supplier
+                            </small>
+
+                            {% if payable.supplier %}
+
+                                <strong>
+                                    {{ payable.supplier }}
+                                </strong>
+
+                                {% if payable.supplier.phone %}
+                                    <small class="text-muted d-block">
+                                        {{ payable.supplier.phone }}
+                                    </small>
+                                {% endif %}
+
+                                {% if payable.supplier.email %}
+                                    <small class="text-muted d-block">
+                                        {{ payable.supplier.email }}
+                                    </small>
+                                {% endif %}
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    No supplier linked
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block">
+                                Created At
+                            </small>
+
+                            <strong>
+                                {{ payable.created_at|date:"d M Y H:i" }}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- PAYMENT HISTORY -->
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+                    <div>
+
+                        <h5 class="mb-1">
+                            Supplier Payment History
+                        </h5>
+
+                        <small class="text-muted">
+                            Payments recorded against this payable.
+                        </small>
+
+                    </div>
+
+                    <span class="badge bg-light text-dark border">
+                        {{ payments|length }}
+                        payment{{ payments|length|pluralize }}
+                    </span>
+
+                </div>
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Method</th>
+                                <th>Account</th>
+                                <th>Amount</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for payment in payments %}
+
+                                <tr>
+
+                                    <td>
+                                        {{ payment.date|date:"d M Y" }}
+                                    </td>
+
+                                    <td>
+
+                                        <span class="badge bg-light text-dark border">
+                                            {{ payment.get_method_display }}
+                                        </span>
+
+                                    </td>
+
+                                    <td>
+
+                                        {% if payment.account %}
+                                            {{ payment.account.name }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+
+                                    </td>
+
+                                    <td class="fw-bold text-danger">
+                                        {{ payment.amount|default:0|floatformat:0 }} RWF
+                                    </td>
+
+                                    <td>
+                                        {{ payment.notes|default:"-"|linebreaksbr }}
+                                    </td>
+
+                                </tr>
+
+                            {% empty %}
+
+                                <tr>
+                                    <td colspan="5"
+                                        class="text-center text-muted py-5">
+
+                                        <i class="bi bi-wallet2 fs-1 d-block mb-2"></i>
+
+                                        No supplier payments have been recorded yet.
+
+                                    </td>
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- RIGHT COLUMN -->
+        <!-- ================================================= -->
+
+        <div class="col-xl-4">
+
+            <!-- PAYMENT SUMMARY -->
+
+            <div class="card border-0 shadow-sm mb-4">
+
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        Payment Summary
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between mb-3">
+
+                        <span class="text-muted">
+                            Total
+                        </span>
+
+                        <strong>
+                            {{ payable.total_amount|default:0|floatformat:0 }} RWF
+                        </strong>
+
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+
+                        <span class="text-muted">
+                            Paid
+                        </span>
+
+                        <strong class="text-success">
+                            {{ payable.amount_paid|default:0|floatformat:0 }} RWF
+                        </strong>
+
+                    </div>
+
+                    <div class="d-flex justify-content-between border-top pt-3">
+
+                        <span class="fw-semibold">
+                            Balance
+                        </span>
+
+                        <strong class="
+                            {% if payable.balance > 0 %}
+                                text-danger
+                            {% else %}
+                                text-success
+                            {% endif %}
+                        ">
+                            {{ payable.balance|default:0|floatformat:0 }} RWF
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        Payable Actions
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    {% if payable.status != "paid" and payable.balance > 0 %}
+
+                        <a href="{% url 'finance:payable_payment' payable.pk %}"
+                           class="btn btn-success w-100 mb-2">
+
+                            <i class="bi bi-cash-stack me-1"></i>
+                            Record Supplier Payment
+                        </a>
+
+                    {% else %}
+
+                        <div class="alert alert-success mb-0">
+
+                            <i class="bi bi-check-circle-fill me-1"></i>
+
+                            This payable has been fully paid.
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

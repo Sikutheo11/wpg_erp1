@@ -1,12 +1,14 @@
 from django.db import models
+from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
-
 from Employee.models import Employee
 from inventory.models import Supplier
 from sales.models import Sale
 from accounts.models import User
+
+
 
 
 
@@ -301,77 +303,63 @@ class Expense(models.Model):
 
 class Receivable(models.Model):
 
-
-    customer=models.ForeignKey(
-        User,
-        on_delete=models.CASCADE
+    STATUS = (
+        ("unpaid", "Unpaid"),
+        ("partial", "Partial"),
+        ("paid", "Paid"),
+        ("overdue", "Overdue"),
     )
 
-
-    invoice_number=models.CharField(
-        max_length=50
+    order = models.OneToOneField(
+        "orders.Order",
+        on_delete=models.PROTECT,
+        related_name="receivable",
+        null=True,
+        blank=True,
     )
 
-
-    total_amount=models.DecimalField(
-        max_digits=15,
-        decimal_places=2
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
 
+    invoice_number = models.CharField(
+        max_length=100,
+        unique=True,
+    )
 
-    amount_paid=models.DecimalField(
+    total_amount = models.DecimalField(
         max_digits=15,
         decimal_places=2,
-        default=0
+        default=0,
     )
 
-
-    due_date=models.DateField()
-
-
-
-    STATUS=(
-
-        ('unpaid','Unpaid'),
-        ('partial','Partial'),
-        ('paid','Paid'),
-        ('overdue','Overdue'),
-
+    amount_paid = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
     )
 
+    due_date = models.DateField()
 
-    status=models.CharField(
+    status = models.CharField(
         max_length=20,
         choices=STATUS,
-        default="unpaid"
+        default="unpaid",
     )
 
-
-    created_at=models.DateTimeField(
-        auto_now_add=True
+    created_at = models.DateTimeField(
+        auto_now_add=True,
     )
-
 
     @property
     def balance(self):
+        return self.total_amount - self.amount_paid
 
-        return self.total_amount-self.amount_paid
-
-
-
-    def save(self,*args,**kwargs):
-
-        if self.amount_paid==0:
-            self.status="unpaid"
-
-        elif self.amount_paid < self.total_amount:
-            self.status="partial"
-
-        else:
-            self.status="paid"
-
-
-        super().save(*args,**kwargs)
+    def __str__(self):
+        return self.invoice_number
 
 
 
@@ -438,7 +426,10 @@ class Payable(models.Model):
     def balance(self):
 
         return self.total_amount-self.amount_paid
-
+    
+    @property
+    def balance(self):
+        return self.total_amount - self.amount_paid
 
 
     def save(self,*args,**kwargs):
@@ -454,6 +445,10 @@ class Payable(models.Model):
 
 
         super().save(*args,**kwargs)
+    
+    @property
+    def balance(self):
+        return self.total_amount - self.amount_paid
 
 
 

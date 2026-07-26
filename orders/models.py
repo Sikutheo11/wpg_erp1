@@ -1,16 +1,19 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from furniture.models import Product
 
 
 class Order(models.Model):
-
     ORDER_TYPES = (
         ("ECOMMERCE", "Ecommerce Order"),
         ("CUSTOM_FURNITURE", "Custom Furniture Order"),
+        ("CUSTOM_ORDER", "Custom Order"),
         ("RESTOCK", "Restock Existing Product"),
         ("NEW_PRODUCT", "New Product Development"),
         ("POS", "Point of Sale"),
+        ("PROJECT", "Project / Contract Order"),
+        ("MAINTENANCE", "Renovation / Maintenance Order"),
     )
 
     STATUS = (
@@ -39,7 +42,17 @@ class Order(models.Model):
         ("DELIVERED", "Delivered"),
         ("FAILED", "Failed"),
     )
-
+    BUSINESS_UNITS = (
+        ("FURNITURE", "Furniture & Manufacturing"),
+        ("CONSTRUCTION", "Construction"),
+        ("AGRICULTURE", "Agriculture / Poultry"),
+        ("MARKETPLACE", "Marketplace"),
+    )
+    business_unit = models.CharField(
+        max_length=30,
+        choices=BUSINESS_UNITS,
+        default="FURNITURE",
+    )
     order_number = models.CharField(
         max_length=50,
         unique=True,
@@ -188,48 +201,49 @@ class OrderItem(models.Model):
 
     order = models.ForeignKey(
         Order,
+        on_delete=models.CASCADE,
         related_name="items",
-        on_delete=models.CASCADE
     )
 
     product = models.ForeignKey(
-        "inventory.Product",
+        Product,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True
+        blank=True,
     )
 
     product_name = models.CharField(
         max_length=255,
-        blank=True
     )
 
-    quantity = models.PositiveIntegerField(default=1)
+    quantity = models.PositiveIntegerField(
+        default=1,
+    )
 
     price = models.DecimalField(
-        max_digits=12,
+        max_digits=15,
         decimal_places=2,
-        default=0
+        default=0,
     )
 
-    created_at = models.DateTimeField(default=timezone.now,editable=False)
+    specifications = models.TextField(
+        blank=True,
+        help_text=(
+            "Dimensions, materials, colour, design, location "
+            "or other customer requirements."
+        ),
+    )
 
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
 
     @property
     def subtotal(self):
-
-        return (self.quantity or 0) * (self.price or 0)
-
-
-    def save(self, *args, **kwargs):
-
-        if self.product and not self.product_name:
-
-            self.product_name = self.product.name
-
-        super().save(*args, **kwargs)
-
+        return self.quantity * self.price
 
     def __str__(self):
-
-        return f"{self.product_name} x {self.quantity}"
+        return (
+            f"{self.product_name} "
+            f"x {self.quantity}"
+        )

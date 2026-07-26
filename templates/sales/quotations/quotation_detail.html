@@ -1,0 +1,404 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+{{ quotation.quotation_no }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">{{ quotation.quotation_no }}</h3>
+            <p class="text-muted mb-0">
+                Sales quotation for {{ quotation.customer.display_name }}
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'sales:quotation_list' %}"
+               class="btn btn-outline-secondary">
+                Back
+            </a>
+
+            {% if quotation.converted_order %}
+                <a href="{% url 'orders:order_detail' quotation.converted_order.pk %}"
+                   class="btn btn-primary">
+                    View Order
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row text-center g-3">
+
+                <div class="col">
+                    <div class="rounded-circle mx-auto mb-2 bg-primary text-white"
+                         style="width:42px;height:42px;display:grid;place-items:center;">
+                        1
+                    </div>
+                    <small class="fw-semibold">Draft</small>
+                </div>
+
+                <div class="col">
+                    <div class="rounded-circle mx-auto mb-2
+                        {% if quotation.status == 'sent' or quotation.status == 'approved' or quotation.status == 'converted' %}
+                            bg-primary text-white
+                        {% else %}
+                            bg-light text-muted
+                        {% endif %}"
+                         style="width:42px;height:42px;display:grid;place-items:center;">
+                        2
+                    </div>
+                    <small class="fw-semibold">Sent</small>
+                </div>
+
+                <div class="col">
+                    <div class="rounded-circle mx-auto mb-2
+                        {% if quotation.status == 'approved' or quotation.status == 'converted' %}
+                            bg-success text-white
+                        {% else %}
+                            bg-light text-muted
+                        {% endif %}"
+                         style="width:42px;height:42px;display:grid;place-items:center;">
+                        3
+                    </div>
+                    <small class="fw-semibold">Approved</small>
+                </div>
+
+                <div class="col">
+                    <div class="rounded-circle mx-auto mb-2
+                        {% if quotation.status == 'converted' %}
+                            bg-success text-white
+                        {% else %}
+                            bg-light text-muted
+                        {% endif %}"
+                         style="width:42px;height:42px;display:grid;place-items:center;">
+                        4
+                    </div>
+                    <small class="fw-semibold">Converted</small>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <div class="col-xl-8">
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">Quotation Items</h5>
+                        <small class="text-muted">
+                            Products, services and customer specifications.
+                        </small>
+                    </div>
+
+                    {% if can_edit %}
+                        <a href="{% url 'sales:quotation_item_create' quotation.pk %}"
+                           class="btn btn-sm btn-success">
+                            Add Item
+                        </a>
+                    {% endif %}
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Specifications</th>
+                                <th class="text-end">Quantity</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Subtotal</th>
+                                {% if can_edit %}
+                                    <th class="text-end">Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for item in items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.resolved_name }}</strong>
+
+                                        {% if item.product %}
+                                            <small class="text-muted d-block">
+                                                Inventory product
+                                            </small>
+                                        {% else %}
+                                            <small class="text-muted d-block">
+                                                Custom item/service
+                                            </small>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {{ item.specifications|default:"-"|truncatechars:80 }}
+                                    </td>
+
+                                    <td class="text-end">
+                                        {{ item.quantity }}
+                                    </td>
+
+                                    <td class="text-end">
+                                        {{ item.unit_price|floatformat:0 }} RWF
+                                    </td>
+
+                                    <td class="text-end fw-bold">
+                                        {{ item.subtotal|floatformat:0 }} RWF
+                                    </td>
+
+                                    {% if can_edit %}
+                                        <td class="text-end">
+                                            <a href="{% url 'sales:quotation_item_update' quotation.pk item.pk %}"
+                                               class="btn btn-sm btn-outline-warning">
+                                                Edit
+                                            </a>
+
+                                            <form method="post"
+                                                  action="{% url 'sales:quotation_item_delete' quotation.pk item.pk %}"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Remove this quotation item?');">
+                                                {% csrf_token %}
+
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="{% if can_edit %}6{% else %}5{% endif %}"
+                                        class="text-center text-muted py-5">
+                                        No quotation items have been added.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Notes</h5>
+                </div>
+
+                <div class="card-body">
+                    {{ quotation.notes|default:"No notes provided."|linebreaksbr }}
+                </div>
+            </div>
+
+        </div>
+
+        <div class="col-xl-4">
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Quotation Summary</h5>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Customer</span>
+                        <strong class="text-end">
+                            {{ quotation.customer.display_name }}
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Phone</span>
+                        <strong>{{ quotation.customer.phone }}</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Business Unit</span>
+                        <strong class="text-end">
+                            {{ quotation.get_business_unit_display|default:"-" }}
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Order Type</span>
+                        <strong class="text-end">
+                            {{ quotation.get_order_type_display|default:"-" }}
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Quotation Date</span>
+                        <strong>{{ quotation.quotation_date|date:"d M Y" }}</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Valid Until</span>
+                        <strong>{{ quotation.valid_until|date:"d M Y" }}</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Status</span>
+
+                        <span class="badge
+                            {% if quotation.status == 'approved' %}
+                                bg-success
+                            {% elif quotation.status == 'converted' %}
+                                bg-primary
+                            {% elif quotation.status == 'sent' %}
+                                bg-warning text-dark
+                            {% elif quotation.status == 'rejected' or quotation.status == 'cancelled' or quotation.status == 'expired' %}
+                                bg-danger
+                            {% else %}
+                                bg-secondary
+                            {% endif %}
+                        ">
+                            {{ quotation.get_status_display }}
+                        </span>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Subtotal</span>
+                        <strong>{{ quotation.subtotal|floatformat:0 }} RWF</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Discount</span>
+                        <strong class="text-danger">
+                            {{ quotation.discount|floatformat:0 }} RWF
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Tax</span>
+                        <strong>{{ quotation.tax|floatformat:0 }} RWF</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between border-top pt-3">
+                        <span class="fw-semibold">Total</span>
+                        <strong class="text-success fs-5">
+                            {{ quotation.total_amount|floatformat:0 }} RWF
+                        </strong>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Workflow Actions</h5>
+                </div>
+
+                <div class="card-body d-grid gap-3">
+
+                    {% if can_submit %}
+                        <form method="post"
+                              action="{% url 'sales:quotation_submit' quotation.pk %}">
+                            {% csrf_token %}
+
+                            <button type="submit"
+                                    class="btn btn-primary w-100">
+                                Submit Quotation
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if can_approve %}
+                        <form method="post"
+                              action="{% url 'sales:quotation_approve' quotation.pk %}">
+                            {% csrf_token %}
+
+                            <button type="submit"
+                                    class="btn btn-success w-100">
+                                Approve Quotation
+                            </button>
+                        </form>
+
+                        <form method="post"
+                              action="{% url 'sales:quotation_reject' quotation.pk %}">
+                            {% csrf_token %}
+
+                            <input type="text"
+                                   name="reason"
+                                   class="form-control mb-2"
+                                   placeholder="Rejection reason">
+
+                            <button type="submit"
+                                    class="btn btn-outline-danger w-100">
+                                Reject Quotation
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if can_convert %}
+                        <form method="post"
+                              action="{% url 'sales:quotation_convert' quotation.pk %}"
+                              onsubmit="return confirm('Convert this quotation into an enterprise order?');">
+                            {% csrf_token %}
+
+                            <button type="submit"
+                                    class="btn btn-dark w-100">
+                                Convert to Enterprise Order
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if can_edit %}
+                        <form method="post"
+                              action="{% url 'sales:quotation_cancel' quotation.pk %}">
+                            {% csrf_token %}
+
+                            <input type="text"
+                                   name="reason"
+                                   class="form-control mb-2"
+                                   placeholder="Cancellation reason">
+
+                            <button type="submit"
+                                    class="btn btn-outline-danger w-100">
+                                Cancel Quotation
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if quotation.converted_order %}
+                        <div class="alert alert-success mb-0">
+                            <div>Converted to enterprise order:</div>
+
+                            <strong>
+                                {{ quotation.converted_order.order_number }}
+                            </strong>
+
+                            <a href="{% url 'orders:order_detail' quotation.converted_order.pk %}"
+                               class="btn btn-sm btn-success w-100 mt-3">
+                                Open Order
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {% if not can_submit and not can_approve and not can_convert and not can_edit and not quotation.converted_order %}
+                        <div class="alert alert-light border mb-0 text-muted">
+                            No workflow actions are available for this quotation.
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

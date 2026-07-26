@@ -1,0 +1,244 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+{% if customer %}
+Update Customer
+{% else %}
+Create Customer
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-8">
+
+            <div class="card shadow-sm">
+
+                <div class="card-header">
+
+                    <h4 class="mb-0">
+
+                        {% if customer %}
+                            Update Customer
+                        {% else %}
+                            Create Customer
+                        {% endif %}
+
+                    </h4>
+
+                </div>
+
+                <div class="card-body">
+
+                    <form method="post">
+
+                        {% csrf_token %}
+
+                        <div class="row">
+
+                            <!-- Customer Type -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+
+                                    Customer Type
+
+                                </label>
+
+                                <select
+                                    name="customer_type"
+                                    class="form-select">
+
+                                    {% for value,label in customer_type_choices %}
+
+                                    <option
+                                        value="{{ value }}"
+                                        {% if customer.customer_type == value %}
+                                            selected
+                                        {% endif %}>
+
+                                        {{ label }}
+
+                                    </option>
+
+                                    {% endfor %}
+
+                                </select>
+
+                            </div>
+
+
+                            <!-- Full Name -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+
+                                    Full Name
+
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="full_name"
+                                    class="form-control"
+                                    value="{{ customer.full_name|default:'' }}">
+
+                            </div>
+
+
+                            <!-- Company -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+
+                                    Company Name
+
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="company_name"
+                                    class="form-control"
+                                    value="{{ customer.company_name|default:'' }}">
+
+                            </div>
+
+
+                            <!-- Phone -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+
+                                    Phone
+
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="phone"
+                                    class="form-control"
+                                    value="{{ customer.phone|default:'' }}">
+
+                            </div>
+
+
+                            <!-- Email -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+
+                                    Email
+
+                                </label>
+
+                                <input
+                                    type="email"
+                                    name="email"
+                                    class="form-control"
+                                    value="{{ customer.email|default:'' }}">
+
+                            </div>
+
+
+                            <!-- Tax Number -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+
+                                    Tax Number
+
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="tax_number"
+                                    class="form-control"
+                                    value="{{ customer.tax_number|default:'' }}">
+
+                            </div>
+
+
+                            <!-- Credit Limit -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+
+                                    Credit Limit
+
+                                </label>
+
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    name="credit_limit"
+                                    class="form-control"
+                                    value="{{ customer.credit_limit|default:0 }}">
+
+                            </div>
+
+
+                            <!-- Address -->
+
+                            <div class="col-12 mb-3">
+
+                                <label class="form-label">
+
+                                    Address
+
+                                </label>
+
+                                <textarea
+                                    name="address"
+                                    class="form-control"
+                                    rows="4">{{ customer.address|default:'' }}</textarea>
+
+                            </div>
+
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+
+                            <a
+                                href="{% url 'sales:customer_list' %}"
+                                class="btn btn-secondary">
+
+                                Cancel
+
+                            </a>
+
+                            <button
+                                class="btn btn-success"
+                                type="submit">
+
+                                Save Customer
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

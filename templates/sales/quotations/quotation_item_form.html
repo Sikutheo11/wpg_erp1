@@ -1,0 +1,195 @@
+{% extends "sales/base_sales.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+
+        <div>
+            <h3 class="fw-bold mb-1">{{ page_title }}</h3>
+            <p class="text-muted mb-0">
+                Quotation {{ quotation.quotation_no }}
+            </p>
+        </div>
+
+        <a href="{% url 'sales:quotation_detail' quotation.pk %}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Quotation
+        </a>
+
+    </div>
+
+    <div class="row justify-content-center">
+
+        <div class="col-xl-9">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-body">
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label for="product" class="form-label fw-semibold">
+                                    Existing Product
+                                </label>
+
+                                <select name="product"
+                                        id="product"
+                                        class="form-select">
+                                    <option value="">Select product</option>
+
+                                    {% for product in products %}
+                                        <option value="{{ product.pk }}"
+                                                data-price="{{ product.selling_price }}"
+                                            {% if item and item.product_id == product.pk %}selected{% endif %}>
+                                            {{ product.name }} — {{ product.selling_price }} RWF
+                                        </option>
+                                    {% endfor %}
+                                </select>
+
+                                <small class="text-muted">
+                                    Leave blank for a custom product or service.
+                                </small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="product_name" class="form-label fw-semibold">
+                                    Custom Item / Service Name
+                                </label>
+
+                                <input type="text"
+                                       name="product_name"
+                                       id="product_name"
+                                       class="form-control"
+                                       value="{% if item %}{{ item.product_name }}{% endif %}"
+                                       placeholder="Custom furniture, project, maintenance service...">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="quantity" class="form-label fw-semibold">
+                                    Quantity
+                                </label>
+
+                                <input type="number"
+                                       name="quantity"
+                                       id="quantity"
+                                       class="form-control"
+                                       min="1"
+                                       step="1"
+                                       value="{% if item %}{{ item.quantity }}{% else %}1{% endif %}"
+                                       required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="unit_price" class="form-label fw-semibold">
+                                    Unit Price
+                                </label>
+
+                                <div class="input-group">
+                                    <input type="number"
+                                           name="unit_price"
+                                           id="unit_price"
+                                           class="form-control"
+                                           min="0"
+                                           step="0.01"
+                                           value="{% if item %}{{ item.unit_price }}{% endif %}"
+                                           required>
+                                    <span class="input-group-text">RWF</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="subtotal_preview" class="form-label fw-semibold">
+                                    Estimated Subtotal
+                                </label>
+
+                                <div class="input-group">
+                                    <input type="text"
+                                           id="subtotal_preview"
+                                           class="form-control"
+                                           readonly>
+                                    <span class="input-group-text">RWF</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="specifications" class="form-label fw-semibold">
+                                    Specifications
+                                </label>
+
+                                <textarea name="specifications"
+                                          id="specifications"
+                                          class="form-control"
+                                          rows="5"
+                                          placeholder="Dimensions, material, color, scope of work or customer requirements...">{% if item %}{{ item.specifications }}{% endif %}</textarea>
+                            </div>
+
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mt-4">
+
+                            <button type="submit" class="btn btn-primary">
+                                Save Item
+                            </button>
+
+                            <a href="{% url 'sales:quotation_detail' quotation.pk %}"
+                               class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const product = document.getElementById("product");
+    const quantity = document.getElementById("quantity");
+    const price = document.getElementById("unit_price");
+    const preview = document.getElementById("subtotal_preview");
+
+    function updateSubtotal() {
+        const q = Number(quantity.value || 0);
+        const p = Number(price.value || 0);
+        preview.value = (q * p).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    product.addEventListener("change", function () {
+        const option = product.options[product.selectedIndex];
+
+        if (option && option.dataset.price && !price.value) {
+            price.value = option.dataset.price;
+        }
+
+        updateSubtotal();
+    });
+
+    quantity.addEventListener("input", updateSubtotal);
+    price.addEventListener("input", updateSubtotal);
+
+    updateSubtotal();
+});
+</script>
+
+{% endblock %}

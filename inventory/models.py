@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, ExpressionWrapper
 from accounts.models import User
@@ -133,7 +134,20 @@ class RawMaterial(models.Model):
 # PRODUCT
 # =========================
 class Product(models.Model):
+    BUSINESS_UNITS = (
+        ("FURNITURE", "Furniture & Manufacturing"),
+        ("CONSTRUCTION", "Construction"),
+        ("AGRICULTURE", "Agriculture / Poultry"),
+        ("MARKETPLACE", "Marketplace"),
+    )
 
+    PRODUCT_TYPES = (
+        ("PHYSICAL", "Physical Product"),
+        ("SERVICE", "Service"),
+        ("CUSTOM", "Custom Product"),
+    )
+    business_unit = models.CharField(max_length=30, choices=BUSINESS_UNITS, default="FURNITURE",)
+    product_type = models.CharField(max_length=20, choices=PRODUCT_TYPES,default="PHYSICAL",)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     product_code = models.CharField(max_length=50, unique=True, blank=True)
     name = models.CharField(max_length=200)
@@ -382,3 +396,130 @@ class StockMovement(models.Model):
 
     def __str__(self):
         return f"{self.movement_type} - {self.quantity}"
+
+
+class StockReservation(models.Model):
+
+    STATUS_CHOICES = (
+        ("PENDING", "Pending"),
+        ("RESERVED", "Reserved"),
+        ("PARTIAL", "Partially Reserved"),
+        ("FAILED", "Failed"),
+        ("RELEASED", "Released"),
+        ("COMPLETED", "Completed"),
+    )
+
+    order_item = models.OneToOneField(
+        "orders.OrderItem",
+        on_delete=models.CASCADE,
+        related_name="stock_reservation",
+    )
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        related_name="stock_reservations",
+    )
+
+    warehouse = models.ForeignKey(
+        Warehouse,
+        on_delete=models.PROTECT,
+        related_name="stock_reservations",
+    )
+
+    requested_quantity = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+    )
+
+    reserved_quantity = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="PENDING",
+    )
+
+    reserved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inventory_reservations_created",
+    )
+
+    reserved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    released_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    note = models.TextField(
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-created_at",
+        ]
+
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(
+                    requested_quantity__gt=0
+                ),
+                name=(
+                    "inventory_reservation_"
+                    "requested_quantity_positive"
+                ),
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    reserved_quantity__gte=0
+                ),
+                name=(
+                    "inventory_reservation_"
+                    "reserved_quantity_non_negative"
+                ),
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.product.name} — "
+            f"{self.reserved_quantity}/"
+            f"{self.requested_quantity}"
+        )
+
+    @property
+    def shortage_quantity(self):
+        shortage = (
+            self.requested_quantity
+            - self.reserved_quantity
+        )
+
+        return max(
+            shortage,
+            0,
+        )

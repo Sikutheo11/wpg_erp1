@@ -7,9 +7,8 @@ from .models import (
     Asset,
     AssetAssignment,
     StockMovement,
+    StockReservation,
 )
-
-
 # =========================
 # CATEGORY
 # =========================
@@ -134,4 +133,36 @@ class StockMovementAdmin(admin.ModelAdmin):
         'product__name',
         'raw_material__name',
         'reference_no',
+    )
+
+@admin.register(StockReservation)
+class StockReservationAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "id",
+        "product",
+        "warehouse",
+        "requested_quantity",
+        "reserved_quantity",
+        "status",
+        "created_at",
+    )
+
+    list_filter = (
+        "status",
+        "warehouse",
+        "created_at",
+    )
+
+    search_fields = (
+        "product__name",
+        "order_item__order__order_number",
+    )
+
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "reserved_at",
+        "released_at",
+        "completed_at",
     )

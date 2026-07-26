@@ -1,174 +1,478 @@
-# Finance/dashboard.py
+from datetime import timedelta
+from decimal import Decimal
 
-
-from django.db.models import Sum
+from django.db.models import (
+    Count,
+    DecimalField,
+    ExpressionWrapper,
+    F,
+    Sum,
+)
+from django.db.models.functions import Coalesce
+from django.utils import timezone
 
 from .models import (
     Account,
-    Transaction,
-    Income,
     Expense,
-    Receivable,
+    Income,
     Payable,
     Payment,
-    Payroll,
+    Receivable,
+    Transaction,
 )
 
 
+ZERO = Decimal("0.00")
 
-def get_finance_dashboard(user):
-
-
-    # ==========================
-    # ACCOUNTS
-    # ==========================
-
-    total_accounts = Account.objects.count()
+MONEY_FIELD = DecimalField(
+    max_digits=18,
+    decimal_places=2,
+)
 
 
-    total_balance = (
-        Account.objects.aggregate(
-            total=Sum("balance")
-        )["total"] or 0
+def _money_sum(queryset, field_name):
+    """
+    Return a Decimal sum and never return None.
+    """
+
+    return queryset.aggregate(
+        total=Coalesce(
+            Sum(field_name),
+            ZERO,
+            output_field=MONEY_FIELD,
+        )
+    )["total"]
+
+
+def _account_balance_by_name(name):
+    """
+    Return the combined balance of accounts matching a standard name.
+    """
+
+    return (
+        Account.objects
+        .filter(name__iexact=name)
+        .aggregate(
+            total=Coalesce(
+                Sum("balance"),
+                ZERO,
+                output_field=MONEY_FIELD,
+            )
+        )["total"]
     )
 
 
+def get_finance_dashboard(user=None):
+    """
+    Build the Finance dashboard context.
 
-    # ==========================
-    # INCOME
-    # ==========================
+    This dashboard is shared across WPG business units and reports:
+    - account balances;
+    - current-month income, expenses and net profit;
+    - receivables and payables;
+    - customer and supplier payments;
+    - overdue balances;
+    - recent payments and transactions;
+    - chart-ready monthly income and expense data.
+    """
 
-    total_income = (
-        Income.objects.aggregate(
-            total=Sum("amount")
-        )["total"] or 0
+    today = timezone.localdate()
+    month_start = today.replace(day=1)
+
+    year_start = today.replace(
+        month=1,
+        day=1,
     )
 
+    # =====================================================
+    # ACCOUNT BALANCES
+    # =====================================================
 
-
-    # ==========================
-    # EXPENSE
-    # ==========================
-
-    total_expense = (
-        Expense.objects.aggregate(
-            total=Sum("amount")
-        )["total"] or 0
+    accounts = Account.objects.all().order_by(
+        "name",
     )
 
-
-
-    # ==========================
-    # PROFIT
-    # ==========================
-
-    profit = total_income - total_expense
-
-
-
-    # ==========================
-    # RECEIVABLE
-    # ==========================
-
-    total_receivable = (
-        Receivable.objects.aggregate(
-            total=Sum("total_amount")
-        )["total"] or 0
+    total_account_balance = _money_sum(
+        accounts,
+        "balance",
     )
 
-
-    paid_receivable = (
-        Receivable.objects.aggregate(
-            total=Sum("amount_paid")
-        )["total"] or 0
+    cash_balance = _account_balance_by_name(
+        "Cash"
     )
 
-
-    pending_receivable = (
-        total_receivable - paid_receivable
+    bank_balance = _account_balance_by_name(
+        "Bank"
     )
 
-
-
-    # ==========================
-    # PAYABLE
-    # ==========================
-
-    total_payable = (
-        Payable.objects.aggregate(
-            total=Sum("total_amount")
-        )["total"] or 0
+    mobile_money_balance = (
+        _account_balance_by_name(
+            "Mobile Money"
+        )
     )
 
+    # =====================================================
+    # INCOME AND EXPENSES
+    # =====================================================
 
-    paid_payable = (
-        Payable.objects.aggregate(
-            total=Sum("amount_paid")
-        )["total"] or 0
+    month_incomes = Income.objects.filter(
+        date__range=[
+            month_start,
+            today,
+        ]
     )
 
-
-    pending_payable = (
-        total_payable - paid_payable
+    month_expenses = Expense.objects.filter(
+        date__range=[
+            month_start,
+            today,
+        ]
     )
 
-
-
-    # ==========================
-    # PAYROLL
-    # ==========================
-
-    current_payroll = (
-        Payroll.objects.aggregate(
-            total=Sum("net_salary")
-        )["total"] or 0
+    total_income = _money_sum(
+        month_incomes,
+        "amount",
     )
 
+    total_expenses = _money_sum(
+        month_expenses,
+        "amount",
+    )
 
+    net_profit = (
+        total_income
+        - total_expenses
+    )
 
-    # ==========================
-    # TRANSACTIONS
-    # ==========================
+    year_income = _money_sum(
+        Income.objects.filter(
+            date__range=[
+                year_start,
+                today,
+            ]
+        ),
+        "amount",
+    )
+
+    year_expenses = _money_sum(
+        Expense.objects.filter(
+            date__range=[
+                year_start,
+                today,
+            ]
+        ),
+        "amount",
+    )
+
+    year_net_profit = (
+        year_income
+        - year_expenses
+    )
+
+    # =====================================================
+    # RECEIVABLES
+    # =====================================================
+
+    receivables = Receivable.objects.select_related(
+        "order",
+        "customer",
+    )
+
+    receivable_balance_expression = (
+        ExpressionWrapper(
+            F("total_amount")
+            - F("amount_paid"),
+            output_field=MONEY_FIELD,
+        )
+    )
+
+    outstanding_receivables = (
+        receivables
+        .exclude(status="paid")
+        .aggregate(
+            total=Coalesce(
+                Sum(
+                    receivable_balance_expression
+                ),
+                ZERO,
+                output_field=MONEY_FIELD,
+            )
+        )["total"]
+    )
+
+    overdue_receivables = receivables.filter(
+        due_date__lt=today,
+    ).exclude(
+        status="paid",
+    )
+
+    overdue_receivable_total = (
+        overdue_receivables
+        .aggregate(
+            total=Coalesce(
+                Sum(
+                    receivable_balance_expression
+                ),
+                ZERO,
+                output_field=MONEY_FIELD,
+            )
+        )["total"]
+    )
+
+    # =====================================================
+    # PAYABLES
+    # =====================================================
+
+    payables = Payable.objects.select_related(
+        "supplier",
+    )
+
+    payable_balance_expression = (
+        ExpressionWrapper(
+            F("total_amount")
+            - F("amount_paid"),
+            output_field=MONEY_FIELD,
+        )
+    )
+
+    outstanding_payables = (
+        payables
+        .exclude(status="paid")
+        .aggregate(
+            total=Coalesce(
+                Sum(
+                    payable_balance_expression
+                ),
+                ZERO,
+                output_field=MONEY_FIELD,
+            )
+        )["total"]
+    )
+
+    overdue_payables = payables.filter(
+        due_date__lt=today,
+    ).exclude(
+        status="paid",
+    )
+
+    overdue_payable_total = (
+        overdue_payables
+        .aggregate(
+            total=Coalesce(
+                Sum(
+                    payable_balance_expression
+                ),
+                ZERO,
+                output_field=MONEY_FIELD,
+            )
+        )["total"]
+    )
+
+    # =====================================================
+    # PAYMENTS
+    # =====================================================
+
+    payments = Payment.objects.select_related(
+        "receivable",
+        "receivable__order",
+        "payable",
+        "payable__supplier",
+    )
+
+    month_payments = payments.filter(
+        date__range=[
+            month_start,
+            today,
+        ]
+    )
+
+    customer_payments = month_payments.filter(
+        receivable__isnull=False,
+    )
+
+    supplier_payments = month_payments.filter(
+        payable__isnull=False,
+    )
+
+    customer_payment_total = _money_sum(
+        customer_payments,
+        "amount",
+    )
+
+    supplier_payment_total = _money_sum(
+        supplier_payments,
+        "amount",
+    )
+
+    # =====================================================
+    # RECENT ACTIVITY
+    # =====================================================
+
+    recent_payments = (
+        payments
+        .order_by(
+            "-date",
+            "-pk",
+        )[:8]
+    )
 
     recent_transactions = (
         Transaction.objects
-        .select_related("account")
-        .order_by("-created_at")[:10]
+        .select_related(
+            "account",
+        )
+        .order_by(
+            "-date",
+            "-created_at",
+        )[:8]
     )
 
+    recent_receivables = (
+        receivables
+        .order_by(
+            "-created_at",
+        )[:5]
+    )
 
+    recent_payables = (
+        payables
+        .order_by(
+            "-created_at",
+        )[:5]
+    )
 
-    context = {
+    # =====================================================
+    # SIX-MONTH CHART DATA
+    # =====================================================
 
+    chart_labels = []
+    income_chart_data = []
+    expense_chart_data = []
 
-        "total_accounts": total_accounts,
+    for offset in range(5, -1, -1):
+        target_year = today.year
+        target_month = (
+            today.month - offset
+        )
 
-        "total_balance": total_balance,
+        while target_month <= 0:
+            target_month += 12
+            target_year -= 1
 
+        month_date = today.replace(
+            year=target_year,
+            month=target_month,
+            day=1,
+        )
+
+        if target_month == 12:
+            next_month = month_date.replace(
+                year=target_year + 1,
+                month=1,
+                day=1,
+            )
+        else:
+            next_month = month_date.replace(
+                month=target_month + 1,
+                day=1,
+            )
+
+        month_end = (
+            next_month
+            - timedelta(days=1)
+        )
+
+        chart_labels.append(
+            month_date.strftime("%b %Y")
+        )
+
+        income_chart_data.append(
+            float(
+                _money_sum(
+                    Income.objects.filter(
+                        date__range=[
+                            month_date,
+                            month_end,
+                        ]
+                    ),
+                    "amount",
+                )
+            )
+        )
+
+        expense_chart_data.append(
+            float(
+                _money_sum(
+                    Expense.objects.filter(
+                        date__range=[
+                            month_date,
+                            month_end,
+                        ]
+                    ),
+                    "amount",
+                )
+            )
+        )
+
+    # =====================================================
+    # CONTEXT
+    # =====================================================
+
+    return {
+        "today": today,
+        "month_start": month_start,
+
+        "accounts": accounts,
+        "total_account_balance": total_account_balance,
+        "cash_balance": cash_balance,
+        "bank_balance": bank_balance,
+        "mobile_money_balance": mobile_money_balance,
 
         "total_income": total_income,
+        "total_expenses": total_expenses,
+        "net_profit": net_profit,
 
-        "total_expense": total_expense,
+        "year_income": year_income,
+        "year_expenses": year_expenses,
+        "year_net_profit": year_net_profit,
 
-        "profit": profit,
+        "receivable_count": receivables.count(),
+        "outstanding_receivables": outstanding_receivables,
+        "overdue_receivable_count": (
+            overdue_receivables.count()
+        ),
+        "overdue_receivable_total": (
+            overdue_receivable_total
+        ),
 
+        "payable_count": payables.count(),
+        "outstanding_payables": outstanding_payables,
+        "overdue_payable_count": (
+            overdue_payables.count()
+        ),
+        "overdue_payable_total": (
+            overdue_payable_total
+        ),
 
-        "total_receivable": total_receivable,
+        "customer_payment_count": (
+            customer_payments.count()
+        ),
+        "customer_payment_total": (
+            customer_payment_total
+        ),
+        "supplier_payment_count": (
+            supplier_payments.count()
+        ),
+        "supplier_payment_total": (
+            supplier_payment_total
+        ),
 
-        "pending_receivable": pending_receivable,
-
-
-        "total_payable": total_payable,
-
-        "pending_payable": pending_payable,
-
-
-        "current_payroll": current_payroll,
-
-
+        "recent_payments": recent_payments,
         "recent_transactions": recent_transactions,
+        "recent_receivables": recent_receivables,
+        "recent_payables": recent_payables,
 
+        "chart_labels": chart_labels,
+        "income_chart_data": income_chart_data,
+        "expense_chart_data": expense_chart_data,
     }
-
-
-    return context
