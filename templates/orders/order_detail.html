@@ -10,7 +10,90 @@ Order Detail
 
 {% block content %}
 
+<style>
+    .order-detail-page {
+        --wpg-primary: #173b57;
+        --wpg-accent: #c99a2e;
+        --wpg-soft: #f6f8fb;
+    }
+
+    .order-detail-page .summary-card,
+    .order-detail-page .content-card {
+        border: 1px solid #e8edf3 !important;
+        border-radius: 14px;
+    }
+
+    .order-detail-page .summary-icon {
+        width: 42px;
+        height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: var(--wpg-soft);
+        color: var(--wpg-primary);
+        font-size: 1.15rem;
+    }
+
+    .order-detail-page .section-title {
+        font-weight: 700;
+        color: #263746;
+    }
+
+    .order-detail-page .workflow-step {
+        position: relative;
+        display: flex;
+        gap: .75rem;
+        padding-bottom: 1rem;
+    }
+
+    .order-detail-page .workflow-step:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        top: 22px;
+        left: 9px;
+        width: 2px;
+        height: calc(100% - 11px);
+        background: #e1e7ed;
+    }
+
+    .order-detail-page .workflow-step i {
+        position: relative;
+        z-index: 1;
+        background: #fff;
+    }
+
+    .order-detail-page .table thead th {
+        white-space: nowrap;
+        font-size: .78rem;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+        color: #6c757d;
+        background: #f8fafc;
+        border-bottom-width: 1px;
+    }
+
+    .order-detail-page .action-card {
+        position: sticky;
+        top: 1rem;
+    }
+</style>
+
 <div class="container-fluid">
+<div class="order-detail-page">
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm"
+                 role="alert">
+                {{ message }}
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
 
     <!-- ================================================= -->
     <!-- HEADER -->
@@ -23,11 +106,20 @@ Order Detail
                 Order {{ order.order_number|default:order.pk }}
             </h3>
 
-            <p class="text-muted mb-0">
+            <p class="text-muted mb-1">
                 {{ order.get_business_unit_display }}
                 · {{ order.get_order_type_display }}
                 · {{ order.get_status_display }}
             </p>
+
+            <small class="text-muted">
+                Created {{ order.created_at|date:"d M Y, H:i"|default:"-" }}
+                {% if order.created_by %}
+                    by {{ order.created_by.get_full_name|default:order.created_by }}
+                {% elif order.user %}
+                    by {{ order.user.get_full_name|default:order.user }}
+                {% endif %}
+            </small>
         </div>
 
         <div class="d-flex flex-wrap gap-2">
@@ -86,14 +178,12 @@ Order Detail
     <div class="row g-3 mb-4">
 
         <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card summary-card border-0 shadow-sm h-100">
                 <div class="card-body">
-
-                    <small class="text-muted d-block">
-                        Order Status
-                    </small>
-
-                    <span class="badge mt-2
+                    <div class="d-flex align-items-center justify-content-between gap-3">
+                        <div>
+                            <small class="text-muted d-block">Order Status</small>
+                            <span class="badge mt-2
                         {% if order.status == 'DRAFT' %}
                             bg-secondary
                         {% elif order.status == 'PENDING' %}
@@ -116,57 +206,59 @@ Order Detail
                             bg-secondary
                         {% endif %}
                     ">
-                        {{ order.get_status_display }}
-                    </span>
-
+                                {{ order.get_status_display }}
+                            </span>
+                        </div>
+                        <span class="summary-icon"><i class="bi bi-diagram-3"></i></span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card summary-card border-0 shadow-sm h-100">
                 <div class="card-body">
-
-                    <small class="text-muted d-block">
-                        Payment Status
-                    </small>
-
-                    <h5 class="fw-bold mt-2 mb-0">
-                        {{ order.get_payment_status_display }}
-                    </h5>
-
+                    <div class="d-flex align-items-center justify-content-between gap-3">
+                        <div>
+                            <small class="text-muted d-block">Payment Status</small>
+                            <h5 class="fw-bold mt-2 mb-0">
+                                {{ order.get_payment_status_display|default:"Not recorded" }}
+                            </h5>
+                        </div>
+                        <span class="summary-icon"><i class="bi bi-wallet2"></i></span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card summary-card border-0 shadow-sm h-100">
                 <div class="card-body">
-
-                    <small class="text-muted d-block">
-                        Delivery Status
-                    </small>
-
-                    <h5 class="fw-bold mt-2 mb-0">
-                        {{ order.get_delivery_status_display }}
-                    </h5>
-
+                    <div class="d-flex align-items-center justify-content-between gap-3">
+                        <div>
+                            <small class="text-muted d-block">Delivery Status</small>
+                            <h5 class="fw-bold mt-2 mb-0">
+                                {{ order.get_delivery_status_display|default:"Not started" }}
+                            </h5>
+                        </div>
+                        <span class="summary-icon"><i class="bi bi-truck"></i></span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card summary-card border-0 shadow-sm h-100">
                 <div class="card-body">
-
-                    <small class="text-muted d-block">
-                        Total Amount
-                    </small>
-
-                    <h4 class="fw-bold text-success mt-2 mb-0">
-                        {{ order.total_amount|default:0|floatformat:0 }} RWF
-                    </h4>
-
+                    <div class="d-flex align-items-center justify-content-between gap-3">
+                        <div>
+                            <small class="text-muted d-block">Total Amount</small>
+                            <h4 class="fw-bold text-success mt-2 mb-0">
+                                {{ order.total_amount|default:0|floatformat:0 }} RWF
+                            </h4>
+                        </div>
+                        <span class="summary-icon"><i class="bi bi-cash-stack"></i></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -184,10 +276,10 @@ Order Detail
 
             <!-- CUSTOMER INFO -->
 
-            <div class="card border-0 shadow-sm mb-4">
+            <div class="card content-card border-0 shadow-sm mb-4">
 
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">
+                    <h5 class="section-title mb-0">
                         Customer and Delivery Information
                     </h5>
                 </div>
@@ -203,6 +295,30 @@ Order Detail
 
                             <strong>
                                 {{ order.customer_name|default:"-" }}
+                            </strong>
+                        </div>
+
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">
+                                Order Source
+                            </small>
+
+                            <strong>
+                                {% if order.source_sales_quotation %}
+                                    Approved quotation
+                                {% else %}
+                                    Direct order
+                                {% endif %}
+                            </strong>
+                        </div>
+
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">
+                                Last Updated
+                            </small>
+
+                            <strong>
+                                {{ order.updated_at|date:"d M Y, H:i"|default:"-" }}
                             </strong>
                         </div>
 
@@ -279,12 +395,12 @@ Order Detail
 
             <!-- ORDER ITEMS -->
 
-            <div class="card border-0 shadow-sm mb-4">
+            <div class="card content-card border-0 shadow-sm mb-4">
 
                 <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
 
                     <div>
-                        <h5 class="mb-1">
+                        <h5 class="section-title mb-1">
                             Order Items
                         </h5>
 
@@ -478,10 +594,10 @@ Order Detail
 
             <!-- INVENTORY RESERVATIONS -->
 
-            <div class="card border-0 shadow-sm">
+            <div class="card content-card border-0 shadow-sm">
 
                 <div class="card-header bg-white">
-                    <h5 class="mb-1">
+                    <h5 class="section-title mb-1">
                         Inventory Reservations
                     </h5>
 
@@ -587,11 +703,11 @@ Order Detail
 
             {% if can_edit_items %}
 
-                <div class="card border-0 shadow-sm mb-4">
+                <div class="card content-card border-0 shadow-sm mb-4">
 
                     <div class="card-header bg-white">
 
-                        <h5 class="mb-1">
+                        <h5 class="section-title mb-1">
                             Add Order Item
                         </h5>
 
@@ -659,64 +775,102 @@ Order Detail
 
             <!-- WORKFLOW -->
 
-            <div class="card border-0 shadow-sm mb-4">
+            <div class="card content-card border-0 shadow-sm mb-4">
 
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">
+                    <h5 class="section-title mb-0">
                         Order Workflow
                     </h5>
                 </div>
 
                 <div class="card-body">
 
-                    <div class="d-flex align-items-center mb-3">
-                        <i class="bi bi-check-circle-fill text-success me-2"></i>
-                        <span>Draft created</span>
+                    <div class="workflow-step">
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        <div>
+                            <span class="fw-semibold d-block">Draft created</span>
+                            <small class="text-muted">Order registered in the Order Engine.</small>
+                        </div>
                     </div>
 
-                    <div class="d-flex align-items-center mb-3">
+                    <div class="workflow-step">
                         {% if order.status != "DRAFT" %}
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <i class="bi bi-check-circle-fill text-success"></i>
                         {% else %}
-                            <i class="bi bi-circle text-muted me-2"></i>
+                            <i class="bi bi-circle text-muted"></i>
                         {% endif %}
-                        <span>Submitted</span>
+                        <div>
+                            <span class="fw-semibold d-block">Submitted</span>
+                            <small class="text-muted">Ready for review and confirmation.</small>
+                        </div>
                     </div>
 
-                    <div class="d-flex align-items-center mb-3">
+                    <div class="workflow-step">
                         {% if order.status == "CONFIRMED" or order.status == "PROCESSING" or order.status == "WAITING_STOCK" or order.status == "IN_PRODUCTION" or order.status == "READY" or order.status == "DELIVERED" or order.status == "COMPLETED" %}
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <i class="bi bi-check-circle-fill text-success"></i>
                         {% else %}
-                            <i class="bi bi-circle text-muted me-2"></i>
+                            <i class="bi bi-circle text-muted"></i>
                         {% endif %}
-                        <span>Confirmed</span>
+                        <div>
+                            <span class="fw-semibold d-block">Confirmed</span>
+                            <small class="text-muted">Commercial order approved for fulfilment.</small>
+                        </div>
                     </div>
 
-                    <div class="d-flex align-items-center mb-3">
+                    {% if order.business_unit == "FURNITURE" and order.order_type != "CATALOGUE" %}
+                    <div class="workflow-step">
+                        {% if order.production_job %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                        {% else %}
+                            <i class="bi bi-circle text-muted"></i>
+                        {% endif %}
+                        <div>
+                            <span class="fw-semibold d-block">Production handoff</span>
+                            <small class="text-muted">
+                                {% if order.production_job %}
+                                    Production job created in Furniture &amp; Manufacturing.
+                                {% else %}
+                                    Waiting for production job creation.
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="workflow-step">
                         {% if order.status == "READY" or order.status == "DELIVERED" or order.status == "COMPLETED" %}
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <i class="bi bi-check-circle-fill text-success"></i>
                         {% else %}
-                            <i class="bi bi-circle text-muted me-2"></i>
+                            <i class="bi bi-circle text-muted"></i>
                         {% endif %}
-                        <span>Ready</span>
+                        <div>
+                            <span class="fw-semibold d-block">Ready</span>
+                            <small class="text-muted">Items cleared for dispatch or collection.</small>
+                        </div>
                     </div>
 
-                    <div class="d-flex align-items-center mb-3">
+                    <div class="workflow-step">
                         {% if order.delivery_status == "SHIPPED" or order.delivery_status == "DELIVERED" %}
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <i class="bi bi-check-circle-fill text-success"></i>
                         {% else %}
-                            <i class="bi bi-circle text-muted me-2"></i>
+                            <i class="bi bi-circle text-muted"></i>
                         {% endif %}
-                        <span>Shipped</span>
+                        <div>
+                            <span class="fw-semibold d-block">Shipped</span>
+                            <small class="text-muted">Order dispatched to the customer.</small>
+                        </div>
                     </div>
 
-                    <div class="d-flex align-items-center">
+                    <div class="workflow-step pb-0">
                         {% if order.delivery_status == "DELIVERED" %}
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <i class="bi bi-check-circle-fill text-success"></i>
                         {% else %}
-                            <i class="bi bi-circle text-muted me-2"></i>
+                            <i class="bi bi-circle text-muted"></i>
                         {% endif %}
-                        <span>Delivered</span>
+                        <div>
+                            <span class="fw-semibold d-block">Delivered</span>
+                            <small class="text-muted">Delivery completed and stock posted.</small>
+                        </div>
                     </div>
 
                 </div>
@@ -726,10 +880,10 @@ Order Detail
 
             <!-- ORDER ACTIONS -->
 
-            <div class="card border-0 shadow-sm">
+            <div class="card content-card action-card border-0 shadow-sm">
 
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">
+                    <h5 class="section-title mb-0">
                         Order Actions
                     </h5>
                 </div>
@@ -874,6 +1028,7 @@ Order Detail
                     {% if not can_submit and not can_confirm and not can_cancel and order.status != "READY" %}
 
                         <div class="alert alert-light border mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
                             No actions are currently available for this order.
                         </div>
 
@@ -887,6 +1042,7 @@ Order Detail
 
     </div>
 
+</div>
 </div>
 
 {% endblock %}

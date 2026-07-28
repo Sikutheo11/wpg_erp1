@@ -1,9 +1,11 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
-
 from core.event_engine import EventEngine
-
 from ..models import Order
+from inventory.models import Warehouse
+from .inventory_fulfilment_service import (
+    InventoryFulfilmentService,
+)
 
 
 class OrderRoutingService:
@@ -173,16 +175,12 @@ class OrderRoutingService:
             "ECOMMERCE",
             "POS",
         }:
-            return {
-                "business_unit": "FURNITURE",
-                "route": "FURNITURE_FULFILMENT",
-                "object": None,
-                "created": False,
-                "message": (
-                    f"Order {order.order_number} is ready "
-                    "for inventory fulfilment review."
-                ),
-            }
+            return cls._route_inventory_fulfilment(
+                order=order,
+                actor=actor,
+                warehouse_code="FURN_FG",
+                route_code="FURNITURE_FULFILMENT",
+            )
 
         raise ValidationError(
             (
@@ -277,3 +275,60 @@ class OrderRoutingService:
         )
 
         return production_job, True
+
+    @classmethod
+    def _route_inventory_fulfilment(
+        cls,
+        *,
+        order,
+        actor=None,
+        warehouse_code,
+        route_code,
+    ):
+        warehouse = (
+            Warehouse.objects
+            .filter(
+                code=warehouse_code,
+                is_active=True,
+            )
+            .first()
+        )
+
+        if warehouse is None:
+            raise ValidationError(
+                (
+                    f"Active warehouse {warehouse_code} "
+                    "was not found."
+                )
+            )
+
+        fulfilment_result = (
+            InventoryFulfilmentService.prepare_order(
+                order=order,
+                warehouse=warehouse,
+                actor=actor,
+                note=(
+                    f"Automatically prepared during "
+                    f"routing of order "
+                    f"{order.order_number}."
+                ),
+                strict=False,
+            )
+        )
+
+        return {
+            "business_unit": order.business_unit,
+            "route": route_code,
+            "object": warehouse,
+            "created": bool(
+                fulfilment_result["reservations"]
+            ),
+            "message": (
+                f"Order {order.order_number} was routed "
+                f"to inventory fulfilment at "
+                f"{warehouse.name}. "
+                f"Reservation status: "
+                f"{fulfilment_result['status']}."
+            ),
+            "fulfilment_result": fulfilment_result,
+        }

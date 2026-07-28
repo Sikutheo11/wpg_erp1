@@ -1,27 +1,54 @@
-{% extends "sales/base_sales.html" %}
+{% extends "base_dashboard.html" %}
 
-{% block title %}{{ page_title }}{% endblock %}
+{% block title %}
+{{ page_title|default:"Quotation Item" }}
+{% endblock %}
 
 {% block content %}
 
 <div class="container-fluid py-4">
 
+    <!-- ================================================= -->
+    <!-- HEADER -->
+    <!-- ================================================= -->
+
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
 
         <div>
-            <h3 class="fw-bold mb-1">{{ page_title }}</h3>
+            <h3 class="fw-bold mb-1">
+                {{ page_title|default:"Quotation Item" }}
+            </h3>
+
             <p class="text-muted mb-0">
-                Quotation {{ quotation.quotation_no }}
+                Quotation:
+                <strong>{{ quotation.quotation_no }}</strong>
             </p>
         </div>
 
-        <a href="{% url 'sales:quotation_detail' quotation.pk %}"
-           class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i>
-            Back to Quotation
-        </a>
+        {% if quotation and quotation.pk %}
+            <a href="{% url 'sales:quotation_detail' quotation.pk %}"
+               class="btn btn-outline-secondary">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Quotation
+
+            </a>
+        {% else %}
+            <a href="{% url 'sales:quotation_list' %}"
+               class="btn btn-outline-secondary">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Quotations
+
+            </a>
+        {% endif %}
 
     </div>
+
+
+    <!-- ================================================= -->
+    <!-- FORM -->
+    <!-- ================================================= -->
 
     <div class="row justify-content-center">
 
@@ -29,53 +56,128 @@
 
             <div class="card border-0 shadow-sm">
 
+                <div class="card-header bg-white">
+
+                    <h5 class="mb-1">
+                        Item Information
+                    </h5>
+
+                    <small class="text-muted">
+                        Select an inventory product or enter a custom product/service.
+                    </small>
+
+                </div>
+
                 <div class="card-body">
 
-                    <form method="post" novalidate>
+                    <form method="post"
+                          id="quotationItemForm"
+                          novalidate>
+
                         {% csrf_token %}
 
                         <div class="row g-3">
 
+                            <!-- ========================================= -->
+                            <!-- EXISTING PRODUCT -->
+                            <!-- ========================================= -->
+
                             <div class="col-md-6">
-                                <label for="product" class="form-label fw-semibold">
+
+                                <label for="product"
+                                       class="form-label fw-semibold">
+
                                     Existing Product
+
                                 </label>
 
                                 <select name="product"
                                         id="product"
                                         class="form-select">
-                                    <option value="">Select product</option>
+
+                                    <option value="">
+                                        Select inventory product
+                                    </option>
 
                                     {% for product in products %}
+
                                         <option value="{{ product.pk }}"
-                                                data-price="{{ product.selling_price }}"
-                                            {% if item and item.product_id == product.pk %}selected{% endif %}>
-                                            {{ product.name }} — {{ product.selling_price }} RWF
+                                                data-name="{{ product.name }}"
+                                                data-price="{{ product.selling_price|default:0 }}"
+                                            {% if request.POST.product == product.pk|stringformat:"s" %}
+                                                selected
+                                            {% elif not request.POST and item and item.product_id == product.pk %}
+                                                selected
+                                            {% endif %}>
+
+                                            {{ product.name }}
+                                            — {{ product.selling_price|default:0|floatformat:0 }} RWF
+
                                         </option>
+
+                                    {% empty %}
+
+                                        <option value="" disabled>
+                                            No available products
+                                        </option>
+
                                     {% endfor %}
+
                                 </select>
 
                                 <small class="text-muted">
-                                    Leave blank for a custom product or service.
+                                    Leave this blank when entering a custom item or service.
                                 </small>
+
                             </div>
 
+
+                            <!-- ========================================= -->
+                            <!-- CUSTOM ITEM NAME -->
+                            <!-- ========================================= -->
+
                             <div class="col-md-6">
-                                <label for="product_name" class="form-label fw-semibold">
+
+                                <label for="product_name"
+                                       class="form-label fw-semibold">
+
                                     Custom Item / Service Name
+
                                 </label>
 
                                 <input type="text"
                                        name="product_name"
                                        id="product_name"
                                        class="form-control"
-                                       value="{% if item %}{{ item.product_name }}{% endif %}"
-                                       placeholder="Custom furniture, project, maintenance service...">
+                                       value="{% if request.POST %}{{ request.POST.product_name }}{% elif item %}{{ item.product_name }}{% endif %}"
+                                       placeholder="Example: Custom office table">
+
+                                <small class="text-muted">
+                                    Required only when an inventory product is not selected.
+                                </small>
+
+                                <div id="itemNameError"
+                                     class="text-danger small mt-1 d-none">
+
+                                    Select a product or provide a custom item/service name.
+
+                                </div>
+
                             </div>
 
+
+                            <!-- ========================================= -->
+                            <!-- QUANTITY -->
+                            <!-- ========================================= -->
+
                             <div class="col-md-4">
-                                <label for="quantity" class="form-label fw-semibold">
+
+                                <label for="quantity"
+                                       class="form-label fw-semibold">
+
                                     Quantity
+                                    <span class="text-danger">*</span>
+
                                 </label>
 
                                 <input type="number"
@@ -84,66 +186,146 @@
                                        class="form-control"
                                        min="1"
                                        step="1"
-                                       value="{% if item %}{{ item.quantity }}{% else %}1{% endif %}"
+                                       value="{% if request.POST.quantity %}{{ request.POST.quantity }}{% elif item %}{{ item.quantity }}{% else %}1{% endif %}"
                                        required>
+
+                                <div class="invalid-feedback">
+                                    Enter a quantity greater than zero.
+                                </div>
+
                             </div>
 
+
+                            <!-- ========================================= -->
+                            <!-- UNIT PRICE -->
+                            <!-- ========================================= -->
+
                             <div class="col-md-4">
-                                <label for="unit_price" class="form-label fw-semibold">
+
+                                <label for="unit_price"
+                                       class="form-label fw-semibold">
+
                                     Unit Price
+                                    <span class="text-danger">*</span>
+
                                 </label>
 
                                 <div class="input-group">
+
                                     <input type="number"
                                            name="unit_price"
                                            id="unit_price"
                                            class="form-control"
                                            min="0"
                                            step="0.01"
-                                           value="{% if item %}{{ item.unit_price }}{% endif %}"
+                                           value="{% if request.POST.unit_price %}{{ request.POST.unit_price }}{% elif item %}{{ item.unit_price }}{% endif %}"
                                            required>
-                                    <span class="input-group-text">RWF</span>
+
+                                    <span class="input-group-text">
+                                        RWF
+                                    </span>
+
+                                    <div class="invalid-feedback">
+                                        Enter a valid unit price.
+                                    </div>
+
                                 </div>
+
                             </div>
 
+
+                            <!-- ========================================= -->
+                            <!-- SUBTOTAL PREVIEW -->
+                            <!-- ========================================= -->
+
                             <div class="col-md-4">
-                                <label for="subtotal_preview" class="form-label fw-semibold">
+
+                                <label for="subtotal_preview"
+                                       class="form-label fw-semibold">
+
                                     Estimated Subtotal
+
                                 </label>
 
                                 <div class="input-group">
+
                                     <input type="text"
                                            id="subtotal_preview"
-                                           class="form-control"
+                                           class="form-control fw-bold"
+                                           value="0.00"
                                            readonly>
-                                    <span class="input-group-text">RWF</span>
+
+                                    <span class="input-group-text">
+                                        RWF
+                                    </span>
+
                                 </div>
+
                             </div>
 
+
+                            <!-- ========================================= -->
+                            <!-- SPECIFICATIONS -->
+                            <!-- ========================================= -->
+
                             <div class="col-12">
-                                <label for="specifications" class="form-label fw-semibold">
+
+                                <label for="specifications"
+                                       class="form-label fw-semibold">
+
                                     Specifications
+
                                 </label>
 
                                 <textarea name="specifications"
                                           id="specifications"
                                           class="form-control"
                                           rows="5"
-                                          placeholder="Dimensions, material, color, scope of work or customer requirements...">{% if item %}{{ item.specifications }}{% endif %}</textarea>
+                                          placeholder="Dimensions, material, color, design, scope of work or customer requirements...">{% if request.POST %}{{ request.POST.specifications }}{% elif item %}{{ item.specifications }}{% endif %}</textarea>
+
                             </div>
 
                         </div>
 
-                        <div class="d-flex flex-wrap gap-2 mt-4">
 
-                            <button type="submit" class="btn btn-primary">
-                                Save Item
+                        <!-- ================================================= -->
+                        <!-- FORM ACTIONS -->
+                        <!-- ================================================= -->
+
+                        <div class="d-flex flex-wrap justify-content-between gap-2 mt-4">
+
+                            {% if quotation and quotation.pk %}
+
+                                <a href="{% url 'sales:quotation_detail' quotation.pk %}"
+                                   class="btn btn-outline-secondary">
+
+                                    Cancel
+
+                                </a>
+
+                            {% else %}
+
+                                <a href="{% url 'sales:quotation_list' %}"
+                                   class="btn btn-outline-secondary">
+
+                                    Cancel
+
+                                </a>
+
+                            {% endif %}
+
+                            <button type="submit"
+                                    class="btn btn-primary">
+
+                                <i class="bi bi-check-lg me-1"></i>
+
+                                {% if item %}
+                                    Update Item
+                                {% else %}
+                                    Save Item
+                                {% endif %}
+
                             </button>
-
-                            <a href="{% url 'sales:quotation_detail' quotation.pk %}"
-                               class="btn btn-outline-secondary">
-                                Cancel
-                            </a>
 
                         </div>
 
@@ -159,34 +341,108 @@
 
 </div>
 
+
+<!-- ================================================= -->
+<!-- PAGE SCRIPT -->
+<!-- ================================================= -->
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("quotationItemForm");
     const product = document.getElementById("product");
+    const productName = document.getElementById("product_name");
     const quantity = document.getElementById("quantity");
     const price = document.getElementById("unit_price");
     const preview = document.getElementById("subtotal_preview");
+    const itemNameError = document.getElementById("itemNameError");
+
+    function numberValue(value) {
+        const parsed = Number(value);
+
+        if (!Number.isFinite(parsed)) {
+            return 0;
+        }
+
+        return parsed;
+    }
 
     function updateSubtotal() {
-        const q = Number(quantity.value || 0);
-        const p = Number(price.value || 0);
-        preview.value = (q * p).toLocaleString(undefined, {
+        const quantityValue = numberValue(quantity.value);
+        const priceValue = numberValue(price.value);
+        const subtotal = quantityValue * priceValue;
+
+        preview.value = subtotal.toLocaleString("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
     }
 
-    product.addEventListener("change", function () {
-        const option = product.options[product.selectedIndex];
+    function updateProductDetails() {
+        const selectedOption = product.options[product.selectedIndex];
 
-        if (option && option.dataset.price && !price.value) {
-            price.value = option.dataset.price;
+        if (!selectedOption || !selectedOption.value) {
+            return;
         }
 
-        updateSubtotal();
-    });
+        const selectedPrice = selectedOption.dataset.price || "";
+        const selectedName = selectedOption.dataset.name || "";
 
+        /*
+         * Automatically populate price when:
+         * - creating a new item; or
+         * - the price field is currently empty.
+         */
+        if (!price.value && selectedPrice) {
+            price.value = selectedPrice;
+        }
+
+        /*
+         * Do not overwrite a custom name entered by the user.
+         */
+        if (!productName.value.trim() && selectedName) {
+            productName.placeholder = selectedName;
+        }
+
+        itemNameError.classList.add("d-none");
+        updateSubtotal();
+    }
+
+    function validateProductSelection() {
+        const hasProduct = Boolean(product.value);
+        const hasCustomName = Boolean(productName.value.trim());
+
+        if (!hasProduct && !hasCustomName) {
+            itemNameError.classList.remove("d-none");
+            productName.focus();
+            return false;
+        }
+
+        itemNameError.classList.add("d-none");
+        return true;
+    }
+
+    product.addEventListener("change", updateProductDetails);
     quantity.addEventListener("input", updateSubtotal);
     price.addEventListener("input", updateSubtotal);
+
+    productName.addEventListener("input", function () {
+        if (productName.value.trim()) {
+            itemNameError.classList.add("d-none");
+        }
+    });
+
+    form.addEventListener("submit", function (event) {
+
+        const validProduct = validateProductSelection();
+
+        if (!form.checkValidity() || !validProduct) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        form.classList.add("was-validated");
+    });
 
     updateSubtotal();
 });

@@ -1,137 +1,362 @@
 {% extends "base_dashboard.html" %}
 
+{% block title %}
+Order Management
+{% endblock %}
+
+{% block page_title %}
+Orders
+{% endblock %}
+
 {% block content %}
 
-<div class="container py-4">
+<style>
+    .orders-page {
+        --wpg-primary: #173b57;
+        --wpg-soft: #f6f8fb;
+    }
 
-<h3 class="fw-bold">Order Management</h3>
+    .orders-page .page-card {
+        border: 1px solid #e8edf3;
+        border-radius: 14px;
+    }
 
-<!-- FILTER -->
-<form method="get" class="mb-3">
+    .orders-page .filter-panel {
+        background: var(--wpg-soft);
+        border: 1px solid #e8edf3;
+        border-radius: 12px;
+    }
 
-    <select name="status" class="form-select w-25">
+    .orders-page .table thead th {
+        white-space: nowrap;
+        background: #f8fafc;
+        color: #667085;
+        border-bottom-width: 1px;
+        font-size: .76rem;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
 
-        <option value="">All</option>
+    .orders-page .order-number {
+        color: var(--wpg-primary);
+        font-weight: 700;
+    }
 
-        <option value="PENDING">Pending</option>
+    .orders-page .empty-icon {
+        width: 64px;
+        height: 64px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: var(--wpg-soft);
+        color: #8391a2;
+        font-size: 1.7rem;
+    }
+</style>
 
-        <option value="CONFIRMED">Confirmed</option>
+<div class="container-fluid orders-page">
 
-        <option value="PROCESSING">Processing</option>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm"
+                 role="alert">
+                {{ message }}
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
 
-        <option value="READY">Ready</option>
+    <!-- PAGE HEADER -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
 
-        <option value="DELIVERED">Delivered</option>
+        <div>
+            <h3 class="fw-bold mb-1">Order Management</h3>
+            <p class="text-muted mb-0">
+                Manage customer, catalogue, restock and production orders.
+            </p>
+        </div>
 
-    </select>
-
-    <button class="btn btn-primary mt-2">
-        Filter
-    </button>
-
-</form>
-<div class="d-flex justify-content-between mb-4">
-
-    <h3>
-
-        Orders
-
-    </h3>
-
-    <div>
-
-        <a href="{% url 'orders:restock_order_create' %}"
-           class="btn btn-warning">
-
-            Restock Order
-
+        <a href="{% url 'orders:business_unit_select' %}"
+           class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>
+            Create Order
         </a>
 
     </div>
 
-</div>
+    <!-- FILTER -->
+    <div class="filter-panel p-3 mb-4">
 
-<!-- TABLE -->
-<table class="table table-bordered">
+        <form method="get"
+              class="row g-3 align-items-end">
 
-    <thead class="table-dark">
+            <div class="col-lg-4 col-md-6">
+                <label for="statusFilter"
+                       class="form-label fw-semibold">
+                    Order Status
+                </label>
 
-        <tr>
-            <th>ID</th>
-            <th>Customer</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Total</th>
-            <th>Date</th>
-            <th></th>
-        </tr>
+                <select name="status"
+                        id="statusFilter"
+                        class="form-select">
 
-    </thead>
+                    <option value="">All statuses</option>
 
-    <tbody>
+                    <option value="DRAFT"
+                            {% if request.GET.status == "DRAFT" %}selected{% endif %}>
+                        Draft
+                    </option>
 
-        {% for order in orders %}
+                    <option value="PENDING"
+                            {% if request.GET.status == "PENDING" %}selected{% endif %}>
+                        Pending
+                    </option>
 
-        <tr>
+                    <option value="CONFIRMED"
+                            {% if request.GET.status == "CONFIRMED" %}selected{% endif %}>
+                        Confirmed
+                    </option>
 
-            <td>#{{ order.id }}</td>
+                    <option value="PROCESSING"
+                            {% if request.GET.status == "PROCESSING" %}selected{% endif %}>
+                        Processing
+                    </option>
 
-            <td>{{ order.customer_name }}</td>
+                    <option value="WAITING_STOCK"
+                            {% if request.GET.status == "WAITING_STOCK" %}selected{% endif %}>
+                        Waiting for Stock
+                    </option>
 
-            <td>{{ order.order_type }}</td>
+                    <option value="IN_PRODUCTION"
+                            {% if request.GET.status == "IN_PRODUCTION" %}selected{% endif %}>
+                        In Production
+                    </option>
 
-            <td>
+                    <option value="READY"
+                            {% if request.GET.status == "READY" %}selected{% endif %}>
+                        Ready
+                    </option>
 
-                <span class="badge bg-info">
+                    <option value="DELIVERED"
+                            {% if request.GET.status == "DELIVERED" %}selected{% endif %}>
+                        Delivered
+                    </option>
 
-                    {{ order.status }}
+                    <option value="COMPLETED"
+                            {% if request.GET.status == "COMPLETED" %}selected{% endif %}>
+                        Completed
+                    </option>
 
-                </span>
+                    <option value="CANCELLED"
+                            {% if request.GET.status == "CANCELLED" %}selected{% endif %}>
+                        Cancelled
+                    </option>
 
-            </td>
+                </select>
+            </div>
 
-            <td class="text-primary fw-bold">
+            <div class="col-md-auto">
+                <button type="submit"
+                        class="btn btn-primary">
+                    <i class="bi bi-funnel me-1"></i>
+                    Apply Filter
+                </button>
+            </div>
 
-                {{ order.total_amount }} RWF
+            {% if request.GET.status %}
+                <div class="col-md-auto">
+                    <a href="{% url 'orders:order_list' %}"
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Clear
+                    </a>
+                </div>
+            {% endif %}
 
-            </td>
+        </form>
 
-            <td>
+    </div>
 
-                {{ order.created_at|date:"Y-m-d H:i" }}
+    <!-- ORDERS TABLE -->
+    <div class="card page-card border-0 shadow-sm">
 
-            </td>
+        <div class="card-header bg-white border-bottom py-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h5 class="fw-bold mb-1">Orders</h5>
+                    <small class="text-muted">
+                        {{ orders|length }} order{{ orders|length|pluralize }} shown
+                    </small>
+                </div>
 
-            <td>
+                {% if request.GET.status %}
+                    <span class="badge bg-light text-dark border px-3 py-2">
+                        Filter: {{ request.GET.status }}
+                    </span>
+                {% endif %}
+            </div>
+        </div>
 
-                <a href="{% url 'orders:order_detail' order.id %}"
-                   class="btn btn-sm btn-dark">
+        <div class="table-responsive">
 
-                    View
+            <table class="table table-hover align-middle mb-0">
 
-                </a>
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th>Business Unit</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                        <th>Delivery</th>
+                        <th class="text-end">Total</th>
+                        <th>Date</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
 
-            </td>
+                <tbody>
 
-        </tr>
+                    {% for order in orders %}
 
-        {% empty %}
+                        <tr>
 
-        <tr>
+                            <td>
+                                <span class="order-number">
+                                    {{ order.order_number|default:order.pk }}
+                                </span>
+                            </td>
 
-            <td colspan="7" class="text-center text-muted">
+                            <td>
+                                <strong class="d-block">
+                                    {{ order.customer_name|default:"No customer" }}
+                                </strong>
 
-                No orders found
+                                {% if order.customer_phone %}
+                                    <small class="text-muted">
+                                        {{ order.customer_phone }}
+                                    </small>
+                                {% endif %}
+                            </td>
 
-            </td>
+                            <td>
+                                {{ order.get_business_unit_display|default:"-" }}
+                            </td>
 
-        </tr>
+                            <td>
+                                {{ order.get_order_type_display|default:order.order_type }}
+                            </td>
 
-        {% endfor %}
+                            <td>
+                                <span class="badge
+                                    {% if order.status == 'DRAFT' %}
+                                        bg-secondary
+                                    {% elif order.status == 'PENDING' %}
+                                        bg-warning text-dark
+                                    {% elif order.status == 'CONFIRMED' %}
+                                        bg-primary
+                                    {% elif order.status == 'PROCESSING' or order.status == 'IN_PRODUCTION' %}
+                                        bg-info text-dark
+                                    {% elif order.status == 'WAITING_STOCK' %}
+                                        bg-warning text-dark
+                                    {% elif order.status == 'READY' %}
+                                        bg-success
+                                    {% elif order.status == 'DELIVERED' or order.status == 'COMPLETED' %}
+                                        bg-success
+                                    {% elif order.status == 'CANCELLED' %}
+                                        bg-danger
+                                    {% else %}
+                                        bg-light text-dark border
+                                    {% endif %}
+                                ">
+                                    {{ order.get_status_display|default:order.status }}
+                                </span>
+                            </td>
 
-    </tbody>
+                            <td>
+                                <span class="small">
+                                    {{ order.get_payment_status_display|default:"-" }}
+                                </span>
+                            </td>
 
-</table>
+                            <td>
+                                <span class="small">
+                                    {{ order.get_delivery_status_display|default:"-" }}
+                                </span>
+                            </td>
+
+                            <td class="text-end text-success fw-bold text-nowrap">
+                                {{ order.total_amount|default:0|floatformat:0 }} RWF
+                            </td>
+
+                            <td class="text-nowrap">
+                                {{ order.created_at|date:"d M Y" }}
+                                <small class="text-muted d-block">
+                                    {{ order.created_at|date:"H:i" }}
+                                </small>
+                            </td>
+
+                            <td class="text-end">
+                                <a href="{% url 'orders:order_detail' order.pk %}"
+                                   class="btn btn-sm btn-outline-primary"
+                                   aria-label="View order {{ order.order_number|default:order.pk }}">
+                                    <i class="bi bi-eye me-1"></i>
+                                    View
+                                </a>
+                            </td>
+
+                        </tr>
+
+                    {% empty %}
+
+                        <tr>
+                            <td colspan="10"
+                                class="text-center py-5">
+
+                                <span class="empty-icon mb-3">
+                                    <i class="bi bi-cart-x"></i>
+                                </span>
+
+                                <h5 class="fw-bold">No orders found</h5>
+
+                                <p class="text-muted mb-3">
+                                    {% if request.GET.status %}
+                                        No orders match the selected status.
+                                    {% else %}
+                                        Create the first order to start the fulfilment workflow.
+                                    {% endif %}
+                                </p>
+
+                                {% if request.GET.status %}
+                                    <a href="{% url 'orders:order_list' %}"
+                                       class="btn btn-outline-secondary">
+                                        Clear Filter
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'orders:business_unit_select' %}"
+                                       class="btn btn-primary">
+                                        <i class="bi bi-plus-circle me-1"></i>
+                                        Create Order
+                                    </a>
+                                {% endif %}
+
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
 
 </div>
 

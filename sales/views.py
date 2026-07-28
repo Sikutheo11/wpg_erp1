@@ -1,13 +1,12 @@
 from datetime import date
-
+from core.workflow_service import WorkflowService
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
-
 from inventory.models import Product
-
 from .dashboard import get_sales_dashboard
 from .models import (
     Customer,
@@ -21,6 +20,11 @@ from .services import (
     CustomerService,
     QuotationConversionService,
     QuotationService,
+)
+
+from .forms import (
+    SalesQuotationForm,
+    SalesQuotationItemFormSet,
 )
 
 
@@ -285,8 +289,46 @@ def quotation_detail(request, pk):
             "prepared_by",
             "approved_by",
             "converted_order",
-        ).prefetch_related("items__product"),
+        ).prefetch_related(
+            "items__product",
+        ),
         pk=pk,
+    )
+
+    workflow_actions = (
+        WorkflowService.get_available_action_map(
+            obj=quotation,
+            workflow_code="SALES_QUOTATION",
+            user=request.user,
+        )
+    )
+
+    can_edit_items = (
+        quotation.status
+        in QuotationService.EDITABLE_STATUSES
+        and not quotation.converted_order_id
+    )
+
+    can_submit = (
+        "sent" in workflow_actions
+        and quotation.items.exists()
+    )
+
+    can_approve = (
+        "approved" in workflow_actions
+    )
+
+    can_reject = (
+        "rejected" in workflow_actions
+    )
+
+    can_cancel = (
+        "cancelled" in workflow_actions
+    )
+
+    can_convert = (
+        "converted" in workflow_actions
+        and not quotation.converted_order_id
     )
 
     return render(
@@ -295,142 +337,183 @@ def quotation_detail(request, pk):
         {
             "quotation": quotation,
             "items": quotation.items.all(),
-            "can_edit": (
-                quotation.status in QuotationService.EDITABLE_STATUSES
-                and not quotation.converted_order_id
+
+            # Workflow
+            "workflow_actions": workflow_actions,
+            "workflow_history": (
+                WorkflowService.history(
+                    quotation
+                )
             ),
-            "can_submit": (
-                quotation.status in QuotationService.EDITABLE_STATUSES
-                and quotation.items.exists()
-            ),
-            "can_approve": quotation.status == "sent",
-            "can_convert": (
-                quotation.status == "approved"
-                and not quotation.converted_order_id
-            ),
+
+            # Template compatibility
+            "can_edit": can_edit_items,
+            "can_submit": can_submit,
+            "can_approve": can_approve,
+            "can_reject": can_reject,
+            "can_cancel": can_cancel,
+            "can_convert": can_convert,
         },
     )
 
 @login_required
 def quotation_create(request):
-    customers = (
-        Customer.objects
-        .filter(is_active=True)
-        .order_by(
-            "company_name",
-            "full_name",
-            "phone",
-        )
+    quotation = SalesQuotation()
+
+    published_products = (
+        Product.objects
+        .filter(is_published=True)
+        .order_by("name")
     )
 
-    context = {
-        "quotation": None,
-        "customers": customers,
-        "business_unit_choices": SalesQuotation.BUSINESS_UNITS,
-        "order_type_choices": SalesQuotation.ORDER_TYPES,
+    # Product information used by JavaScript.
+    # Keys are strings because selected option values come from HTML.
+    product_lookup = {
+        str(product.pk): {
+            "id": product.pk,
+            "name": product.name,
+            "selling_price": str(
+                product.selling_price or 0
+            ),
+            "business_unit": (
+                product.business_unit or ""
+            ),
+        }
+        for product in published_products
     }
 
     if request.method == "POST":
-        customer_id = request.POST.get(
-            "customer",
-            "",
-        ).strip()
-
-        if not customer_id:
-            messages.error(
-                request,
-                "Please select a customer.",
-            )
-            return render(
-                request,
-                "sales/quotations/quotation_form.html",
-                context,
-            )
-
-        customer = (
-            Customer.objects
-            .filter(
-                pk=customer_id,
-                is_active=True,
-            )
-            .first()
+        form = SalesQuotationForm(
+            request.POST,
+            instance=quotation,
         )
 
-        if customer is None:
-            messages.error(
-                request,
-                (
-                    "The selected customer does not exist "
-                    "or is inactive."
-                ),
-            )
-            return render(
-                request,
-                "sales/quotations/quotation_form.html",
-                context,
-            )
+        formset = SalesQuotationItemFormSet(
+            request.POST,
+            instance=quotation,
+        )
 
-        try:
-            quotation = QuotationService.create_quotation(
-                customer=customer,
-                business_unit=request.POST.get(
-                    "business_unit",
-                    "",
-                ),
-                order_type=request.POST.get(
-                    "order_type",
-                    "",
-                ),
-                quotation_date=_parse_date(
-                    request.POST.get(
-                        "quotation_date"
+        if form.is_valid() and formset.is_valid():
+            try:
+                with transaction.atomic():
+                    header = form.cleaned_data
+
+                    quotation = (
+                        QuotationService
+                        .create_quotation(
+                            customer=header["customer"],
+                            business_unit=header[
+                                "business_unit"
+                            ],
+                            order_type=header[
+                                "order_type"
+                            ],
+                            quotation_date=header.get(
+                                "quotation_date"
+                            ),
+                            valid_until=header.get(
+                                "valid_until"
+                            ),
+                            discount=header.get(
+                                "discount",
+                                0,
+                            ),
+                            tax=header.get(
+                                "tax",
+                                0,
+                            ),
+                            notes=header.get(
+                                "notes",
+                                "",
+                            ),
+                            prepared_by=request.user,
+                            actor=request.user,
+                        )
                     )
-                ),
-                valid_until=_parse_date(
-                    request.POST.get(
-                        "valid_until"
+
+                    formset.instance = quotation
+
+                    items = formset.save(
+                        commit=False
                     )
-                ),
-                discount=request.POST.get(
-                    "discount",
-                    0,
-                ),
-                tax=request.POST.get(
-                    "tax",
-                    0,
-                ),
-                notes=request.POST.get(
-                    "notes",
-                    "",
-                ),
-                prepared_by=request.user,
-                actor=request.user,
-            )
 
-        except ValidationError as error:
-            messages.error(
-                request,
-                _validation_message(error),
-            )
+                    for item in items:
+                        item.quotation = quotation
 
-        else:
-            messages.success(
-                request,
-                (
-                    f"Quotation {quotation.quotation_no} "
-                    "created successfully."
-                ),
-            )
+                        # Keep a name snapshot even when
+                        # an inventory product was selected.
+                        if (
+                            item.product
+                            and not item.product_name
+                        ):
+                            item.product_name = (
+                                item.product.name
+                            )
 
-            return redirect(
-                "sales:quotation_detail",
-                pk=quotation.pk,
-            )
+                        item.full_clean()
+                        item.save()
+
+                    for deleted_item in (
+                        formset.deleted_objects
+                    ):
+                        if deleted_item.pk:
+                            deleted_item.delete()
+
+                    QuotationService.recalculate_totals(
+                        quotation
+                    )
+
+            except ValidationError as error:
+                messages.error(
+                    request,
+                    _validation_message(error),
+                )
+
+            except Exception as error:
+                messages.error(
+                    request,
+                    (
+                        "Quotation could not be created: "
+                        f"{error}"
+                    ),
+                )
+
+            else:
+                messages.success(
+                    request,
+                    (
+                        f"Quotation "
+                        f"{quotation.quotation_no} "
+                        "created successfully."
+                    ),
+                )
+
+                return redirect(
+                    "sales:quotation_detail",
+                    pk=quotation.pk,
+                )
+
+    else:
+        form = SalesQuotationForm(
+            instance=quotation,
+        )
+
+        formset = SalesQuotationItemFormSet(
+            instance=quotation,
+        )
 
     return render(
         request,
         "sales/quotations/quotation_form.html",
-        context,
+        {
+            "page_title": (
+                "Create Sales Quotation"
+            ),
+            "quotation": quotation,
+            "form": form,
+            "formset": formset,
+            "product_lookup": product_lookup,
+        },
     )
 
 @login_required
@@ -470,11 +553,7 @@ def quotation_item_create(request, pk):
         is_published=True,
     ).order_by("name")
 
-    if quotation.business_unit != "MARKETPLACE":
-        products = products.filter(
-            business_unit=quotation.business_unit
-        )
-
+   
     return render(
         request,
         "sales/quotations/quotation_item_form.html",
@@ -530,10 +609,6 @@ def quotation_item_update(request, pk, item_pk):
         is_published=True,
     ).order_by("name")
 
-    if quotation.business_unit != "MARKETPLACE":
-        products = products.filter(
-            business_unit=quotation.business_unit
-        )
 
     return render(
         request,

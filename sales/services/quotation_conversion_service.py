@@ -5,6 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from core.event_engine import EventEngine
+from core.workflow_service import WorkflowService
 from orders.models import OrderItem
 from orders.services import OrderService
 
@@ -16,17 +17,28 @@ class QuotationConversionService:
     Convert an approved SalesQuotation into an enterprise Order.
 
     Responsibilities:
+    - lock only the quotation database row;
     - validate quotation eligibility;
     - prevent duplicate conversion;
-    - create the Order through OrderService;
+    - create the enterprise order through OrderService;
     - copy quotation items into OrderItem;
-    - recalculate order totals;
+    - recalculate and verify order totals;
     - link the quotation to the created order;
-    - mark the quotation as converted.
+    - move the quotation to the converted workflow step;
+    - dispatch the conversion event.
     """
+
+    WORKFLOW_CODE = "SALES_QUOTATION"
+    CONVERTED_STEP = "converted"
+    MONEY_QUANTIZER = Decimal("0.01")
 
     @staticmethod
     def _user(actor):
+        """
+        Return a User instance whether actor is a User or an
+        Employee-like object containing a user attribute.
+        """
+
         if actor is None:
             return None
 
@@ -40,7 +52,21 @@ class QuotationConversionService:
         return (value or "").strip()
 
     @classmethod
-    def _validate_quotation(cls, quotation):
+    def _money(cls, value):
+        """
+        Normalize monetary values to two decimal places.
+        """
+
+        return Decimal(str(value or 0)).quantize(
+            cls.MONEY_QUANTIZER
+        )
+
+    @classmethod
+    def _validate_quotation(
+        cls,
+        quotation,
+        quotation_items=None,
+    ):
         if quotation is None:
             raise ValidationError(
                 "Quotation is required."
@@ -82,7 +108,12 @@ class QuotationConversionService:
                 "Quotation order type is required."
             )
 
-        if not quotation.items.exists():
+        if quotation_items is None:
+            has_items = quotation.items.exists()
+        else:
+            has_items = bool(quotation_items)
+
+        if not has_items:
             raise ValidationError(
                 (
                     "Add at least one quotation item "
@@ -90,7 +121,7 @@ class QuotationConversionService:
                 )
             )
 
-        if quotation.total_amount <= 0:
+        if cls._money(quotation.total_amount) <= 0:
             raise ValidationError(
                 (
                     "Quotation total must be greater "
@@ -104,7 +135,7 @@ class QuotationConversionService:
     def _quantity_as_integer(quantity):
         """
         OrderItem.quantity is a PositiveIntegerField while quotation
-        quantity is DecimalField. Only whole-number quantities can be
+        quantity may be decimal. Only whole-number quantities can be
         converted safely.
         """
 
@@ -133,21 +164,51 @@ class QuotationConversionService:
         quotation,
         actor=None,
     ):
+        if quotation is None or not getattr(
+            quotation,
+            "pk",
+            None,
+        ):
+            raise ValidationError(
+                "A saved quotation is required."
+            )
+
+        quotation_id = quotation.pk
+        actor_user = cls._user(actor)
+
+        # Important:
+        # - use _base_manager to avoid custom manager joins;
+        # - clear select_related joins;
+        # - lock only the SalesQuotation row.
+        #
+        # This prevents PostgreSQL's:
+        # "FOR UPDATE cannot be applied to the nullable side
+        # of an outer join".
         quotation = (
-            SalesQuotation.objects
-            .select_for_update()
+            SalesQuotation._base_manager
+            .select_related(None)
+            .select_for_update(
+                of=("self",)
+            )
+            .get(
+                pk=quotation_id
+            )
+        )
+
+        # Load quotation items separately after locking the quotation.
+        quotation_items = list(
+            quotation.items
             .select_related(
-                "customer",
-                "customer__user",
+                "product"
             )
-            .prefetch_related(
-                "items__product",
+            .order_by(
+                "pk"
             )
-            .get(pk=quotation.pk)
         )
 
         cls._validate_quotation(
-            quotation
+            quotation,
+            quotation_items=quotation_items,
         )
 
         customer = quotation.customer
@@ -186,7 +247,7 @@ class QuotationConversionService:
             business_unit=quotation.business_unit,
             order_type=quotation.order_type,
             user=(
-                cls._user(actor)
+                actor_user
                 or customer.user
             ),
             customer_name=customer_name,
@@ -201,7 +262,7 @@ class QuotationConversionService:
 
         created_items = []
 
-        for quotation_item in quotation.items.all():
+        for quotation_item in quotation_items:
             quantity = cls._quantity_as_integer(
                 quotation_item.quantity
             )
@@ -237,7 +298,10 @@ class QuotationConversionService:
             order
         )
 
-        if order.subtotal != quotation.subtotal:
+        if (
+            cls._money(order.subtotal)
+            != cls._money(quotation.subtotal)
+        ):
             raise ValidationError(
                 (
                     "Order subtotal does not match quotation subtotal. "
@@ -245,7 +309,10 @@ class QuotationConversionService:
                 )
             )
 
-        if order.total_amount != quotation.total_amount:
+        if (
+            cls._money(order.total_amount)
+            != cls._money(quotation.total_amount)
+        ):
             raise ValidationError(
                 (
                     "Order total does not match quotation total. "
@@ -253,22 +320,35 @@ class QuotationConversionService:
                 )
             )
 
-        quotation.status = "converted"
         quotation.converted_order = order
         quotation.converted_at = timezone.now()
 
         quotation.save(
             update_fields=[
-                "status",
                 "converted_order",
                 "converted_at",
                 "updated_at",
             ]
         )
 
+        # Move approved -> converted through the Core Workflow Engine.
+        # The detailed conversion event is dispatched below, therefore
+        # dispatch_event=False prevents duplicate notifications/events.
+        WorkflowService.move(
+            obj=quotation,
+            workflow_code=cls.WORKFLOW_CODE,
+            to_step=cls.CONVERTED_STEP,
+            user=actor_user,
+            note=(
+                f"Converted to enterprise order "
+                f"{order.order_number}."
+            ),
+            dispatch_event=False,
+        )
+
         EventEngine.dispatch(
             event_code="SALES_QUOTATION_CONVERTED",
-            actor=cls._user(actor),
+            actor=actor_user,
             obj=quotation,
             title="Quotation Converted to Order",
             message=(
@@ -289,10 +369,18 @@ class QuotationConversionService:
                     for item in created_items
                 ],
                 "item_count": len(created_items),
-                "subtotal": str(order.subtotal),
-                "discount": str(order.discount),
-                "tax": str(order.tax),
-                "total_amount": str(order.total_amount),
+                "subtotal": str(
+                    cls._money(order.subtotal)
+                ),
+                "discount": str(
+                    cls._money(order.discount)
+                ),
+                "tax": str(
+                    cls._money(order.tax)
+                ),
+                "total_amount": str(
+                    cls._money(order.total_amount)
+                ),
                 "converted_at": (
                     quotation.converted_at.isoformat()
                 ),

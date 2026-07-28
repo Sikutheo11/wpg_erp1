@@ -1,12 +1,13 @@
 from django.urls import path
-
 from . import views
-
-
 app_name = "orders"
 
-
 urlpatterns = [
+
+    # ======================================================
+    # ORDERS
+    # ======================================================
+
     path(
         "",
         views.order_list,
@@ -37,6 +38,10 @@ urlpatterns = [
         name="order_detail",
     ),
 
+    # ======================================================
+    # ORDER ITEMS
+    # ======================================================
+
     path(
         "<int:pk>/items/add/",
         views.add_order_item,
@@ -55,6 +60,10 @@ urlpatterns = [
         name="remove_order_item",
     ),
 
+    # ======================================================
+    # ORDER WORKFLOW
+    # ======================================================
+
     path(
         "<int:pk>/submit/",
         views.submit_order,
@@ -72,15 +81,21 @@ urlpatterns = [
         views.cancel_order,
         name="cancel_order",
     ),
+
+    # ======================================================
+    # DELIVERY WORKFLOW
+    # ======================================================
+
     path(
-        "<int:pk>/deliver/",
-        views.deliver_order,
-        name="deliver_order",
+        "<int:pk>/ready/",
+        views.mark_ready,
+        name="mark_ready",
     ),
+
     path(
-        "<int:pk>/ship/",
-        views.mark_shipped,
-        name="mark_shipped",
+        "<int:pk>/dispatch/",
+        views.order_dispatch,
+        name="order_dispatch",
     ),
 
     path(
@@ -88,4 +103,33 @@ urlpatterns = [
         views.deliver_order,
         name="deliver_order",
     ),
+
+    path(
+        "<int:pk>/delivery/cancel/",
+        views.cancel_delivery,
+        name="cancel_delivery",
+    ),
+
+    # ======================================================
+    # INVENTORY
+    # ======================================================
+
+    # path(
+    #     "<int:pk>/reserve/",
+    #     views.reserve_order,
+    #     name="reserve_order",
+    # ),
+
+    # path(
+    #     "<int:pk>/fulfil/",
+    #     views.fulfil_order,
+    #     name="fulfil_order",
+    # ),
+
+    # path(
+    #     "<int:pk>/release/",
+    #     views.release_order,
+    #     name="release_order",
+    # ),
+
 ]
