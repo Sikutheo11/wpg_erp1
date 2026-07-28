@@ -1,282 +1,674 @@
 {% extends "base_dashboard.html" %}
 
 {% block title %}
-Create Sales Quotation
+{{ page_title|default:"Create Sales Quotation" }}
 {% endblock %}
 
 {% block content %}
-
 <div class="container-fluid py-4">
 
-    <div class="row justify-content-center">
-
-        <div class="col-xl-10">
-
-            <div class="card shadow-sm border-0">
-
-                <div class="card-header bg-white">
-
-                    <h3 class="mb-1">
-
-                        Create Sales Quotation
-
-                    </h3>
-
-                    <small class="text-muted">
-
-                        Customer quotation before converting to Enterprise Order
-
-                    </small>
-
-                </div>
-
-                <div class="card-body">
-
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }}">
-                                {{ message }}
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-
-                    <form method="post">
-
-                        {% csrf_token %}
-
-                        <div class="row">
-
-                            <!-- Customer -->
-
-                            <div class="col-md-6 mb-3">
-
-                                <label class="form-label">
-
-                                    Customer
-
-                                </label>
-
-                                <select
-                                    name="customer"
-                                    class="form-select"
-                                    required>
-
-                                    <option value="">
-                                        ---- Select Customer ----
-                                    </option>
-
-                                    {% for customer in customers %}
-
-                                        <option
-                                            value="{{ customer.id }}"
-                                            {% if request.POST.customer == customer.id|stringformat:"s" %}
-                                                selected
-                                            {% endif %}>
-
-                                            {{ customer.display_name }}
-                                            ({{ customer.phone }})
-
-                                        </option>
-
-                                    {% endfor %}
-
-                                </select>
-
-                            </div>
-
-
-                            <!-- Business Unit -->
-
-                            <div class="col-md-6 mb-3">
-
-                                <label class="form-label">
-
-                                    Business Unit
-
-                                </label>
-
-                                <select
-                                    name="business_unit"
-                                    class="form-select"
-                                    required>
-
-                                    {% for value,label in business_unit_choices %}
-
-                                        <option value="{{ value }}">
-
-                                            {{ label }}
-
-                                        </option>
-
-                                    {% endfor %}
-
-                                </select>
-
-                            </div>
-
-
-                            <!-- Order Type -->
-
-                            <div class="col-md-6 mb-3">
-
-                                <label class="form-label">
-
-                                    Order Type
-
-                                </label>
-
-                                <select
-                                    name="order_type"
-                                    class="form-select"
-                                    required>
-
-                                    {% for value,label in order_type_choices %}
-
-                                        <option value="{{ value }}">
-
-                                            {{ label }}
-
-                                        </option>
-
-                                    {% endfor %}
-
-                                </select>
-
-                            </div>
-
-
-                            <!-- Quotation Date -->
-
-                            <div class="col-md-3 mb-3">
-
-                                <label class="form-label">
-
-                                    Quotation Date
-
-                                </label>
-
-                                <input
-                                    type="date"
-                                    name="quotation_date"
-                                    class="form-control"
-                                    value="{{ request.POST.quotation_date }}">
-
-                            </div>
-
-
-                            <!-- Valid Until -->
-
-                            <div class="col-md-3 mb-3">
-
-                                <label class="form-label">
-
-                                    Valid Until
-
-                                </label>
-
-                                <input
-                                    type="date"
-                                    name="valid_until"
-                                    class="form-control"
-                                    value="{{ request.POST.valid_until }}">
-
-                            </div>
-
-
-                            <!-- Discount -->
-
-                            <div class="col-md-3 mb-3">
-
-                                <label class="form-label">
-
-                                    Discount
-
-                                </label>
-
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    name="discount"
-                                    class="form-control"
-                                    value="{{ request.POST.discount|default:0 }}">
-
-                            </div>
-
-
-                            <!-- Tax -->
-
-                            <div class="col-md-3 mb-3">
-
-                                <label class="form-label">
-
-                                    Tax
-
-                                </label>
-
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    name="tax"
-                                    class="form-control"
-                                    value="{{ request.POST.tax|default:0 }}">
-
-                            </div>
-
-
-                            <!-- Notes -->
-
-                            <div class="col-12 mb-3">
-
-                                <label class="form-label">
-
-                                    Notes
-
-                                </label>
-
-                                <textarea
-                                    name="notes"
-                                    rows="5"
-                                    class="form-control"
-                                    placeholder="Special customer requirements...">{{ request.POST.notes }}</textarea>
-
-                            </div>
-
-                        </div>
-
-                        <hr>
-
-                        <div class="d-flex justify-content-between">
-
-                            <a
-                                href="{% url 'sales:quotation_list' %}"
-                                class="btn btn-secondary">
-
-                                Cancel
-
-                            </a>
-
-                            <button
-                                type="submit"
-                                class="btn btn-primary">
-
-                                Create Quotation
-
-                            </button>
-
-                        </div>
-
-                    </form>
-
-                </div>
-
-            </div>
-
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">{{ page_title|default:"Create Sales Quotation" }}</h3>
+            <p class="text-muted mb-0">Create the quotation and add all requested products or services on one page.</p>
         </div>
-
+        <a href="{% url 'sales:quotation_list' %}" class="btn btn-outline-secondary">Back to Quotations</a>
     </div>
 
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+    {% endif %}
+
+    {% if formset.non_form_errors %}
+        <div class="alert alert-danger">
+            {% for error in formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" id="quotationForm" novalidate>
+        {% csrf_token %}
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-1">Quotation Information</h5>
+                <small class="text-muted">Customer, business unit, validity dates and commercial terms.</small>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Customer <span class="text-danger">*</span></label>
+                        {{ form.customer }}
+                        {% for error in form.customer.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Business Unit <span class="text-danger">*</span></label>
+                        {{ form.business_unit }}
+                        {% for error in form.business_unit.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Order Type <span class="text-danger">*</span></label>
+                        {{ form.order_type }}
+                        {% for error in form.order_type.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Quotation Date</label>
+                        {{ form.quotation_date }}
+                        {% for error in form.quotation_date.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Valid Until</label>
+                        {{ form.valid_until }}
+                        {% for error in form.valid_until.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Discount</label>
+                        <div class="input-group">{{ form.discount }}<span class="input-group-text">RWF</span></div>
+                        {% for error in form.discount.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Tax</label>
+                        <div class="input-group">{{ form.tax }}<span class="input-group-text">RWF</span></div>
+                        {% for error in form.tax.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Notes</label>
+                        {{ form.notes }}
+                        {% for error in form.notes.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h5 class="mb-1">Quotation Items</h5>
+                    <small class="text-muted">Select published products or enter custom products and services.</small>
+                </div>
+                <button type="button" id="addItemButton" class="btn btn-success">+ Add Item</button>
+            </div>
+            <div class="card-body">
+                {{ formset.management_form }}
+                {{ product_lookup|json_script:"product-lookup-data" }}
+                <div id="quotationItems">
+                    {% for item_form in formset %}
+                        <div class="quotation-item border rounded p-3 mb-3">
+                            {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+                            {% if item_form.non_field_errors %}
+                                <div class="alert alert-danger py-2">{% for error in item_form.non_field_errors %}<div>{{ error }}</div>{% endfor %}</div>
+                            {% endif %}
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <strong>Item <span class="item-number">{{ forloop.counter }}</span></strong>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-item-button">Remove</button>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-lg-4">
+                                    <label class="form-label fw-semibold">Published Product</label>
+                                    {{ item_form.product }}
+                                    {% for error in item_form.product.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="form-label fw-semibold">Custom Product / Service</label>
+                                    {{ item_form.product_name }}
+                                    {% for error in item_form.product_name.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                                </div>
+                                <div class="col-lg-2">
+                                    <label class="form-label fw-semibold">Quantity</label>
+                                    {{ item_form.quantity }}
+                                    {% for error in item_form.quantity.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                                </div>
+                                <div class="col-lg-2">
+                                    <label class="form-label fw-semibold">Unit Price</label>
+                                    {{ item_form.unit_price }}
+                                    {% for error in item_form.unit_price.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                                </div>
+                                <div class="col-lg-9">
+                                    <label class="form-label fw-semibold">Specifications</label>
+                                    {{ item_form.specifications }}
+                                    {% for error in item_form.specifications.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                                </div>
+                                <div class="col-lg-3">
+                                    <label class="form-label fw-semibold">Line Subtotal</label>
+                                    <div class="input-group"><input type="text" class="form-control fw-bold line-subtotal" value="0.00" readonly><span class="input-group-text">RWF</span></div>
+                                </div>
+                            </div>
+                            <div class="d-none">{{ item_form.DELETE }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <template id="emptyItemTemplate">
+                    <div class="quotation-item border rounded p-3 mb-3">
+                        {% with item_form=formset.empty_form %}
+                            {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <strong>Item <span class="item-number"></span></strong>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-item-button">Remove</button>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-lg-4"><label class="form-label fw-semibold">Published Product</label>{{ item_form.product }}</div>
+                                <div class="col-lg-4"><label class="form-label fw-semibold">Custom Product / Service</label>{{ item_form.product_name }}</div>
+                                <div class="col-lg-2"><label class="form-label fw-semibold">Quantity</label>{{ item_form.quantity }}</div>
+                                <div class="col-lg-2"><label class="form-label fw-semibold">Unit Price</label>{{ item_form.unit_price }}</div>
+                                <div class="col-lg-9"><label class="form-label fw-semibold">Specifications</label>{{ item_form.specifications }}</div>
+                                <div class="col-lg-3"><label class="form-label fw-semibold">Line Subtotal</label><div class="input-group"><input type="text" class="form-control fw-bold line-subtotal" value="0.00" readonly><span class="input-group-text">RWF</span></div></div>
+                            </div>
+                            <div class="d-none">{{ item_form.DELETE }}</div>
+                        {% endwith %}
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div class="row justify-content-end mb-4">
+            <div class="col-xl-5">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white"><h5 class="mb-0">Financial Summary</h5></div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3"><span class="text-muted">Items Subtotal</span><strong id="itemsSubtotal">0.00 RWF</strong></div>
+                        <div class="d-flex justify-content-between mb-3"><span class="text-muted">Discount</span><strong id="discountPreview" class="text-danger">0.00 RWF</strong></div>
+                        <div class="d-flex justify-content-between mb-3"><span class="text-muted">Tax</span><strong id="taxPreview">0.00 RWF</strong></div>
+                        <div class="d-flex justify-content-between border-top pt-3"><span class="fw-semibold">Grand Total</span><strong id="grandTotal" class="text-success fs-5">0.00 RWF</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between gap-2">
+            <a href="{% url 'sales:quotation_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4">Save Quotation as Draft</button>
+        </div>
+    </form>
 </div>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById(
+        "quotationForm"
+    );
+
+    const itemsContainer = document.getElementById(
+        "quotationItems"
+    );
+
+    const addButton = document.getElementById(
+        "addItemButton"
+    );
+
+    const emptyTemplate = document.getElementById(
+        "emptyItemTemplate"
+    );
+
+    /*
+     * Do not hard-code "items".
+     * Django supplies the actual formset prefix.
+     */
+    const formsetPrefix = "{{ formset.prefix }}";
+
+    const totalForms = document.getElementById(
+        `id_${formsetPrefix}-TOTAL_FORMS`
+    );
+
+    const discountInput = document.getElementById(
+        "id_discount"
+    );
+
+    const taxInput = document.getElementById(
+        "id_tax"
+    );
+
+    const itemsSubtotalElement =
+        document.getElementById(
+            "itemsSubtotal"
+        );
+
+    const discountPreviewElement =
+        document.getElementById(
+            "discountPreview"
+        );
+
+    const taxPreviewElement =
+        document.getElementById(
+            "taxPreview"
+        );
+
+    const grandTotalElement =
+        document.getElementById(
+            "grandTotal"
+        );
+
+    const productLookupElement =
+        document.getElementById(
+            "product-lookup-data"
+        );
+
+    const productLookup =
+        productLookupElement
+            ? JSON.parse(
+                productLookupElement.textContent
+            )
+            : {};
+
+
+    function numberValue(value) {
+        const parsed = Number(value || 0);
+
+        return Number.isFinite(parsed)
+            ? parsed
+            : 0;
+    }
+
+
+    function formatMoney(value) {
+        return numberValue(value).toLocaleString(
+            "en-US",
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        ) + " RWF";
+    }
+
+
+    function getDeleteInput(row) {
+        return row.querySelector(
+            'input[name$="-DELETE"]'
+        );
+    }
+
+
+    function activeRows() {
+        return Array.from(
+            itemsContainer.querySelectorAll(
+                ".quotation-item"
+            )
+        ).filter(function (row) {
+            const deleteInput =
+                getDeleteInput(row);
+
+            return (
+                !deleteInput
+                || !deleteInput.checked
+            );
+        });
+    }
+
+
+    function updateItemNumbers() {
+        activeRows().forEach(
+            function (row, index) {
+                const numberElement =
+                    row.querySelector(
+                        ".item-number"
+                    );
+
+                if (numberElement) {
+                    numberElement.textContent =
+                        index + 1;
+                }
+            }
+        );
+    }
+
+
+    function updateLineSubtotal(row) {
+        const quantityInput =
+            row.querySelector(
+                ".quotation-quantity"
+            );
+
+        const priceInput =
+            row.querySelector(
+                ".quotation-price"
+            );
+
+        const subtotalInput =
+            row.querySelector(
+                ".line-subtotal"
+            );
+
+        const quantity = numberValue(
+            quantityInput
+                ? quantityInput.value
+                : 0
+        );
+
+        const price = numberValue(
+            priceInput
+                ? priceInput.value
+                : 0
+        );
+
+        const subtotal =
+            quantity * price;
+
+        if (subtotalInput) {
+            subtotalInput.value =
+                subtotal.toLocaleString(
+                    "en-US",
+                    {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }
+                );
+        }
+
+        return subtotal;
+    }
+
+
+    function updateFinancialSummary() {
+        let itemsSubtotal = 0;
+
+        activeRows().forEach(function (row) {
+            itemsSubtotal +=
+                updateLineSubtotal(row);
+        });
+
+        const discount = numberValue(
+            discountInput
+                ? discountInput.value
+                : 0
+        );
+
+        const tax = numberValue(
+            taxInput
+                ? taxInput.value
+                : 0
+        );
+
+        let grandTotal =
+            itemsSubtotal
+            - discount
+            + tax;
+
+        if (grandTotal < 0) {
+            grandTotal = 0;
+        }
+
+        itemsSubtotalElement.textContent =
+            formatMoney(itemsSubtotal);
+
+        discountPreviewElement.textContent =
+            formatMoney(discount);
+
+        taxPreviewElement.textContent =
+            formatMoney(tax);
+
+        grandTotalElement.textContent =
+            formatMoney(grandTotal);
+    }
+
+
+    function populateProductFields(row) {
+        const productSelect =
+            row.querySelector(
+                ".quotation-product"
+            );
+
+        const productNameInput =
+            row.querySelector(
+                ".quotation-product-name"
+            );
+
+        const priceInput =
+            row.querySelector(
+                ".quotation-price"
+            );
+
+        if (!productSelect) {
+            return;
+        }
+
+        const productId =
+            productSelect.value;
+
+        if (!productId) {
+            updateFinancialSummary();
+            return;
+        }
+
+        const selectedProduct =
+            productLookup[productId];
+
+        if (!selectedProduct) {
+            updateFinancialSummary();
+            return;
+        }
+
+        /*
+         * Automatically fill the commercial fields.
+         */
+        if (productNameInput) {
+            productNameInput.value =
+                selectedProduct.name || "";
+        }
+
+        if (priceInput) {
+            priceInput.value =
+                selectedProduct.selling_price
+                || "0";
+        }
+
+        updateFinancialSummary();
+    }
+
+
+    function removeRow(row) {
+        const rows = activeRows();
+
+        /*
+         * Keep at least one visible form.
+         */
+        if (rows.length <= 1) {
+            const productSelect =
+                row.querySelector(
+                    ".quotation-product"
+                );
+
+            const productNameInput =
+                row.querySelector(
+                    ".quotation-product-name"
+                );
+
+            const quantityInput =
+                row.querySelector(
+                    ".quotation-quantity"
+                );
+
+            const priceInput =
+                row.querySelector(
+                    ".quotation-price"
+                );
+
+            const specificationsInput =
+                row.querySelector(
+                    "textarea"
+                );
+
+            if (productSelect) {
+                productSelect.value = "";
+            }
+
+            if (productNameInput) {
+                productNameInput.value = "";
+            }
+
+            if (quantityInput) {
+                quantityInput.value = "1";
+            }
+
+            if (priceInput) {
+                priceInput.value = "";
+            }
+
+            if (specificationsInput) {
+                specificationsInput.value = "";
+            }
+
+            updateFinancialSummary();
+            return;
+        }
+
+        const deleteInput =
+            getDeleteInput(row);
+
+        if (deleteInput) {
+            deleteInput.checked = true;
+        }
+
+        row.classList.add("d-none");
+
+        updateItemNumbers();
+        updateFinancialSummary();
+    }
+
+
+    function bindRow(row) {
+        const productSelect =
+            row.querySelector(
+                ".quotation-product"
+            );
+
+        const quantityInput =
+            row.querySelector(
+                ".quotation-quantity"
+            );
+
+        const priceInput =
+            row.querySelector(
+                ".quotation-price"
+            );
+
+        const removeButton =
+            row.querySelector(
+                ".remove-item-button"
+            );
+
+        if (productSelect) {
+            productSelect.addEventListener(
+                "change",
+                function () {
+                    populateProductFields(row);
+                }
+            );
+        }
+
+        if (quantityInput) {
+            quantityInput.addEventListener(
+                "input",
+                updateFinancialSummary
+            );
+        }
+
+        if (priceInput) {
+            priceInput.addEventListener(
+                "input",
+                updateFinancialSummary
+            );
+        }
+
+        if (removeButton) {
+            removeButton.addEventListener(
+                "click",
+                function () {
+                    removeRow(row);
+                }
+            );
+        }
+
+        updateLineSubtotal(row);
+    }
+
+
+    function addItem() {
+        if (!totalForms) {
+            console.error(
+                "Formset management form was not found."
+            );
+            return;
+        }
+
+        const index = Number(
+            totalForms.value
+        );
+
+        const newHtml =
+            emptyTemplate.innerHTML.replaceAll(
+                "__prefix__",
+                index
+            );
+
+        itemsContainer.insertAdjacentHTML(
+            "beforeend",
+            newHtml
+        );
+
+        totalForms.value =
+            index + 1;
+
+        const rows =
+            itemsContainer.querySelectorAll(
+                ".quotation-item"
+            );
+
+        const newRow =
+            rows[rows.length - 1];
+
+        bindRow(newRow);
+        updateItemNumbers();
+        updateFinancialSummary();
+    }
+
+
+    itemsContainer.querySelectorAll(
+        ".quotation-item"
+    ).forEach(function (row) {
+        bindRow(row);
+    });
+
+
+    if (addButton) {
+        addButton.addEventListener(
+            "click",
+            addItem
+        );
+    }
+
+
+    if (discountInput) {
+        discountInput.addEventListener(
+            "input",
+            updateFinancialSummary
+        );
+    }
+
+
+    if (taxInput) {
+        taxInput.addEventListener(
+            "input",
+            updateFinancialSummary
+        );
+    }
+
+
+    /*
+     * Run before submission so every displayed
+     * calculation is current.
+     */
+    if (form) {
+        form.addEventListener(
+            "submit",
+            updateFinancialSummary
+        );
+    }
+
+
+    updateItemNumbers();
+    updateFinancialSummary();
+});
+</script>
 {% endblock %}

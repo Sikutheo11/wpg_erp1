@@ -3,7 +3,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-
+from django.views.decorators.http import require_POST
+from core.permissions import PermissionService
+from .models import Order
+from .services.delivery_service import DeliveryService
 from django.shortcuts import (
     get_object_or_404,
     redirect,
@@ -17,6 +20,10 @@ from .forms import (
 from .models import (
     Order,
     OrderItem,
+)
+from inventory.models import StockReservation
+from .services.inventory_fulfilment_service import (
+    InventoryFulfilmentService,
 )
 from orders.services import DeliveryService
 from .services import (
@@ -580,14 +587,16 @@ def order_list(request):
 
 # =========================================================
 # ORDER DETAIL
-# =========================================================
 
 @login_required
 def order_detail(request, pk):
+
     order = get_object_or_404(
         Order.objects.select_related(
             "user",
             "delivered_by",
+            "production_job",
+            "source_sales_quotation",
         ).prefetch_related(
             "items__product",
         ),
@@ -596,15 +605,45 @@ def order_detail(request, pk):
 
     items = order.items.all()
 
+    reservations = (
+        StockReservation.objects.filter(
+            order_item__order=order
+        )
+        .select_related(
+            "product",
+            "warehouse",
+        )
+    )
+
+    fulfilment = None
+
+    if order.status in {
+        "PENDING",
+        "CONFIRMED",
+        "PROCESSING",
+        "READY",
+        "DELIVERED",
+        "COMPLETED",
+        "CANCELLED",
+    }:
+        fulfilment = (
+            InventoryFulfilmentService.fulfilment_summary(
+                order=order
+            )
+        )
+
     item_form = OrderItemForm(
         order_type=order.order_type,
         business_unit=order.business_unit,
     )
 
-    can_edit_items = order.status in {
-        "DRAFT",
-        "PENDING",
-    }
+
+    can_edit_items = (
+        order.status in {
+            "DRAFT",
+            "PENDING",
+        }
+    )
 
     can_submit = (
         order.status == "DRAFT"
@@ -615,24 +654,64 @@ def order_detail(request, pk):
         order.status == "PENDING"
     )
 
-    can_cancel = order.status not in {
-        "DELIVERED",
-        "COMPLETED",
-        "CANCELLED",
+    can_route = (
+        order.status == "CONFIRMED"
+    )
+
+    can_prepare = (
+        order.status == "ROUTED"
+    )
+
+    can_mark_ready = (
+        order.status in {
+            "PROCESSING",
+            "IN_PRODUCTION",
+        }
+    )
+
+    can_dispatch = (
+        order.status == "READY"
+    )
+
+    can_deliver = (
+        order.status in {
+            "READY",
+            "DISPATCHED",
+        }
+    )
+
+    can_cancel = (
+        order.status not in {
+            "DELIVERED",
+            "COMPLETED",
+            "CANCELLED",
+        }
+    )
+
+    context = {
+        "order": order,
+        "items": items,
+
+        "reservations": reservations,
+        "fulfilment": fulfilment,
+
+        "item_form": item_form,
+
+        "can_edit_items": can_edit_items,
+        "can_submit": can_submit,
+        "can_confirm": can_confirm,
+        "can_route": can_route,
+        "can_prepare": can_prepare,
+        "can_mark_ready": can_mark_ready,
+        "can_dispatch": can_dispatch,
+        "can_deliver": can_deliver,
+        "can_cancel": can_cancel,
     }
 
     return render(
         request,
         "orders/order_detail.html",
-        {
-            "order": order,
-            "items": items,
-            "item_form": item_form,
-            "can_edit_items": can_edit_items,
-            "can_submit": can_submit,
-            "can_confirm": can_confirm,
-            "can_cancel": can_cancel,
-        },
+        context,
     )
 
 
@@ -1124,6 +1203,244 @@ def deliver_order(request, pk):
 
     else:
         messages.success(
+            request,
+            result["message"],
+        )
+
+    return redirect(
+        "orders:order_detail",
+        pk=order.pk,
+    )
+
+def _validation_message(error):
+    if hasattr(error, "message_dict"):
+        messages_list = []
+
+        for field_messages in error.message_dict.values():
+            messages_list.extend(field_messages)
+
+        return " ".join(
+            str(message)
+            for message in messages_list
+        )
+
+    if hasattr(error, "messages"):
+        return " ".join(
+            str(message)
+            for message in error.messages
+        )
+
+    return str(error)
+
+@login_required
+@require_POST
+def mark_ready(request, pk):
+    order = get_object_or_404(
+        Order,
+        pk=pk,
+    )
+
+    if not PermissionService.user_can_access_feature(
+        request.user,
+        "ORDER_DELIVERY",
+        action="edit",
+    ):
+        messages.error(
+            request,
+            "You do not have permission to mark orders as ready.",
+        )
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    try:
+        DeliveryService.mark_ready(
+            order=order,
+            actor=request.user,
+            note=request.POST.get(
+                "note",
+                "",
+            ),
+        )
+
+    except ValidationError as error:
+        messages.error(
+            request,
+            _validation_message(error),
+        )
+
+    else:
+        messages.success(
+            request,
+            (
+                f"Order {order.order_number} "
+                "is now ready for delivery."
+            ),
+        )
+
+    return redirect(
+        "orders:order_detail",
+        pk=order.pk,
+    )
+
+
+@login_required
+@require_POST
+def order_dispatch(request, pk):
+    order = get_object_or_404(
+        Order,
+        pk=pk,
+    )
+
+    if not PermissionService.user_can_access_feature(
+        request.user,
+        "ORDER_DELIVERY",
+        action="edit",
+    ):
+        messages.error(
+            request,
+            "You do not have permission to dispatch orders.",
+        )
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    try:
+        DeliveryService.dispatch_order(
+            order=order,
+            actor=request.user,
+            note=request.POST.get(
+                "note",
+                "",
+            ),
+        )
+
+    except ValidationError as error:
+        messages.error(
+            request,
+            _validation_message(error),
+        )
+
+    else:
+        messages.success(
+            request,
+            (
+                f"Order {order.order_number} "
+                "was dispatched successfully."
+            ),
+        )
+
+    return redirect(
+        "orders:order_detail",
+        pk=order.pk,
+    )
+
+@login_required
+@require_POST
+def order_mark_delivered(request, pk):
+    order = get_object_or_404(
+        Order,
+        pk=pk,
+    )
+
+    if not PermissionService.user_can_access_feature(
+        request.user,
+        "ORDER_DELIVERY",
+        action="approve",
+    ):
+        messages.error(
+            request,
+            "You do not have permission to complete deliveries.",
+        )
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    try:
+        result = DeliveryService.mark_delivered(
+            order=order,
+            actor=request.user,
+            note=request.POST.get(
+                "note",
+                "",
+            ),
+            fulfil_inventory=True,
+            strict_inventory=True,
+        )
+
+    except ValidationError as error:
+        messages.error(
+            request,
+            _validation_message(error),
+        )
+
+    else:
+        messages.success(
+            request,
+            result["message"],
+        )
+
+    return redirect(
+        "orders:order_detail",
+        pk=order.pk,
+    )
+
+@login_required
+@require_POST
+def cancel_delivery(request, pk):
+    order = get_object_or_404(
+        Order,
+        pk=pk,
+    )
+
+    if not PermissionService.user_can_access_feature(
+        request.user,
+        "ORDER_DELIVERY",
+        action="delete",
+    ):
+        messages.error(
+            request,
+            "You do not have permission to cancel deliveries.",
+        )
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    note = request.POST.get(
+        "note",
+        "",
+    ).strip()
+
+    if not note:
+        messages.error(
+            request,
+            "Provide a reason for cancelling the delivery.",
+        )
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    try:
+        result = DeliveryService.cancel_delivery(
+            order=order,
+            actor=request.user,
+            note=note,
+            release_inventory=True,
+        )
+
+    except ValidationError as error:
+        messages.error(
+            request,
+            _validation_message(error),
+        )
+
+    else:
+        messages.warning(
             request,
             result["message"],
         )
