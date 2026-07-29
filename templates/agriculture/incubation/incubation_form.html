@@ -1,0 +1,29 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<style>
+.inc-form{--agri:#166534;--dark:#14532d}.form-shell{max-width:980px;margin:auto}.form-card{border:0;border-radius:18px;overflow:hidden;box-shadow:0 12px 38px rgba(15,23,42,.08)}.form-head{padding:1.4rem 1.6rem;color:#fff;background:linear-gradient(135deg,var(--dark),var(--agri))}.form-label{font-size:.82rem;font-weight:700;color:#334155}.form-control,.form-select{min-height:44px;border-radius:10px;border-color:#dce3ea}textarea.form-control{min-height:auto}.btn-agri{color:#fff;background:var(--agri);border-color:var(--agri)}.btn-agri:hover{color:#fff;background:var(--dark)}
+</style>
+<div class="container-fluid py-4 inc-form"><div class="form-shell">
+  <a href="{% url 'agriculture:incubation_list' %}" class="text-decoration-none text-muted small"><i class="fas fa-arrow-left me-1"></i>Back to incubation</a>
+  <div class="card form-card mt-3">
+    <div class="form-head"><div class="small text-white-50 fw-bold text-uppercase">Poultry Hatchery</div><h3 class="fw-bold mb-1">{{ title }}</h3><p class="text-white-50 mb-0">Set eggs against an approved Agriculture operation and incubator asset.</p></div>
+    <form method="post" novalidate>{% csrf_token %}
+      <div class="card-body p-4">
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="row g-4">
+        {% for field in form %}
+          <div class="{% if field.name == 'notes' %}col-12{% else %}col-md-6{% endif %}">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+            {{ field }}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            {% for error in field.errors %}<div class="text-danger small mt-1"><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>{% endfor %}
+          </div>
+        {% endfor %}
+        </div>
+        <div class="alert alert-light border mt-4 mb-0 small text-muted"><i class="fas fa-circle-info text-success me-2"></i>Batch code is generated automatically. When chicks hatch, Core sends the output event to Inventory and the resulting StockMovement is linked back to this batch.</div>
+      </div>
+      <div class="card-footer bg-white p-4 d-flex justify-content-end gap-2"><a href="{% url 'agriculture:incubation_list' %}" class="btn btn-outline-secondary">Cancel</a><button class="btn btn-agri px-4"><i class="fas fa-egg me-2"></i>Set Eggs</button></div>
+    </form>
+  </div>
+</div></div>
+{% endblock %}

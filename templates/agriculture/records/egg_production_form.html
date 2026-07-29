@@ -1,0 +1,26 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<style>
+.record-page{--agri:#166534;--dark:#14532d}.record-shell{max-width:960px;margin:auto}.record-card{border:0;border-radius:18px;overflow:hidden;box-shadow:0 12px 38px rgba(15,23,42,.08)}.record-head{padding:1.4rem 1.6rem;color:#fff;background:linear-gradient(135deg,var(--dark),var(--agri))}.flock-strip{padding:1rem 1.25rem;background:#fffbeb;border-bottom:1px solid #fde68a}.form-label{font-size:.82rem;font-weight:700;color:#334155}.form-control,.form-select{min-height:44px;border-radius:10px;border-color:#dce3ea}textarea.form-control{min-height:auto}.btn-agri{color:#fff;background:var(--agri);border-color:var(--agri)}.btn-agri:hover{color:#fff;background:var(--dark)}
+</style>
+<div class="container-fluid py-4 record-page"><div class="record-shell">
+  <a href="{% url 'agriculture:flock_detail' flock.pk %}" class="text-decoration-none text-muted small"><i class="fas fa-arrow-left me-1"></i>Back to {{ flock.code }}</a>
+  <div class="card record-card mt-3">
+    <div class="record-head"><div class="small text-white-50 fw-bold text-uppercase">Poultry Production</div><h3 class="fw-bold mb-1">Record Egg Production</h3><p class="text-white-50 mb-0">Classify all collected eggs and prepare saleable output for Inventory.</p></div>
+    <div class="flock-strip d-flex flex-wrap justify-content-between gap-3"><span><strong>{{ flock.code }}</strong> · {{ flock.breed.name }}</span><span>Current flock: <strong>{{ flock.current_quantity }} birds</strong></span></div>
+    <form method="post" novalidate>{% csrf_token %}
+      <div class="card-body p-4">
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="row g-4">{% for field in form %}
+          <div class="{% if field.name == 'notes' %}col-12{% elif field.name == 'operation' or field.name == 'inventory_product' or field.name == 'warehouse' %}col-md-6{% else %}col-6 col-md-4{% endif %}">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="text-danger">*</span>{% endif %}</label>{{ field }}
+            {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+          </div>
+        {% endfor %}</div>
+        <div class="alert alert-warning-subtle border mt-4 mb-0 small"><i class="fas fa-egg me-2"></i>Collected eggs must equal saleable + hatching + cracked + dirty/rejected eggs. Inventory posting occurs only when a product and warehouse are selected.</div>
+      </div>
+      <div class="card-footer bg-white p-4 d-flex justify-content-end gap-2"><a href="{% url 'agriculture:flock_detail' flock.pk %}" class="btn btn-outline-secondary">Cancel</a><button class="btn btn-agri px-4"><i class="fas fa-save me-2"></i>Save Production</button></div>
+    </form>
+  </div>
+</div></div>
+{% endblock %}

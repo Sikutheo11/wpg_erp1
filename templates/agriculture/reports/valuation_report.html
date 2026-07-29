@@ -1,0 +1,58 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<style>
+.value-page{--agri:#166534;--dark:#14532d;--ink:#172033;--muted:#64748b}.report-head{padding:1.5rem;color:#fff;border-radius:18px;background:linear-gradient(135deg,var(--dark),var(--agri));box-shadow:0 16px 38px rgba(20,83,45,.16)}.filter-card,.metric-card,.panel{border:0;border-radius:16px;box-shadow:0 8px 28px rgba(15,23,42,.07)}.filter-card{background:#f8fafc}.metric-card{height:100%}.metric-card small{display:block;color:var(--muted);font-size:.69rem;font-weight:750;letter-spacing:.04em;text-transform:uppercase}.metric-card strong{color:var(--ink);font-size:1.45rem}.btn-agri{color:#fff;background:var(--agri);border-color:var(--agri)}.btn-agri:hover{color:#fff;background:var(--dark)}.data-table{margin:0;vertical-align:middle}.data-table th{padding:.75rem .9rem;color:var(--muted);background:#f8fafc;font-size:.67rem;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}.data-table td{padding:.82rem .9rem;border-color:#edf2f7;font-size:.82rem}.record-link{color:var(--ink);font-weight:750;text-decoration:none}.record-link:hover{color:var(--agri)}
+</style>
+<div class="container-fluid py-4 value-page">
+  <section class="report-head mb-4">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-8"><div class="small text-white-50 fw-bold text-uppercase">Agriculture · Management Accounting</div><h3 class="fw-bold mb-1">Poultry Valuation Report</h3><p class="text-white-50 mb-0">Cost-based valuation of biological assets, egg inventory, mortality and operating inputs.</p></div>
+      <div class="col-lg-4 text-lg-end"><span class="badge bg-light text-success">Method: {{ summary.valuation_method }}</span></div>
+    </div>
+  </section>
+
+  <div class="card filter-card p-3 mb-4">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-4"><label class="form-label small fw-semibold">Farm</label><select name="farm" class="form-select"><option value="">All farms</option>{% for farm in farms %}<option value="{{ farm.pk }}" {% if selected_farm_id == farm.pk|stringformat:"s" %}selected{% endif %}>{{ farm.name }}</option>{% endfor %}</select></div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">Start Date</label><input type="date" name="start_date" value="{{ start_date }}" class="form-control"></div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">End Date</label><input type="date" name="end_date" value="{{ end_date }}" class="form-control"></div>
+      <div class="col-md-2 d-flex gap-2"><button class="btn btn-agri flex-grow-1"><i class="fas fa-filter"></i></button><a href="{% url 'agriculture:valuation_report' %}" class="btn btn-outline-secondary"><i class="fas fa-undo"></i></a></div>
+    </form>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl"><div class="card metric-card"><div class="card-body"><small>Active Flocks</small><strong>{{ summary.active_flock_count }}</strong></div></div></div>
+    <div class="col-sm-6 col-xl"><div class="card metric-card"><div class="card-body"><small>Total Birds</small><strong>{{ summary.total_birds }}</strong></div></div></div>
+    <div class="col-sm-6 col-xl"><div class="card metric-card"><div class="card-body"><small>Biological Assets</small><strong>{{ summary.biological_asset_value|floatformat:0 }} RWF</strong></div></div></div>
+    <div class="col-sm-6 col-xl"><div class="card metric-card"><div class="card-body"><small>Egg Inventory</small><strong>{{ summary.egg_inventory_value|floatformat:0 }} RWF</strong></div></div></div>
+    <div class="col-sm-6 col-xl"><div class="card metric-card"><div class="card-body"><small>Total Valued Assets</small><strong class="text-success">{{ summary.total_valued_assets|floatformat:0 }} RWF</strong></div></div></div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4"><div class="card metric-card"><div class="card-body"><small>Feed Cost</small><strong>{{ summary.feed_cost|floatformat:0 }} RWF</strong></div></div></div>
+    <div class="col-lg-4"><div class="card metric-card"><div class="card-body"><small>Health Cost</small><strong>{{ summary.health_cost|floatformat:0 }} RWF</strong></div></div></div>
+    <div class="col-lg-4"><div class="card metric-card"><div class="card-body"><small>Mortality Loss</small><strong class="text-danger">{{ summary.mortality_loss|floatformat:0 }} RWF</strong></div></div></div>
+  </div>
+
+  <div class="card panel mb-4">
+    <div class="card-header bg-white py-3"><h6 class="fw-bold mb-0">Flock Valuation</h6></div>
+    <div class="table-responsive"><table class="table data-table">
+      <thead><tr><th>Flock</th><th>Farm</th><th>Birds</th><th>Unit Cost</th><th>Asset Value</th><th>Feed</th><th>Health</th><th>Mortality Loss</th><th>Cost / Egg</th></tr></thead>
+      <tbody>{% for line in summary.flocks %}
+        <tr><td><a href="{% url 'agriculture:flock_detail' line.flock_id %}" class="record-link">{{ line.flock_code }}</a></td><td>{{ line.flock.farm.name }}</td><td>{{ line.current_quantity }}</td><td>{{ line.average_unit_cost|floatformat:0 }}</td><td class="fw-bold">{{ line.current_biological_asset_value|floatformat:0 }}</td><td>{{ line.feed_cost|floatformat:0 }}</td><td>{{ line.health_cost|floatformat:0 }}</td><td class="text-danger">{{ line.mortality_loss|floatformat:0 }}</td><td>{{ line.operating_cost_per_egg|floatformat:2 }}</td></tr>
+      {% empty %}<tr><td colspan="9" class="text-center text-muted py-4">No active flocks available for valuation.</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+
+  <div class="card panel">
+    <div class="card-header bg-white py-3"><h6 class="fw-bold mb-0">Egg Inventory by Warehouse</h6></div>
+    <div class="table-responsive"><table class="table data-table">
+      <thead><tr><th>Product</th><th>Warehouse</th><th>Physical Quantity</th><th>Standard Cost</th><th>Inventory Value</th></tr></thead>
+      <tbody>{% for line in summary.egg_inventory.lines %}
+        <tr><td>{{ line.product.name }}</td><td>{{ line.warehouse.name }}</td><td>{{ line.quantity }}</td><td>{{ line.unit_cost|floatformat:2 }} RWF</td><td class="fw-bold">{{ line.inventory_value|floatformat:0 }} RWF</td></tr>
+      {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No egg products have been posted to Inventory.</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <div class="card-footer bg-white small text-muted"><i class="fas fa-circle-info text-success me-1"></i>{{ summary.note }}</div>
+  </div>
+</div>
+{% endblock %}

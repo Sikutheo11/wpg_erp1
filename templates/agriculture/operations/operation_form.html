@@ -1,0 +1,136 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<style>
+    .operation-form-page {
+        --agri: #166534;
+        --agri-dark: #14532d;
+    }
+    .form-shell {
+        max-width: 980px;
+        margin: 0 auto;
+    }
+    .form-card {
+        border: 0;
+        border-radius: 18px;
+        box-shadow: 0 12px 38px rgba(15, 23, 42, .08);
+        overflow: hidden;
+    }
+    .form-heading {
+        color: #fff;
+        background: linear-gradient(135deg, var(--agri-dark), var(--agri));
+        padding: 1.4rem 1.6rem;
+    }
+    .form-label {
+        color: #334155;
+        font-size: .82rem;
+        font-weight: 700;
+    }
+    .form-control, .form-select {
+        min-height: 44px;
+        border-color: #dce3ea;
+        border-radius: 10px;
+    }
+    textarea.form-control { min-height: auto; }
+    .form-control:focus, .form-select:focus {
+        border-color: #22c55e;
+        box-shadow: 0 0 0 .2rem rgba(34, 197, 94, .12);
+    }
+    .btn-agri {
+        color: #fff;
+        background: var(--agri);
+        border-color: var(--agri);
+    }
+    .btn-agri:hover {
+        color: #fff;
+        background: var(--agri-dark);
+        border-color: var(--agri-dark);
+    }
+</style>
+
+<div class="container-fluid py-4 operation-form-page">
+    <div class="form-shell">
+        <div class="mb-3">
+            <a href="{% url 'agriculture:operation_list' %}"
+               class="text-decoration-none text-muted small">
+                <i class="fas fa-arrow-left me-1"></i>
+                Back to operations
+            </a>
+        </div>
+
+        <div class="card form-card">
+            <div class="form-heading">
+                <div class="small text-white-50 text-uppercase fw-bold mb-1">
+                    Agriculture Workflow
+                </div>
+                <h3 class="fw-bold mb-1">{{ title }}</h3>
+                <p class="mb-0 text-white-50">
+                    The operation will be created as Draft before approval.
+                </p>
+            </div>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="card-body p-4">
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-4">
+                        {% for field in form %}
+                        <div class="{% if field.name == 'notes' %}col-12{% else %}col-md-6{% endif %}">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+
+                            {{ field }}
+
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+
+                            {% for error in field.errors %}
+                            <div class="text-danger small mt-1">
+                                <i class="fas fa-exclamation-circle me-1"></i>
+                                {{ error }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="alert alert-light border mt-4 mb-0">
+                        <div class="d-flex gap-2">
+                            <i class="fas fa-circle-info text-success mt-1"></i>
+                            <small class="text-muted">
+                                Status, approval information, actual cost and Finance
+                                reference are managed automatically by Core Workflow
+                                and the Finance Engine.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-white border-top p-4 d-flex justify-content-end gap-2">
+                    <a href="{% url 'agriculture:operation_list' %}"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-agri px-4">
+                        <i class="fas fa-save me-2"></i>
+                        Save Draft
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

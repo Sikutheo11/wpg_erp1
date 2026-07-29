@@ -1,0 +1,226 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">
+                {{ title|default:"Poultry House" }}
+            </h3>
+
+            {% if farm %}
+                <p class="text-muted mb-0">
+                    Farm: {{ farm.code }} — {{ farm.name }}
+                </p>
+            {% endif %}
+        </div>
+
+        {% if farm %}
+            <a href="{% url 'agriculture:farm_detail' farm.pk %}"
+               class="btn btn-outline-secondary">
+                Back to Farm
+            </a>
+        {% else %}
+            <a href="{% url 'agriculture:farm_list' %}"
+               class="btn btn-outline-secondary">
+                Back to Farms
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 col-xl-7">
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0">
+                        House Information
+                    </h5>
+                </div>
+
+                <div class="card-body p-4">
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.farm.id_for_label }}"
+                                   class="form-label fw-semibold">
+                                {{ form.farm.label }}
+                            </label>
+
+                            {{ form.farm }}
+
+                            {% if form.farm.help_text %}
+                                <div class="form-text">
+                                    {{ form.farm.help_text }}
+                                </div>
+                            {% endif %}
+
+                            {% for error in form.farm.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-5 mb-3">
+                                <label for="{{ form.code.id_for_label }}"
+                                       class="form-label fw-semibold">
+                                    {{ form.code.label }}
+                                </label>
+
+                                {{ form.code }}
+
+                                {% for error in form.code.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-7 mb-3">
+                                <label for="{{ form.name.id_for_label }}"
+                                       class="form-label fw-semibold">
+                                    {{ form.name.label }}
+                                </label>
+
+                                {{ form.name }}
+
+                                {% for error in form.name.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.house_type.id_for_label }}"
+                                       class="form-label fw-semibold">
+                                    {{ form.house_type.label }}
+                                </label>
+
+                                {{ form.house_type }}
+
+                                {% for error in form.house_type.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.capacity.id_for_label }}"
+                                       class="form-label fw-semibold">
+                                    {{ form.capacity.label }}
+                                </label>
+
+                                {{ form.capacity }}
+
+                                <div class="form-text">
+                                    Maximum number of birds this house can hold.
+                                </div>
+
+                                {% for error in form.capacity.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}"
+                                   class="form-label fw-semibold">
+                                {{ form.description.label }}
+                            </label>
+
+                            {{ form.description }}
+
+                            {% for error in form.description.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="form-check mb-4">
+                            {{ form.is_active }}
+
+                            <label for="{{ form.is_active.id_for_label }}"
+                                   class="form-check-label fw-semibold">
+                                {{ form.is_active.label }}
+                            </label>
+
+                            {% for error in form.is_active.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit"
+                                    class="btn btn-success">
+                                {{ submit_label|default:"Save House" }}
+                            </button>
+
+                            {% if farm %}
+                                <a href="{% url 'agriculture:farm_detail' farm.pk %}"
+                                   class="btn btn-light border">
+                                    Cancel
+                                </a>
+                            {% else %}
+                                <a href="{% url 'agriculture:farm_list' %}"
+                                   class="btn btn-light border">
+                                    Cancel
+                                </a>
+                            {% endif %}
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="col-lg-4 col-xl-5 mt-4 mt-lg-0">
+            <div class="card border-0 bg-light">
+                <div class="card-body">
+                    <h6 class="fw-bold">House setup guidance</h6>
+
+                    <ul class="text-muted small mb-0">
+                        <li class="mb-2">
+                            Use a unique house code within the selected farm.
+                        </li>
+                        <li class="mb-2">
+                            Capacity represents the maximum safe number of birds.
+                        </li>
+                        <li class="mb-2">
+                            Select the house type according to its poultry purpose.
+                        </li>
+                        <li>
+                            The selected farm must have an Agriculture warehouse.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

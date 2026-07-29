@@ -1,0 +1,58 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<style>
+.flock-detail{--agri:#166534;--dark:#14532d;--ink:#172033;--muted:#64748b}.banner{padding:1.5rem;color:#fff;border-radius:18px;background:linear-gradient(135deg,var(--dark),var(--agri));box-shadow:0 16px 38px rgba(20,83,45,.16)}.panel{border:0;border-radius:16px;box-shadow:0 8px 28px rgba(15,23,42,.07)}.panel .card-header{padding:1rem 1.2rem;background:#fff;border-color:#edf2f7}.title{font-weight:750;color:var(--ink)}.metric{height:100%;padding:1rem;border-radius:12px;background:#f8fafc}.metric small{display:block;color:var(--muted);font-size:.7rem;text-transform:uppercase}.metric strong{font-size:1.25rem;color:var(--ink)}.data-table{margin:0;vertical-align:middle}.data-table th{padding:.7rem .9rem;color:var(--muted);background:#f8fafc;font-size:.67rem;text-transform:uppercase;white-space:nowrap}.data-table td{padding:.8rem .9rem;border-color:#edf2f7;font-size:.82rem}.quick-btn{color:var(--agri);background:#fff;border:1px solid #bbf7d0}.quick-btn:hover{color:#fff;background:var(--agri)}
+</style>
+<div class="container-fluid py-4 flock-detail">
+  <a href="{% url 'agriculture:flock_list' %}" class="text-decoration-none text-muted small"><i class="fas fa-arrow-left me-1"></i>Back to flocks</a>
+  <section class="banner my-3">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-6"><div class="small text-white-50 text-uppercase fw-bold">{{ flock.get_purpose_display }}</div><h3 class="fw-bold mb-2">{{ flock.code }}</h3><div class="text-white-50">{{ flock.farm.name }} · {{ flock.house.code }} · {{ flock.breed.name }}</div></div>
+      <div class="col-lg-6"><div class="d-flex flex-wrap justify-content-lg-end gap-2">
+        <a class="btn quick-btn" href="{% url 'agriculture:daily_record_create' flock.pk %}"><i class="fas fa-calendar-day me-1"></i>Daily</a>
+        <a class="btn quick-btn" href="{% url 'agriculture:egg_production_create' flock.pk %}"><i class="fas fa-egg me-1"></i>Eggs</a>
+        <a class="btn quick-btn" href="{% url 'agriculture:feeding_record_create' flock.pk %}"><i class="fas fa-wheat-awn me-1"></i>Feed</a>
+        <a class="btn quick-btn" href="{% url 'agriculture:health_record_create' flock.pk %}"><i class="fas fa-syringe me-1"></i>Health</a>
+        <a class="btn btn-outline-light" href="{% url 'agriculture:mortality_record_create' flock.pk %}"><i class="fas fa-triangle-exclamation me-1"></i>Mortality</a>
+      </div></div>
+    </div>
+  </section>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="metric"><small>Current Birds</small><strong>{{ flock.current_quantity }}</strong></div></div>
+    <div class="col-6 col-lg-3"><div class="metric"><small>Initial Birds</small><strong>{{ flock.initial_quantity }}</strong></div></div>
+    <div class="col-6 col-lg-3"><div class="metric"><small>Age</small><strong>{{ flock.age_in_weeks }} weeks</strong></div></div>
+    <div class="col-6 col-lg-3"><div class="metric"><small>Status</small><strong>{{ flock.get_status_display }}</strong></div></div>
+  </div>
+
+  <div class="card panel mb-4"><div class="card-header"><div class="title">Flock Profile</div></div><div class="card-body p-4"><div class="row g-4">
+    <div class="col-md-3"><small class="text-muted">Source</small><div class="fw-semibold">{{ flock.get_source_display }}</div></div>
+    <div class="col-md-3"><small class="text-muted">Arrival / Hatch Date</small><div class="fw-semibold">{{ flock.arrival_or_hatch_date|date:"d M Y" }}</div></div>
+    <div class="col-md-3"><small class="text-muted">Average Unit Cost</small><div class="fw-semibold">{{ flock.average_unit_cost|floatformat:0 }} RWF</div></div>
+    <div class="col-md-3"><small class="text-muted">Inventory Product</small><div class="fw-semibold">{{ flock.livestock_product|default:"Not linked" }}</div></div>
+    {% if flock.source_operation %}<div class="col-12"><small class="text-muted">Source Operation</small><div><a href="{% url 'agriculture:operation_detail' flock.source_operation.pk %}" class="fw-semibold text-success text-decoration-none">{{ flock.source_operation.code }}</a></div></div>{% endif %}
+  </div></div></div>
+
+  <div class="row g-4">
+    <div class="col-xl-7">
+      <div class="card panel mb-4"><div class="card-header"><div class="title">Daily Movement Records</div></div><div class="table-responsive"><table class="table data-table"><thead><tr><th>Date</th><th>Opening</th><th>Added/In</th><th>Loss/Out</th><th>Closing</th><th>Weight</th></tr></thead><tbody>
+      {% for record in daily_records %}<tr><td>{{ record.record_date|date:"d M Y" }}</td><td>{{ record.opening_quantity }}</td><td>{{ record.additions|add:record.transferred_in }}</td><td>{{ record.mortality|add:record.culls|add:record.sold|add:record.transferred_out }}</td><td class="fw-bold">{{ record.closing_quantity }}</td><td>{{ record.average_weight_kg|default:"—" }}</td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No daily records.</td></tr>{% endfor %}
+      </tbody></table></div></div>
+      <div class="card panel"><div class="card-header"><div class="title">Egg Production</div></div><div class="table-responsive"><table class="table data-table"><thead><tr><th>Date</th><th>Collected</th><th>Saleable</th><th>Hatching</th><th>Rejected</th><th>Rate</th></tr></thead><tbody>
+      {% for record in egg_records %}<tr><td>{{ record.record_date|date:"d M Y" }}</td><td class="fw-bold">{{ record.eggs_collected }}</td><td>{{ record.saleable_eggs }}</td><td>{{ record.hatching_eggs }}</td><td>{{ record.cracked_eggs|add:record.dirty_or_rejected_eggs }}</td><td class="text-success fw-semibold">{{ record.laying_rate }}%</td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No egg-production records.</td></tr>{% endfor %}
+      </tbody></table></div></div>
+    </div>
+    <div class="col-xl-5">
+      <div class="card panel mb-4"><div class="card-header"><div class="title">Feeding</div></div><div class="table-responsive"><table class="table data-table"><thead><tr><th>Date</th><th>Feed</th><th>Quantity</th><th>Cost</th></tr></thead><tbody>
+      {% for record in feeding_records %}<tr><td>{{ record.record_date|date:"d M" }}</td><td>{{ record.feed_product }}</td><td>{{ record.quantity_kg }} kg</td><td>{{ record.total_cost|floatformat:0 }}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted py-4">No feeding records.</td></tr>{% endfor %}
+      </tbody></table></div></div>
+      <div class="card panel mb-4"><div class="card-header"><div class="title">Health & Vaccination</div></div><div class="table-responsive"><table class="table data-table"><thead><tr><th>Date</th><th>Type</th><th>Condition / Vaccine</th><th>Birds</th></tr></thead><tbody>
+      {% for record in health_records %}<tr><td>{{ record.record_date|date:"d M" }}</td><td>{{ record.get_record_type_display }}</td><td>{{ record.condition_or_vaccine }}</td><td>{{ record.birds_treated }}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted py-4">No health records.</td></tr>{% endfor %}
+      </tbody></table></div></div>
+      <div class="card panel"><div class="card-header"><div class="title text-danger">Mortality</div></div><div class="table-responsive"><table class="table data-table"><thead><tr><th>Date</th><th>Quantity</th><th>Cause</th><th>Action</th></tr></thead><tbody>
+      {% for record in mortality_records %}<tr><td>{{ record.record_date|date:"d M" }}</td><td class="text-danger fw-bold">{{ record.quantity }}</td><td>{{ record.get_suspected_cause_display }}</td><td>{{ record.action_taken|default:"—"|truncatechars:30 }}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted py-4">No mortality records.</td></tr>{% endfor %}
+      </tbody></table></div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

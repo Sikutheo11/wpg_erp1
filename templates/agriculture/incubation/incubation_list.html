@@ -1,0 +1,34 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<style>
+.inc-page{--agri:#166534;--dark:#14532d;--ink:#172033;--muted:#64748b}.btn-agri{color:#fff;background:var(--agri);border-color:var(--agri)}.btn-agri:hover{color:#fff;background:var(--dark)}.filter-card,.data-card{border:0;border-radius:16px;box-shadow:0 8px 28px rgba(15,23,42,.07)}.filter-card{background:#f8fafc}.data-table{margin:0;vertical-align:middle}.data-table th{padding:.8rem 1rem;color:var(--muted);background:#f8fafc;font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}.data-table td{padding:.9rem 1rem;border-color:#edf2f7;font-size:.85rem}.record-link{color:var(--ink);font-weight:800;text-decoration:none}.record-link:hover{color:var(--agri)}.status-pill{padding:.32rem .58rem;border-radius:999px;font-size:.68rem;font-weight:750}.status-planned,.status-cancelled{color:#475569;background:#e2e8f0}.status-set,.status-candled,.status-hatching{color:#92400e;background:#fef3c7}.status-completed{color:#166534;background:#dcfce7}.empty-state{padding:3rem;text-align:center;color:var(--muted)}
+</style>
+<div class="container-fluid py-4 inc-page">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div><div class="small text-success fw-bold text-uppercase">Agriculture · Hatchery</div><h3 class="fw-bold mb-1">Incubation Batches</h3><p class="text-muted mb-0">Track eggs from setting and candling through chick output.</p></div>
+    <a href="{% url 'agriculture:incubation_create' %}" class="btn btn-agri"><i class="fas fa-plus me-2"></i>New Batch</a>
+  </div>
+  <div class="card filter-card p-3 mb-4">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-5"><label class="form-label small fw-semibold">Batch Status</label><select name="status" class="form-select"><option value="">All statuses</option>{% for value,label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-md-4 d-flex gap-2"><button class="btn btn-agri"><i class="fas fa-filter me-1"></i>Filter</button><a href="{% url 'agriculture:incubation_list' %}" class="btn btn-outline-secondary">Clear</a></div>
+    </form>
+  </div>
+  <div class="card data-card"><div class="table-responsive"><table class="table data-table">
+    <thead><tr><th>Batch</th><th>Source Flock</th><th>Eggs Set</th><th>Set Date</th><th>Expected Hatch</th><th>Fertile</th><th>Chicks</th><th>Hatchability</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for batch in batches %}
+      <tr>
+        <td><a href="{% url 'agriculture:incubation_detail' batch.pk %}" class="record-link">{{ batch.code }}</a></td>
+        <td>{% if batch.source_flock %}<a href="{% url 'agriculture:flock_detail' batch.source_flock.pk %}" class="text-success text-decoration-none">{{ batch.source_flock.code }}</a>{% else %}<span class="text-muted">External eggs</span>{% endif %}</td>
+        <td class="fw-bold">{{ batch.eggs_set }}</td><td>{{ batch.set_date|date:"d M Y" }}</td><td>{{ batch.expected_hatch_date|date:"d M Y" }}</td><td>{{ batch.fertile_eggs }}</td><td class="fw-bold text-success">{{ batch.chicks_hatched }}</td><td>{{ batch.hatchability_rate }}%</td>
+        <td><span class="status-pill status-{{ batch.status|lower }}">{{ batch.get_status_display }}</span></td>
+        <td><a href="{% url 'agriculture:incubation_detail' batch.pk %}" class="btn btn-sm btn-outline-dark">View</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="10"><div class="empty-state"><i class="fas fa-egg fa-2x mb-3"></i><h6 class="fw-bold">No incubation batches found</h6><a href="{% url 'agriculture:incubation_create' %}" class="btn btn-sm btn-agri">Create Batch</a></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div></div>
+</div>
+{% endblock %}

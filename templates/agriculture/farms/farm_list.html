@@ -1,0 +1,159 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<style>
+    .farm-page { --agri: #166534; --agri-dark: #14532d; --ink: #172033; --muted: #64748b; }
+    .btn-agri { color: #fff; background: var(--agri); border-color: var(--agri); }
+    .btn-agri:hover { color: #fff; background: var(--agri-dark); border-color: var(--agri-dark); }
+    .farm-card {
+        height: 100%;
+        border: 0;
+        border-radius: 16px;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, .07);
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .farm-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 14px 34px rgba(15, 23, 42, .11);
+    }
+    .farm-icon {
+        width: 48px;
+        height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--agri);
+        background: #dcfce7;
+        border-radius: 14px;
+    }
+    .farm-code {
+        color: var(--agri);
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+    .farm-name {
+        color: var(--ink);
+        text-decoration: none;
+    }
+    .farm-name:hover { color: var(--agri); }
+    .farm-stat {
+        padding: .75rem;
+        border-radius: 11px;
+        background: #f8fafc;
+        text-align: center;
+    }
+    .farm-stat strong { display: block; color: var(--ink); font-size: 1.15rem; }
+    .farm-stat span { color: var(--muted); font-size: .7rem; text-transform: uppercase; }
+    .empty-card {
+        border: 1px dashed #cbd5e1;
+        border-radius: 16px;
+        padding: 4rem 1rem;
+        color: var(--muted);
+        background: #fff;
+        text-align: center;
+    }
+</style>
+
+<div class="container-fluid py-4 farm-page">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="farm-code mb-1">Agriculture · Master Data</div>
+            <h3 class="fw-bold mb-1">Poultry Farms</h3>
+            <p class="text-muted mb-0">
+                Manage farm locations, responsible employees and shared warehouses.
+            </p>
+        </div>
+        <a href="{% url 'agriculture:farm_create' %}" class="btn btn-agri">
+            <i class="fas fa-plus me-2"></i>
+            New Farm
+        </a>
+    </div>
+
+    <div class="row g-4">
+        {% for farm in farms %}
+        <div class="col-md-6 col-xl-4">
+            <div class="card farm-card">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                        <span class="farm-icon">
+                            <i class="fas fa-tractor"></i>
+                        </span>
+                        {% if farm.is_active %}
+                            <span class="badge rounded-pill text-bg-success">Active</span>
+                        {% else %}
+                            <span class="badge rounded-pill text-bg-secondary">Inactive</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="farm-code">{{ farm.code }}</div>
+                    <h5 class="fw-bold mt-1 mb-2">
+                        <a href="{% url 'agriculture:farm_detail' farm.pk %}"
+                           class="farm-name">
+                            {{ farm.name }}
+                        </a>
+                    </h5>
+                    <p class="text-muted small mb-3">
+                        <i class="fas fa-location-dot me-1"></i>
+                        {{ farm.location|default:"Location not provided" }}
+                    </p>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="farm-stat">
+                                <strong>{{ farm.house_count }}</strong>
+                                <span>Houses</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="farm-stat">
+                                <strong>{{ farm.flock_count }}</strong>
+                                <span>Flocks</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="small border-top pt-3">
+                        <div class="d-flex justify-content-between gap-2 mb-2">
+                            <span class="text-muted">Manager</span>
+                            <span class="fw-semibold text-end">
+                                {{ farm.manager|default:"Unassigned" }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between gap-2">
+                            <span class="text-muted">Warehouse</span>
+                            <span class="fw-semibold text-end">
+                                {{ farm.warehouse|default:"Not linked" }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-white border-top px-4 py-3 d-flex gap-2">
+                    <a href="{% url 'agriculture:farm_detail' farm.pk %}"
+                       class="btn btn-sm btn-agri flex-grow-1">
+                        Open Farm
+                    </a>
+                    <a href="{% url 'agriculture:farm_update' farm.pk %}"
+                       class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-pen"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="empty-card">
+                <i class="fas fa-tractor fa-2x mb-3 text-secondary"></i>
+                <h5 class="fw-bold">No poultry farms yet</h5>
+                <p>Create the first farm before adding houses and flocks.</p>
+                <a href="{% url 'agriculture:farm_create' %}" class="btn btn-agri">
+                    Create First Farm
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

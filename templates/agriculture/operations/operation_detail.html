@@ -1,0 +1,415 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<style>
+    .operation-detail {
+        --agri: #166534;
+        --agri-dark: #14532d;
+        --ink: #172033;
+        --muted: #64748b;
+    }
+    .detail-card {
+        border: 0;
+        border-radius: 16px;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, .07);
+    }
+    .operation-banner {
+        color: #fff;
+        background: linear-gradient(135deg, var(--agri-dark), var(--agri));
+        border-radius: 18px;
+        padding: 1.5rem;
+    }
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: .42rem .7rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .16);
+        border: 1px solid rgba(255, 255, 255, .28);
+        font-size: .75rem;
+        font-weight: 750;
+    }
+    .info-label {
+        color: var(--muted);
+        font-size: .7rem;
+        font-weight: 750;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+    }
+    .info-value {
+        color: var(--ink);
+        font-size: .9rem;
+        font-weight: 650;
+    }
+    .section-title {
+        color: var(--ink);
+        font-size: .95rem;
+        font-weight: 750;
+    }
+    .metric-box {
+        padding: 1rem;
+        border: 1px solid #e8edf3;
+        border-radius: 12px;
+        background: #f8fafc;
+    }
+    .timeline {
+        position: relative;
+        padding-left: 1.3rem;
+    }
+    .timeline::before {
+        content: "";
+        position: absolute;
+        top: .4rem;
+        bottom: .4rem;
+        left: .34rem;
+        width: 2px;
+        background: #dcfce7;
+    }
+    .timeline-item {
+        position: relative;
+        padding: 0 0 1.15rem .65rem;
+    }
+    .timeline-item::before {
+        content: "";
+        position: absolute;
+        top: .28rem;
+        left: -1.04rem;
+        width: 10px;
+        height: 10px;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        background: var(--agri);
+        box-shadow: 0 0 0 2px #bbf7d0;
+    }
+    .btn-agri {
+        color: #fff;
+        background: var(--agri);
+        border-color: var(--agri);
+    }
+    .btn-agri:hover {
+        color: #fff;
+        background: var(--agri-dark);
+        border-color: var(--agri-dark);
+    }
+</style>
+
+<div class="container-fluid py-4 operation-detail">
+    <div class="mb-3">
+        <a href="{% url 'agriculture:operation_list' %}"
+           class="text-decoration-none text-muted small">
+            <i class="fas fa-arrow-left me-1"></i>
+            Back to operations
+        </a>
+    </div>
+
+    <section class="operation-banner mb-4">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-7">
+                <div class="small text-white-50 text-uppercase fw-bold mb-1">
+                    {{ operation.get_operation_type_display }}
+                </div>
+                <h3 class="fw-bold mb-2">{{ operation.code }}</h3>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="status-pill">
+                        <i class="fas fa-circle me-2 small"></i>
+                        {{ operation.get_status_display }}
+                    </span>
+                    <span class="status-pill">
+                        <i class="fas fa-tractor me-2"></i>
+                        {{ operation.farm.name }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                    {% if operation.status == "DRAFT" %}
+                    <form method="post"
+                          action="{% url 'agriculture:operation_action' operation.pk 'submit' %}">
+                        {% csrf_token %}
+                        <button class="btn btn-light" type="submit">
+                            <i class="fas fa-paper-plane me-1"></i>
+                            Submit
+                        </button>
+                    </form>
+                    {% elif operation.status == "PENDING" %}
+                    <form method="post"
+                          action="{% url 'agriculture:operation_action' operation.pk 'approve' %}">
+                        {% csrf_token %}
+                        <button class="btn btn-light" type="submit">
+                            <i class="fas fa-check me-1"></i>
+                            Approve
+                        </button>
+                    </form>
+                    <button class="btn btn-outline-light"
+                            data-bs-toggle="modal"
+                            data-bs-target="#returnModal">
+                        Return
+                    </button>
+                    {% elif operation.status == "APPROVED" %}
+                    <form method="post"
+                          action="{% url 'agriculture:operation_action' operation.pk 'start' %}">
+                        {% csrf_token %}
+                        <button class="btn btn-light" type="submit">
+                            <i class="fas fa-play me-1"></i>
+                            Start
+                        </button>
+                    </form>
+                    {% elif operation.status == "ACTIVE" %}
+                    <button class="btn btn-outline-light"
+                            data-bs-toggle="modal"
+                            data-bs-target="#holdModal">
+                        <i class="fas fa-pause me-1"></i>
+                        Hold
+                    </button>
+                    <form method="post"
+                          action="{% url 'agriculture:operation_action' operation.pk 'complete' %}">
+                        {% csrf_token %}
+                        <button class="btn btn-light" type="submit">
+                            <i class="fas fa-check-double me-1"></i>
+                            Complete
+                        </button>
+                    </form>
+                    {% elif operation.status == "ON_HOLD" %}
+                    <form method="post"
+                          action="{% url 'agriculture:operation_action' operation.pk 'resume' %}">
+                        {% csrf_token %}
+                        <button class="btn btn-light" type="submit">
+                            <i class="fas fa-play me-1"></i>
+                            Resume
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    {% if operation.status != "COMPLETED" and operation.status != "CANCELLED" %}
+                    <button class="btn btn-outline-light"
+                            data-bs-toggle="modal"
+                            data-bs-target="#cancelModal">
+                        <i class="fas fa-ban me-1"></i>
+                        Cancel
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <div class="card detail-card mb-4">
+                <div class="card-body p-4">
+                    <div class="section-title mb-3">Operation Information</div>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="info-label">Assigned To</div>
+                            <div class="info-value">
+                                {{ operation.assigned_to|default:"Unassigned" }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-label">Source Order</div>
+                            <div class="info-value">
+                                {% if operation.source_order %}
+                                    {{ operation.source_order.order_number|default:operation.source_order }}
+                                {% else %}
+                                    Internal operation
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-label">Created By</div>
+                            <div class="info-value">
+                                {{ operation.created_by|default:"System" }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-label">Planned Start</div>
+                            <div class="info-value">
+                                {{ operation.planned_start_date|date:"d M Y"|default:"Not set" }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-label">Planned End</div>
+                            <div class="info-value">
+                                {{ operation.planned_end_date|date:"d M Y"|default:"Not set" }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-label">Approved By</div>
+                            <div class="info-value">
+                                {{ operation.approved_by|default:"Not approved" }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if operation.notes %}
+                    <hr class="my-4">
+                    <div class="info-label mb-2">Notes</div>
+                    <div class="text-muted">{{ operation.notes|linebreaksbr }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card detail-card">
+                <div class="card-body p-4">
+                    <div class="section-title mb-3">Related Poultry Records</div>
+                    <div class="row g-3">
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="metric-box">
+                                <div class="info-label">Created Flocks</div>
+                                <div class="h4 fw-bold mb-0">{{ operation.created_flocks.count }}</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="metric-box">
+                                <div class="info-label">Egg Records</div>
+                                <div class="h4 fw-bold mb-0">{{ operation.egg_production_records.count }}</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="metric-box">
+                                <div class="info-label">Feeding Records</div>
+                                <div class="h4 fw-bold mb-0">{{ operation.feeding_records.count }}</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="metric-box">
+                                <div class="info-label">Health Records</div>
+                                <div class="h4 fw-bold mb-0">{{ operation.health_records.count }}</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="metric-box">
+                                <div class="info-label">Mortality Records</div>
+                                <div class="h4 fw-bold mb-0">{{ operation.mortality_records.count }}</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="metric-box">
+                                <div class="info-label">Incubation Batches</div>
+                                <div class="h4 fw-bold mb-0">{{ operation.incubation_batches.count }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card detail-card mb-4">
+                <div class="card-body p-4">
+                    <div class="section-title mb-3">Financial Summary</div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Budget</span>
+                        <strong>{{ operation.budget|floatformat:0 }} RWF</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Actual Cost</span>
+                        <strong>{{ operation.actual_cost|floatformat:0 }} RWF</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Finance Reference</span>
+                        <strong>{{ operation.finance_reference|default:"Not posted" }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card detail-card">
+                <div class="card-body p-4">
+                    <div class="section-title mb-3">Workflow History</div>
+                    <div class="timeline">
+                        {% for entry in workflow_history %}
+                        <div class="timeline-item">
+                            <div class="fw-semibold small">
+                                {{ entry.from_step|default:"Start" }}
+                                <i class="fas fa-arrow-right mx-1 text-muted"></i>
+                                {{ entry.to_step|default:entry }}
+                            </div>
+                            {% if entry.note %}
+                            <div class="small text-muted mt-1">{{ entry.note }}</div>
+                            {% endif %}
+                            <div class="small text-muted mt-1">
+                                {{ entry.created_at|date:"d M Y H:i" }}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-muted small">
+                            No workflow transitions recorded yet.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="returnModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post"
+              action="{% url 'agriculture:operation_action' operation.pk 'return' %}"
+              class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Return for Correction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label fw-semibold">Reason / Note</label>
+                {{ note_form.note }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-warning">Return Operation</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="holdModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post"
+              action="{% url 'agriculture:operation_action' operation.pk 'hold' %}"
+              class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Place Operation on Hold</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label fw-semibold">Reason / Note</label>
+                {{ note_form.note }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-warning">Place on Hold</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post"
+              action="{% url 'agriculture:operation_action' operation.pk 'cancel' %}"
+              class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">Cancel Operation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">
+                    This action is recorded in the Core audit trail.
+                </p>
+                <label class="form-label fw-semibold">Cancellation Reason</label>
+                {{ reason_form.reason }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-danger">Cancel Operation</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

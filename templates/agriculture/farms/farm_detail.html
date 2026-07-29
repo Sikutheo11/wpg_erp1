@@ -1,0 +1,201 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<style>
+    .farm-detail { --agri: #166534; --agri-dark: #14532d; --ink: #172033; --muted: #64748b; }
+    .farm-banner {
+        color: #fff;
+        padding: 1.5rem;
+        border-radius: 18px;
+        background: linear-gradient(135deg, var(--agri-dark), var(--agri));
+        box-shadow: 0 16px 38px rgba(20, 83, 45, .16);
+    }
+    .detail-card {
+        height: 100%;
+        border: 0;
+        border-radius: 16px;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, .07);
+    }
+    .detail-card .card-header { background: #fff; border-color: #edf2f7; padding: 1rem 1.2rem; }
+    .section-title { color: var(--ink); font-size: .96rem; font-weight: 750; }
+    .btn-agri { color: #fff; background: var(--agri); border-color: var(--agri); }
+    .btn-agri:hover { color: #fff; background: var(--agri-dark); border-color: var(--agri-dark); }
+    .data-table { margin-bottom: 0; vertical-align: middle; }
+    .data-table thead th {
+        color: var(--muted);
+        padding: .75rem 1rem;
+        background: #f8fafc;
+        border-color: #e8edf3;
+        font-size: .69rem;
+        font-weight: 750;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .data-table tbody td { padding: .85rem 1rem; border-color: #edf2f7; font-size: .84rem; }
+    .record-link { color: var(--ink); font-weight: 750; text-decoration: none; }
+    .record-link:hover { color: var(--agri); }
+    .info-box { padding: 1rem; border-radius: 12px; background: #f8fafc; }
+    .info-box small { display: block; color: var(--muted); margin-bottom: .2rem; }
+</style>
+
+<div class="container-fluid py-4 farm-detail">
+    <div class="mb-3">
+        <a href="{% url 'agriculture:farm_list' %}"
+           class="text-decoration-none text-muted small">
+            <i class="fas fa-arrow-left me-1"></i>Back to farms
+        </a>
+    </div>
+
+    <section class="farm-banner mb-4">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-7">
+                <div class="small text-white-50 fw-bold text-uppercase mb-1">{{ farm.code }}</div>
+                <h3 class="fw-bold mb-2">{{ farm.name }}</h3>
+                <div class="d-flex flex-wrap gap-3 text-white-50 small">
+                    <span><i class="fas fa-location-dot me-1"></i>{{ farm.location|default:"Location not provided" }}</span>
+                    <span><i class="fas fa-user-tie me-1"></i>{{ farm.manager|default:"Manager unassigned" }}</span>
+                    <span><i class="fas fa-warehouse me-1"></i>{{ farm.warehouse|default:"Warehouse not linked" }}</span>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="d-flex flex-wrap justify-content-lg-end gap-2">
+                    <a href="{% url 'agriculture:farm_house_create' farm.pk %}" class="btn btn-light">
+                        <i class="fas fa-plus me-1"></i>Add House
+                    </a>
+                    <a href="{% url 'agriculture:flock_create' %}?farm={{ farm.pk }}"
+                       class="btn btn-outline-light">
+                        <i class="fas fa-feather me-1"></i>Add Flock
+                    </a>
+                    <a href="{% url 'agriculture:farm_update' farm.pk %}"
+                       class="btn btn-outline-light">
+                        <i class="fas fa-pen"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-4">
+            <div class="card detail-card">
+                <div class="card-header"><div class="section-title">Farm Profile</div></div>
+                <div class="card-body p-4">
+                    <div class="info-box mb-3">
+                        <small>Status</small>
+                        {% if farm.is_active %}
+                            <span class="badge text-bg-success">Active</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">Inactive</span>
+                        {% endif %}
+                    </div>
+                    <div class="info-box mb-3">
+                        <small>Manager</small>
+                        <strong>{{ farm.manager|default:"Unassigned" }}</strong>
+                    </div>
+                    <div class="info-box mb-3">
+                        <small>Inventory Warehouse</small>
+                        <strong>{{ farm.warehouse|default:"Not linked" }}</strong>
+                    </div>
+                    <div class="text-muted small">
+                        {{ farm.description|default:"No farm description provided."|linebreaksbr }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8">
+            <div class="card detail-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="section-title">Poultry Houses</div>
+                    <a href="{% url 'agriculture:farm_house_create' farm.pk %}"
+                       class="btn btn-sm btn-agri">Add House</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table data-table">
+                        <thead>
+                            <tr><th>Code</th><th>Name</th><th>Type</th><th>Capacity</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for house in houses %}
+                            <tr>
+                                <td class="fw-bold">{{ house.code }}</td>
+                                <td>{{ house.name }}</td>
+                                <td>{{ house.get_house_type_display }}</td>
+                                <td>{{ house.capacity }} birds</td>
+                                <td>
+                                    {% if house.is_active %}
+                                        <span class="badge text-bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge text-bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-4">No houses registered for this farm.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-7">
+            <div class="card detail-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="section-title">Flocks</div>
+                    <a href="{% url 'agriculture:flock_create' %}?farm={{ farm.pk }}"
+                       class="btn btn-sm btn-agri">Add Flock</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table data-table">
+                        <thead>
+                            <tr><th>Flock</th><th>House</th><th>Breed</th><th>Birds</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for flock in flocks %}
+                            <tr>
+                                <td><a href="{% url 'agriculture:flock_detail' flock.pk %}" class="record-link">{{ flock.code }}</a></td>
+                                <td>{{ flock.house.code }}</td>
+                                <td>{{ flock.breed.name }}</td>
+                                <td class="fw-bold">{{ flock.current_quantity }}</td>
+                                <td><span class="badge text-bg-light border">{{ flock.get_status_display }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-4">No flocks registered for this farm.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-5">
+            <div class="card detail-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="section-title">Recent Operations</div>
+                    <a href="{% url 'agriculture:operation_create' %}" class="btn btn-sm btn-outline-success">New</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table data-table">
+                        <thead><tr><th>Operation</th><th>Type</th><th>Status</th></tr></thead>
+                        <tbody>
+                            {% for operation in operations %}
+                            <tr>
+                                <td><a href="{% url 'agriculture:operation_detail' operation.pk %}" class="record-link">{{ operation.code }}</a></td>
+                                <td>{{ operation.get_operation_type_display }}</td>
+                                <td><span class="badge text-bg-light border">{{ operation.get_status_display }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted py-4">No operations for this farm.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

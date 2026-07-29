@@ -1,0 +1,30 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<style>
+.flock-page{--agri:#166534;--dark:#14532d;--ink:#172033;--muted:#64748b}.btn-agri{color:#fff;background:var(--agri);border-color:var(--agri)}.btn-agri:hover{color:#fff;background:var(--dark)}.filter-card,.data-card{border:0;border-radius:16px;box-shadow:0 8px 28px rgba(15,23,42,.07)}.filter-card{background:#f8fafc}.data-table{margin:0;vertical-align:middle}.data-table th{padding:.8rem 1rem;color:var(--muted);background:#f8fafc;font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}.data-table td{padding:.9rem 1rem;border-color:#edf2f7;font-size:.85rem}.record-link{color:var(--ink);font-weight:800;text-decoration:none}.record-link:hover{color:var(--agri)}.status-active{color:#166534;background:#dcfce7}.status-quarantined{color:#92400e;background:#fef3c7}.status-planned,.status-closed,.status-sold,.status-cancelled{color:#475569;background:#e2e8f0}.status-pill{padding:.3rem .55rem;border-radius:999px;font-size:.68rem;font-weight:750}
+</style>
+<div class="container-fluid py-4 flock-page">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div><div class="small text-success fw-bold text-uppercase">Agriculture · Livestock</div><h3 class="fw-bold mb-1">Poultry Flocks</h3><p class="text-muted mb-0">Monitor flock age, location, purpose and current bird quantity.</p></div>
+    <a href="{% url 'agriculture:flock_create' %}" class="btn btn-agri"><i class="fas fa-plus me-2"></i>New Flock</a>
+  </div>
+  <div class="card filter-card p-3 mb-4"><form method="get" class="row g-3 align-items-end">
+    <div class="col-md-3"><label class="form-label small fw-semibold">Status</label><select name="status" class="form-select"><option value="">All statuses</option>{% for value,label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label small fw-semibold">Purpose</label><select name="purpose" class="form-select"><option value="">All purposes</option>{% for value,label in purposes %}<option value="{{ value }}" {% if selected_purpose == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label small fw-semibold">Farm</label><select name="farm" class="form-select"><option value="">All farms</option>{% for farm in farms %}<option value="{{ farm.pk }}" {% if selected_farm == farm.pk|stringformat:"s" %}selected{% endif %}>{{ farm.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-3 d-flex gap-2"><button class="btn btn-agri flex-grow-1"><i class="fas fa-filter me-1"></i>Filter</button><a href="{% url 'agriculture:flock_list' %}" class="btn btn-outline-secondary"><i class="fas fa-undo"></i></a></div>
+  </form></div>
+  <div class="card data-card"><div class="table-responsive"><table class="table data-table">
+    <thead><tr><th>Flock</th><th>Farm / House</th><th>Breed</th><th>Purpose</th><th>Initial</th><th>Current</th><th>Age</th><th>Status</th><th></th></tr></thead>
+    <tbody>{% for flock in flocks %}
+      <tr>
+        <td><a href="{% url 'agriculture:flock_detail' flock.pk %}" class="record-link">{{ flock.code }}</a><div class="small text-muted">{{ flock.get_source_display }}</div></td>
+        <td>{{ flock.farm.name }}<div class="small text-muted">{{ flock.house.code }}</div></td>
+        <td>{{ flock.breed.name }}</td><td>{{ flock.get_purpose_display }}</td><td>{{ flock.initial_quantity }}</td><td class="fw-bold text-success">{{ flock.current_quantity }}</td><td>{{ flock.age_in_weeks }} weeks</td>
+        <td><span class="status-pill status-{{ flock.status|lower }}">{{ flock.get_status_display }}</span></td>
+        <td><a href="{% url 'agriculture:flock_detail' flock.pk %}" class="btn btn-sm btn-outline-dark">View</a></td>
+      </tr>
+    {% empty %}<tr><td colspan="9" class="text-center text-muted py-5">No flocks match the selected filters.</td></tr>{% endfor %}</tbody>
+  </table></div></div>
+</div>
+{% endblock %}

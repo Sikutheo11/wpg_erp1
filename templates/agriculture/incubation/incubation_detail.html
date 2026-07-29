@@ -1,0 +1,55 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<style>
+.inc-detail{--agri:#166534;--dark:#14532d;--ink:#172033;--muted:#64748b}.banner{padding:1.5rem;color:#fff;border-radius:18px;background:linear-gradient(135deg,var(--dark),var(--agri));box-shadow:0 16px 38px rgba(20,83,45,.16)}.panel{border:0;border-radius:16px;box-shadow:0 8px 28px rgba(15,23,42,.07)}.panel .card-header{padding:1rem 1.2rem;background:#fff;border-color:#edf2f7}.title{font-weight:750;color:var(--ink)}.metric{height:100%;padding:1rem;border-radius:12px;background:#f8fafc}.metric small{display:block;color:var(--muted);font-size:.69rem;text-transform:uppercase}.metric strong{font-size:1.3rem;color:var(--ink)}.info-label{color:var(--muted);font-size:.7rem;font-weight:750;text-transform:uppercase}.form-label{font-size:.8rem;font-weight:700}.form-control,.form-select{border-radius:10px}.btn-agri{color:#fff;background:var(--agri);border-color:var(--agri)}.btn-agri:hover{color:#fff;background:var(--dark)}
+</style>
+<div class="container-fluid py-4 inc-detail">
+  <a href="{% url 'agriculture:incubation_list' %}" class="text-decoration-none text-muted small"><i class="fas fa-arrow-left me-1"></i>Back to incubation</a>
+  <section class="banner my-3">
+    <div class="row align-items-center g-3"><div class="col-lg-8"><div class="small text-white-50 fw-bold text-uppercase">Incubation Batch</div><h3 class="fw-bold mb-2">{{ batch.code }}</h3><div class="d-flex flex-wrap gap-3 text-white-50"><span><i class="fas fa-calendar me-1"></i>Set {{ batch.set_date|date:"d M Y" }}</span><span><i class="fas fa-egg me-1"></i>{{ batch.eggs_set }} eggs</span><span><i class="fas fa-circle me-1"></i>{{ batch.get_status_display }}</span></div></div><div class="col-lg-4 text-lg-end"><span class="badge bg-light text-success fs-6">{{ batch.hatchability_rate }}% hatchability</span></div></div>
+  </section>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg"><div class="metric"><small>Eggs Set</small><strong>{{ batch.eggs_set }}</strong></div></div>
+    <div class="col-6 col-lg"><div class="metric"><small>Candled</small><strong>{{ batch.eggs_candled }}</strong></div></div>
+    <div class="col-6 col-lg"><div class="metric"><small>Fertile</small><strong>{{ batch.fertile_eggs }}</strong></div></div>
+    <div class="col-6 col-lg"><div class="metric"><small>Infertile</small><strong>{{ batch.infertile_eggs }}</strong></div></div>
+    <div class="col-6 col-lg"><div class="metric"><small>Chicks Hatched</small><strong class="text-success">{{ batch.chicks_hatched }}</strong></div></div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-7">
+      <div class="card panel mb-4"><div class="card-header"><div class="title">Batch Information</div></div><div class="card-body p-4"><div class="row g-4">
+        <div class="col-md-4"><div class="info-label">Source Flock</div><div class="fw-semibold">{% if batch.source_flock %}<a href="{% url 'agriculture:flock_detail' batch.source_flock.pk %}" class="text-success text-decoration-none">{{ batch.source_flock.code }}</a>{% else %}External eggs{% endif %}</div></div>
+        <div class="col-md-4"><div class="info-label">Operation</div><div class="fw-semibold">{% if batch.operation %}<a href="{% url 'agriculture:operation_detail' batch.operation.pk %}" class="text-success text-decoration-none">{{ batch.operation.code }}</a>{% else %}Not linked{% endif %}</div></div>
+        <div class="col-md-4"><div class="info-label">Incubator Asset</div><div class="fw-semibold">{{ batch.incubator_asset|default:"Not linked" }}</div></div>
+        <div class="col-md-4"><div class="info-label">Expected Hatch</div><div class="fw-semibold">{{ batch.expected_hatch_date|date:"d M Y" }}</div></div>
+        <div class="col-md-4"><div class="info-label">Actual Hatch</div><div class="fw-semibold">{{ batch.actual_hatch_date|date:"d M Y"|default:"Pending" }}</div></div>
+        <div class="col-md-4"><div class="info-label">Unhatched Eggs</div><div class="fw-semibold">{{ batch.unhatched_eggs }}</div></div>
+      </div>{% if batch.notes %}<hr><div class="info-label mb-2">Notes</div><div class="text-muted">{{ batch.notes|linebreaksbr }}</div>{% endif %}</div></div>
+
+      <div class="card panel"><div class="card-header"><div class="title">Inventory Output</div></div><div class="card-body p-4"><div class="row g-4">
+        <div class="col-md-4"><div class="info-label">Chick Product</div><div class="fw-semibold">{{ batch.chick_product|default:"Not linked" }}</div></div>
+        <div class="col-md-4"><div class="info-label">Output Warehouse</div><div class="fw-semibold">{{ batch.output_warehouse|default:"Not linked" }}</div></div>
+        <div class="col-md-4"><div class="info-label">Stock Movement</div><div class="fw-semibold">{% if batch.stock_movement %}#{{ batch.stock_movement.pk }}{% else %}<span class="text-muted">Awaiting posting</span>{% endif %}</div></div>
+      </div></div></div>
+    </div>
+
+    <div class="col-xl-5">
+      {% if batch.status == "SET" or batch.status == "CANDLED" %}
+      <div class="card panel mb-4"><div class="card-header"><div class="title">Record Candling Results</div></div><form method="post" action="{% url 'agriculture:incubation_candle' batch.pk %}">{% csrf_token %}<div class="card-body p-4"><div class="row g-3">
+        {% for field in candling_form %}<div class="{% if field.name == 'notes' %}col-12{% else %}col-md-4{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+      </div></div><div class="card-footer bg-white p-3 text-end"><button class="btn btn-warning"><i class="fas fa-magnifying-glass me-1"></i>Save Candling</button></div></form></div>
+      {% endif %}
+
+      {% if batch.status == "CANDLED" or batch.status == "HATCHING" %}
+      <div class="card panel"><div class="card-header"><div class="title">Complete Hatching</div></div><form method="post" action="{% url 'agriculture:incubation_complete' batch.pk %}">{% csrf_token %}<div class="card-body p-4"><div class="row g-3">
+        {% for field in completion_form %}<div class="{% if field.name == 'notes' %}col-12{% else %}col-md-6{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+      </div><div class="alert alert-light border small text-muted mt-3 mb-0">Completing this batch emits the chick-output event to the shared Inventory Engine.</div></div><div class="card-footer bg-white p-3 text-end"><button class="btn btn-agri"><i class="fas fa-check-double me-1"></i>Complete Batch</button></div></form></div>
+      {% elif batch.status == "COMPLETED" %}
+      <div class="card panel"><div class="card-body p-4 text-center"><i class="fas fa-circle-check fa-3x text-success mb-3"></i><h5 class="fw-bold">Batch Completed</h5><p class="text-muted mb-0">{{ batch.chicks_hatched }} chicks were recorded as output.</p></div></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

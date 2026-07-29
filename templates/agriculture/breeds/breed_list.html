@@ -1,0 +1,33 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<style>
+.agri-page{--agri:#166534;--dark:#14532d;--ink:#172033;--muted:#64748b}.btn-agri{color:#fff;background:var(--agri);border-color:var(--agri)}.btn-agri:hover{color:#fff;background:var(--dark)}.data-card{border:0;border-radius:16px;box-shadow:0 8px 28px rgba(15,23,42,.07)}.data-table{margin:0;vertical-align:middle}.data-table th{padding:.8rem 1rem;color:var(--muted);background:#f8fafc;font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}.data-table td{padding:.9rem 1rem;border-color:#edf2f7;font-size:.86rem}.breed-code{color:var(--agri);font-weight:800}.empty-state{padding:3rem;text-align:center;color:var(--muted)}
+</style>
+<div class="container-fluid py-4 agri-page">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div><div class="small text-success fw-bold text-uppercase">Agriculture · Master Data</div><h3 class="fw-bold mb-1">Poultry Breeds</h3><p class="text-muted mb-0">Manage layer, broiler, breeder and dual-purpose breeds.</p></div>
+    <a href="{% url 'agriculture:breed_create' %}" class="btn btn-agri"><i class="fas fa-plus me-2"></i>New Breed</a>
+  </div>
+  <div class="card data-card">
+    <div class="table-responsive">
+      <table class="table data-table">
+        <thead><tr><th>Code</th><th>Breed</th><th>Type</th><th>Laying Age</th><th>Market Age</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for breed in breeds %}
+          <tr>
+            <td class="breed-code">{{ breed.code }}</td>
+            <td><strong>{{ breed.name }}</strong>{% if breed.description %}<div class="small text-muted">{{ breed.description|truncatechars:70 }}</div>{% endif %}</td>
+            <td>{{ breed.get_breed_type_display }}</td>
+            <td>{% if breed.expected_laying_age_weeks %}{{ breed.expected_laying_age_weeks }} weeks{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td>{% if breed.expected_market_age_weeks %}{{ breed.expected_market_age_weeks }} weeks{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td>{% if breed.is_active %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-secondary">Inactive</span>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6"><div class="empty-state"><i class="fas fa-feather fa-2x mb-3"></i><h6 class="fw-bold">No breeds registered</h6><a href="{% url 'agriculture:breed_create' %}" class="btn btn-sm btn-agri">Create Breed</a></div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
