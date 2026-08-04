@@ -1,0 +1,227 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <div class="text-success fw-bold text-uppercase small">
+                WPG Ecommerce
+            </div>
+            <h2 class="fw-bold mb-1">{{ title }}</h2>
+            <p class="text-muted mb-0">
+                Configure online presentation and purchase rules for a shared product.
+            </p>
+        </div>
+
+        <a href="{% url 'ecommerce:online_product_list' %}"
+           class="btn btn-outline-secondary">
+            Back to Products
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <form method="post"
+                          enctype="multipart/form-data"
+                          novalidate>
+                        {% csrf_token %}
+
+                        <h5 class="fw-bold mb-3">Inventory Product</h5>
+                        <div class="mb-4">
+                            <label for="{{ form.product.id_for_label }}"
+                                   class="form-label fw-semibold">
+                                {{ form.product.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.product }}
+                            {% if form.product.help_text %}
+                                <div class="form-text">{{ form.product.help_text }}</div>
+                            {% endif %}
+                            {% for error in form.product.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <hr class="my-4">
+                        <h5 class="fw-bold mb-3">Online Presentation</h5>
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="{{ form.title.id_for_label }}"
+                                       class="form-label fw-semibold">
+                                    {{ form.title.label }}
+                                </label>
+                                {{ form.title }}
+                                {% for error in form.title.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.slug.id_for_label }}"
+                                       class="form-label fw-semibold">
+                                    {{ form.slug.label }}
+                                </label>
+                                {{ form.slug }}
+                                <div class="form-text">
+                                    Leave blank to generate automatically.
+                                </div>
+                                {% for error in form.slug.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.image.id_for_label }}"
+                                   class="form-label fw-semibold">
+                                {{ form.image.label }}
+                            </label>
+                            {{ form.image }}
+                            {% for error in form.image.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.short_description.id_for_label }}"
+                                   class="form-label fw-semibold">
+                                {{ form.short_description.label }}
+                            </label>
+                            {{ form.short_description }}
+                            {% for error in form.short_description.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.description.id_for_label }}"
+                                   class="form-label fw-semibold">
+                                {{ form.description.label }}
+                            </label>
+                            {{ form.description }}
+                            {% for error in form.description.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <hr class="my-4">
+                        <h5 class="fw-bold mb-3">Purchase Rules</h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.purchase_mode.id_for_label }}"
+                                       class="form-label fw-semibold">
+                                    {{ form.purchase_mode.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.purchase_mode }}
+                                {% for error in form.purchase_mode.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.minimum_order_quantity.id_for_label }}"
+                                       class="form-label fw-semibold">
+                                    Minimum Quantity
+                                </label>
+                                {{ form.minimum_order_quantity }}
+                                {% for error in form.minimum_order_quantity.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.maximum_order_quantity.id_for_label }}"
+                                       class="form-label fw-semibold">
+                                    Maximum Quantity
+                                </label>
+                                {{ form.maximum_order_quantity }}
+                                {% for error in form.maximum_order_quantity.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <h5 class="fw-bold mb-3">Search Engine Metadata</h5>
+
+                        <div class="mb-3">
+                            <label for="{{ form.seo_title.id_for_label }}"
+                                   class="form-label fw-semibold">
+                                {{ form.seo_title.label }}
+                            </label>
+                            {{ form.seo_title }}
+                            {% for error in form.seo_title.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.seo_description.id_for_label }}"
+                                   class="form-label fw-semibold">
+                                {{ form.seo_description.label }}
+                            </label>
+                            {{ form.seo_description }}
+                            {% for error in form.seo_description.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                {{ submit_label|default:"Save" }}
+                            </button>
+                            <a href="{% url 'ecommerce:online_product_list' %}"
+                               class="btn btn-light border">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card border-0 bg-light">
+                <div class="card-body">
+                    <h5 class="fw-bold">Source of Truth</h5>
+                    <p class="small text-muted">
+                        Product price, stock, business unit, publication and featured
+                        status are controlled by the shared Inventory Product.
+                    </p>
+
+                    <hr>
+
+                    <h6 class="fw-bold">Purchase modes</h6>
+                    <ul class="small text-muted mb-0">
+                        <li class="mb-2">
+                            <strong>Add to Cart:</strong> ready products with a valid
+                            price and available stock.
+                        </li>
+                        <li class="mb-2">
+                            <strong>Request Quotation:</strong> Construction services
+                            and products requiring assessment.
+                        </li>
+                        <li>
+                            <strong>Made to Order:</strong> custom Furniture or
+                            production-based products.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

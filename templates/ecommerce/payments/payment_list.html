@@ -1,0 +1,165 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Ecommerce Payments{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <div class="text-success fw-bold text-uppercase small">
+                WPG Marketplace
+            </div>
+            <h2 class="fw-bold mb-1">Ecommerce Payments</h2>
+            <p class="text-muted mb-0">
+                Verify customer payments before releasing Enterprise Orders.
+            </p>
+        </div>
+        <a href="{% url 'ecommerce:ecommerce_dashboard' %}"
+           class="btn btn-outline-dark">
+            <i class="bi bi-arrow-left me-1"></i> Marketplace Dashboard
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-semibold">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All statuses</option>
+                        {% for code, label in statuses %}
+                            <option value="{{ code }}" {% if selected_status == code %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-semibold">Method</label>
+                    <select name="method" class="form-select">
+                        <option value="">All methods</option>
+                        {% for code, label in methods %}
+                            <option value="{{ code }}" {% if selected_method == code %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-lg-4 col-md-8">
+                    <label class="form-label fw-semibold">Search</label>
+                    <input type="search"
+                           name="q"
+                           value="{{ search }}"
+                           class="form-control"
+                           placeholder="Payment, checkout, customer, phone or reference">
+                </div>
+
+                <div class="col-lg-2 col-md-4 d-grid">
+                    <button class="btn btn-success" type="submit">
+                        <i class="bi bi-search me-1"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Payment</th>
+                        <th>Customer</th>
+                        <th>Channel</th>
+                        <th>Reference</th>
+                        <th class="text-end">Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ payment.payment_number }}</div>
+                                <div class="small text-muted">
+                                    {{ payment.checkout.checkout_number }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">
+                                    {{ payment.checkout.customer_name }}
+                                </div>
+                                <div class="small text-muted">
+                                    {{ payment.checkout.customer_phone }}
+                                </div>
+                            </td>
+                            <td>
+                                {{ payment.get_method_display }}
+                                <div class="small text-muted">
+                                    {{ payment.provider|default:"—" }}
+                                </div>
+                            </td>
+                            <td>
+                                {{ payment.customer_reference|default:"—" }}
+                                {% if payment.provider_reference %}
+                                    <div class="small text-success">
+                                        Verified: {{ payment.provider_reference }}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td class="text-end fw-bold">
+                                {{ payment.amount|floatformat:0 }} RWF
+                            </td>
+                            <td>
+                                {% if payment.status == "CONFIRMED" %}
+                                    <span class="badge bg-success">Confirmed</span>
+                                {% elif payment.status == "FAILED" %}
+                                    <span class="badge bg-danger">Failed</span>
+                                {% elif payment.status == "REFUNDED" %}
+                                    <span class="badge bg-secondary">Refunded</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">
+                                        {{ payment.get_status_display }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ payment.initiated_at|date:"d M Y H:i" }}</td>
+                            <td class="text-end">
+                                {% if payment.status == "INITIATED" or payment.status == "PENDING" %}
+                                    <a href="{% url 'ecommerce:payment_confirm' payment.id %}"
+                                       class="btn btn-sm btn-success">
+                                        Verify & Confirm
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'ecommerce:payment_waiting' payment.id %}"
+                                       class="btn btn-sm btn-outline-dark">
+                                        View
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                No Ecommerce payments found.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

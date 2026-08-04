@@ -654,6 +654,10 @@ def order_detail(request, pk):
         order.status == "PENDING"
     )
 
+    can_process = (
+        order.status == "CONFIRMED"
+    )
+
     can_route = (
         order.status == "CONFIRMED"
     )
@@ -691,21 +695,20 @@ def order_detail(request, pk):
     context = {
         "order": order,
         "items": items,
-
         "reservations": reservations,
         "fulfilment": fulfilment,
-
         "item_form": item_form,
-
         "can_edit_items": can_edit_items,
         "can_submit": can_submit,
         "can_confirm": can_confirm,
+        "can_process": can_process,
         "can_route": can_route,
         "can_prepare": can_prepare,
         "can_mark_ready": can_mark_ready,
         "can_dispatch": can_dispatch,
         "can_deliver": can_deliver,
         "can_cancel": can_cancel,
+        
     }
 
     return render(
@@ -1097,44 +1100,6 @@ def cancel_order(request, pk):
     )
 
 @login_required
-def deliver_order(request, pk):
-
-    order = get_object_or_404(
-        Order,
-        pk=pk,
-    )
-
-    if request.method != "POST":
-        return redirect(
-            "orders:order_detail",
-            pk=order.pk,
-        )
-
-    try:
-        result = DeliveryService.deliver_order(
-            order=order,
-            delivered_by=request.user,
-        )
-
-    except ValidationError as error:
-
-        messages.error(
-            request,
-            _validation_message(error),
-        )
-
-    else:
-
-        messages.success(
-            request,
-            result["message"],
-        )
-
-    return redirect(
-        "orders:order_detail",
-        pk=order.pk,
-    )
-@login_required
 def mark_shipped(request, pk):
     order = get_object_or_404(
         Order,
@@ -1255,13 +1220,9 @@ def mark_ready(request, pk):
         )
 
     try:
-        DeliveryService.mark_ready(
+        OrderService.mark_ready(
             order=order,
             actor=request.user,
-            note=request.POST.get(
-                "note",
-                "",
-            ),
         )
 
     except ValidationError as error:
@@ -1283,7 +1244,6 @@ def mark_ready(request, pk):
         "orders:order_detail",
         pk=order.pk,
     )
-
 
 @login_required
 @require_POST
@@ -1443,6 +1403,52 @@ def cancel_delivery(request, pk):
         messages.warning(
             request,
             result["message"],
+        )
+
+    return redirect(
+        "orders:order_detail",
+        pk=order.pk,
+    )
+
+    
+@login_required
+@require_POST
+def mark_processing(request, pk):
+    order = get_object_or_404(
+        Order,
+        pk=pk,
+    )
+
+    if not PermissionService.user_can_access_feature(
+        request.user,
+        "ORDER_DELIVERY",
+        action="edit",
+    ):
+        messages.error(
+            request,
+            "You do not have permission to process orders.",
+        )
+        return redirect(
+            "orders:order_detail",
+            pk=order.pk,
+        )
+
+    try:
+        OrderService.mark_processing(
+            order=order,
+            actor=request.user,
+        )
+
+    except ValidationError as error:
+        messages.error(
+            request,
+            _validation_message(error),
+        )
+
+    else:
+        messages.success(
+            request,
+            f"Order {order.order_number} is now processing.",
         )
 
     return redirect(

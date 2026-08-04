@@ -1,0 +1,76 @@
+{% extends "ecommerce/base_ecommerce.html" %}
+
+{% block title %}Confirm Payment - WPG Marketplace{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-dark text-white p-4">
+                    <div class="text-uppercase small text-warning fw-bold">
+                        Authorized staff only
+                    </div>
+                    <h2 class="fw-bold mb-0">Confirm Ecommerce Payment</h2>
+                </div>
+                <div class="card-body p-4 p-lg-5">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags|default:'info' }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <dl class="row mb-4">
+                        <dt class="col-sm-5">Payment</dt>
+                        <dd class="col-sm-7">{{ payment.payment_number }}</dd>
+                        <dt class="col-sm-5">Checkout</dt>
+                        <dd class="col-sm-7">{{ checkout.checkout_number }}</dd>
+                        <dt class="col-sm-5">Customer</dt>
+                        <dd class="col-sm-7">{{ checkout.customer_name }}</dd>
+                        <dt class="col-sm-5">Channel</dt>
+                        <dd class="col-sm-7">{{ payment.get_method_display }} · {{ payment.provider }}</dd>
+                        <dt class="col-sm-5">Customer reference</dt>
+                        <dd class="col-sm-7">{{ payment.customer_reference }}</dd>
+                        <dt class="col-sm-5">Amount</dt>
+                        <dd class="col-sm-7 fw-bold text-success">
+                            {{ payment.amount|floatformat:0 }} RWF
+                        </dd>
+                    </dl>
+
+                    <div class="alert alert-warning">
+                        Confirm only after checking the transaction directly
+                        with the bank or Mobile Money provider. This action posts
+                        Finance and releases all Enterprise Orders.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" for="{{ form.provider_reference.id_for_label }}">
+                                {{ form.provider_reference.label }}
+                            </label>
+                            {{ form.provider_reference }}
+                            {% for error in form.provider_reference.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'ecommerce:payment_waiting' payment.id %}"
+                               class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle me-1"></i>
+                                Confirm Verified Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

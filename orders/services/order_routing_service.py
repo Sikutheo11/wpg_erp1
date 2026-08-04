@@ -1,8 +1,13 @@
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
+
 from core.event_engine import EventEngine
-from ..models import Order
 from inventory.models import Warehouse
+from inventory.services.stock_service import StockService
+
+from ..models import Order
 from .inventory_fulfilment_service import (
     InventoryFulfilmentService,
 )
@@ -10,13 +15,14 @@ from .inventory_fulfilment_service import (
 
 class OrderRoutingService:
     """
-    Routes a confirmed enterprise order to the responsible
+    Routes confirmed enterprise orders to the responsible
     business-unit workflow.
 
-    Version 1:
-    - Furniture production routing is active.
-    - Construction, Agriculture and Marketplace are returned
-      as pending integrations.
+    Active routing:
+    - Furniture production orders create Production Jobs.
+    - Furniture Ecommerce/POS orders reserve available inventory.
+    - Agriculture Ecommerce/POS orders reserve available inventory.
+    - Construction and Marketplace remain pending integrations.
     """
 
     FURNITURE_PRODUCTION_TYPES = {
@@ -96,15 +102,10 @@ class OrderRoutingService:
             }
 
         elif order.business_unit == "AGRICULTURE":
-            result = {
-                "business_unit": "AGRICULTURE",
-                "route": "AGRICULTURE_PENDING",
-                "object": None,
-                "created": False,
-                "message": (
-                    "Agriculture fulfilment routing is not yet connected."
-                ),
-            }
+            result = cls._route_agriculture(
+                order=order,
+                actor=actor,
+            )
 
         elif order.business_unit == "MARKETPLACE":
             result = {
@@ -146,6 +147,150 @@ class OrderRoutingService:
         return result
 
     @classmethod
+    def _route_agriculture(
+        cls,
+        *,
+        order,
+        actor=None,
+    ):
+        if order.order_type in {
+            "ECOMMERCE",
+            "POS",
+        }:
+            return cls._route_available_inventory(
+                order=order,
+                actor=actor,
+                business_unit="AGRICULTURE",
+                route_code="AGRICULTURE_FULFILMENT",
+            )
+
+        return {
+            "business_unit": "AGRICULTURE",
+            "route": "AGRICULTURE_OPERATION",
+            "object": None,
+            "created": False,
+            "message": (
+                f"Agriculture order {order.order_number} requires "
+                "an Agriculture Operation workflow."
+            ),
+        }
+
+    @classmethod
+    def _route_available_inventory(
+        cls,
+        *,
+        order,
+        actor=None,
+        business_unit,
+        route_code,
+    ):
+        requirements = {}
+
+        for item in order.items.select_related("product").order_by("pk"):
+            if item.product_id is None:
+                return {
+                    "business_unit": business_unit,
+                    "route": f"{business_unit}_PRODUCT_REQUIRED",
+                    "object": None,
+                    "created": False,
+                    "message": (
+                        f"Order item {item.product_name} has no "
+                        "Inventory Product assigned."
+                    ),
+                }
+
+            if item.product.business_unit != business_unit:
+                raise ValidationError(
+                    (
+                        f"Product {item.product.name} belongs to "
+                        f"{item.product.business_unit}, not {business_unit}."
+                    )
+                )
+
+            requirement = requirements.setdefault(
+                item.product_id,
+                {
+                    "product": item.product,
+                    "quantity": Decimal("0.00"),
+                },
+            )
+            requirement["quantity"] += Decimal(str(item.quantity))
+
+        warehouses = list(
+            Warehouse.objects
+            .filter(
+                business_unit=business_unit,
+                is_active=True,
+            )
+            .order_by("name", "pk")
+        )
+
+        if not warehouses:
+            return {
+                "business_unit": business_unit,
+                "route": f"{business_unit}_WAREHOUSE_REQUIRED",
+                "object": None,
+                "created": False,
+                "message": (
+                    f"No active {business_unit.title()} warehouse "
+                    "was found."
+                ),
+            }
+
+        selected_warehouse = None
+        shortage_details = []
+
+        for warehouse in warehouses:
+            warehouse_shortages = []
+
+            for requirement in requirements.values():
+                product = requirement["product"]
+                required_quantity = requirement["quantity"]
+
+                available_quantity = StockService.available_stock(
+                    product=product,
+                    warehouse=warehouse,
+                )
+
+                if available_quantity < required_quantity:
+                    warehouse_shortages.append(
+                        (
+                            f"{product.name}: required "
+                            f"{required_quantity}, available "
+                            f"{available_quantity}"
+                        )
+                    )
+
+            if not warehouse_shortages:
+                selected_warehouse = warehouse
+                break
+
+            shortage_details.append(
+                f"{warehouse.name} — "
+                + "; ".join(warehouse_shortages)
+            )
+
+        if selected_warehouse is None:
+            return {
+                "business_unit": business_unit,
+                "route": f"{business_unit}_STOCK_SHORTAGE",
+                "object": None,
+                "created": False,
+                "message": (
+                    f"No {business_unit.title()} warehouse can completely "
+                    f"fulfil order {order.order_number}. "
+                    + " | ".join(shortage_details)
+                ),
+            }
+
+        return cls._route_inventory_fulfilment(
+            order=order,
+            actor=actor,
+            warehouse_code=selected_warehouse.code,
+            route_code=route_code,
+        )
+
+    @classmethod
     def _route_furniture(
         cls,
         *,
@@ -175,10 +320,10 @@ class OrderRoutingService:
             "ECOMMERCE",
             "POS",
         }:
-            return cls._route_inventory_fulfilment(
+            return cls._route_available_inventory(
                 order=order,
                 actor=actor,
-                warehouse_code="FURN_FG",
+                business_unit="FURNITURE",
                 route_code="FURNITURE_FULFILMENT",
             )
 

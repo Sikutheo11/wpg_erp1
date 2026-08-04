@@ -1,0 +1,174 @@
+{% extends "ecommerce/base_ecommerce.html" %}
+
+{% block title %}Marketplace Sellers - WPG Marketplace{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <div class="text-success fw-bold text-uppercase small mb-1">
+                WPG Marketplace
+            </div>
+            <h1 class="fw-bold mb-1">Sellers & Farms</h1>
+            <p class="text-muted mb-0">
+                Manage product ownership, agreed commissions and seller balances.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'ecommerce:seller_settlement_list' %}"
+               class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-text me-1"></i>
+                Settlements
+            </a>
+            <a href="{% url 'ecommerce:marketplace_seller_create' %}"
+               class="btn btn-success">
+                <i class="bi bi-plus-circle me-1"></i>
+                New Seller
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-lg-7">
+                    <label for="seller-search" class="form-label fw-semibold">
+                        Search sellers
+                    </label>
+                    <input id="seller-search"
+                           type="search"
+                           name="q"
+                           value="{{ search }}"
+                           class="form-control"
+                           placeholder="Seller code, name, contact, phone or farm">
+                </div>
+
+                <div class="col-md-7 col-lg-3">
+                    <label for="seller-type" class="form-label fw-semibold">
+                        Seller type
+                    </label>
+                    <select id="seller-type" name="seller_type" class="form-select">
+                        <option value="">All seller types</option>
+                        {% for code, label in seller_types %}
+                            <option value="{{ code }}"
+                                    {% if selected_seller_type == code %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-5 col-lg-2 d-grid">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-funnel me-1"></i>
+                        Filter
+                    </button>
+                </div>
+
+                {% if search or selected_seller_type %}
+                    <div class="col-12">
+                        <a href="{% url 'ecommerce:marketplace_seller_list' %}"
+                           class="small text-decoration-none">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Clear filters
+                        </a>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Seller</th>
+                        <th>Farm / Contact</th>
+                        <th>Type</th>
+                        <th class="text-end">Commission</th>
+                        <th class="text-end">Gross Sales</th>
+                        <th class="text-end">WPG Commission</th>
+                        <th class="text-end">Seller Value</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for seller in sellers %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold">{{ seller.name }}</div>
+                                <div class="small text-muted">{{ seller.code }}</div>
+                            </td>
+                            <td>
+                                {% if seller.poultry_farm %}
+                                    <div class="fw-semibold">
+                                        <i class="bi bi-geo-alt me-1 text-success"></i>
+                                        {{ seller.poultry_farm.name }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        {{ seller.poultry_farm.location|default:"No location recorded" }}
+                                    </div>
+                                {% else %}
+                                    <div>{{ seller.contact_name|default:"No contact person" }}</div>
+                                    <div class="small text-muted">
+                                        {{ seller.phone|default:"No phone recorded" }}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if seller.seller_type == "WPG_INTERNAL" %}
+                                    <span class="badge bg-primary">WPG-owned</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Independent</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end fw-semibold">
+                                {{ seller.default_commission_rate|floatformat:2 }}%
+                            </td>
+                            <td class="text-end">
+                                {{ seller.gross_sales|default_if_none:0|floatformat:0 }} RWF
+                            </td>
+                            <td class="text-end text-success fw-semibold">
+                                {{ seller.commission_total|default_if_none:0|floatformat:0 }} RWF
+                            </td>
+                            <td class="text-end fw-bold">
+                                {{ seller.payable_total|default_if_none:0|floatformat:0 }} RWF
+                            </td>
+                            <td>
+                                {% if seller.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'ecommerce:marketplace_seller_detail' seller.pk %}"
+                                   class="btn btn-sm btn-outline-dark">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <i class="bi bi-shop display-5 text-muted"></i>
+                                <h5 class="mt-3 mb-1">No Marketplace sellers found</h5>
+                                <p class="text-muted mb-3">
+                                    Create a WPG-owned seller or register an independent farm.
+                                </p>
+                                <a href="{% url 'ecommerce:marketplace_seller_create' %}"
+                                   class="btn btn-success">
+                                    Create Seller
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "ecommerce/base_ecommerce.html" %}
+
+{% block title %}{{ seller.name }} - Marketplace Seller{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <a href="{% url 'ecommerce:marketplace_seller_list' %}" class="text-decoration-none">
+                <i class="bi bi-arrow-left me-1"></i>Back to sellers
+            </a>
+            <h1 class="fw-bold mt-2 mb-1">{{ seller.name }}</h1>
+            <div class="text-muted">{{ seller.code }}</div>
+        </div>
+        <div class="d-flex gap-2">
+            {% if seller.seller_type == "INDEPENDENT" and eligible_lines %}
+                <a href="{% url 'ecommerce:seller_settlement_create' seller.pk %}"
+                   class="btn btn-success">
+                    <i class="bi bi-file-earmark-plus me-1"></i>Create Settlement
+                </a>
+            {% endif %}
+            <a href="{% url 'ecommerce:seller_settlement_list' %}"
+               class="btn btn-outline-dark">Settlements</a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <div class="text-muted small text-uppercase">Gross Sales</div>
+            <div class="fs-3 fw-bold">{{ totals.gross|default_if_none:0|floatformat:0 }} RWF</div>
+        </div></div></div>
+        <div class="col-md-4"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <div class="text-muted small text-uppercase">WPG Commission</div>
+            <div class="fs-3 fw-bold text-success">{{ totals.commission|default_if_none:0|floatformat:0 }} RWF</div>
+        </div></div></div>
+        <div class="col-md-4"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <div class="text-muted small text-uppercase">Seller Net Value</div>
+            <div class="fs-3 fw-bold text-primary">{{ totals.payable|default_if_none:0|floatformat:0 }} RWF</div>
+        </div></div></div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white fw-bold py-3">Seller Information</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-5">Type</dt><dd class="col-7">{{ seller.get_seller_type_display }}</dd>
+                        <dt class="col-5">Farm</dt><dd class="col-7">{{ seller.poultry_farm|default:"—" }}</dd>
+                        <dt class="col-5">Contact</dt><dd class="col-7">{{ seller.contact_name|default:"—" }}</dd>
+                        <dt class="col-5">Phone</dt><dd class="col-7">{{ seller.phone|default:"—" }}</dd>
+                        <dt class="col-5">Email</dt><dd class="col-7">{{ seller.email|default:"—" }}</dd>
+                        <dt class="col-5">Default commission</dt><dd class="col-7 fw-bold">{{ seller.default_commission_rate }}%</dd>
+                        <dt class="col-5">Payable account</dt><dd class="col-7">{{ seller.payable_account|default:"Default 2200" }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <span class="fw-bold">Assigned Products</span>
+                    <a href="{% url 'ecommerce:online_product_list' %}" class="btn btn-sm btn-outline-success">Products</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light"><tr><th>Product</th><th>Unit</th><th class="text-end">Commission</th></tr></thead>
+                        <tbody>
+                            {% for assignment in assignments %}
+                                <tr>
+                                    <td><div class="fw-semibold">{{ assignment.online_product.display_title }}</div><small class="text-muted">{{ assignment.online_product.product.product_code }}</small></td>
+                                    <td>{{ assignment.online_product.product.get_business_unit_display }}</td>
+                                    <td class="text-end">{{ assignment.effective_commission_rate }}%</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3" class="text-center text-muted py-4">No products assigned.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between py-3">
+            <span class="fw-bold">Recent Sales</span>
+            <span class="text-muted">Eligible payable: {{ eligible_totals.payable|default_if_none:0|floatformat:0 }} RWF</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th class="ps-4">Order</th><th>Product</th><th>Farm</th><th class="text-end">Gross</th><th class="text-end">Commission</th><th class="text-end">Net</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for line in sale_lines %}
+                        <tr>
+                            <td class="ps-4 fw-semibold">{{ line.order_item.order.order_number }}</td>
+                            <td>{{ line.product_name }}<div class="small text-muted">{{ line.quantity }} × {{ line.unit_price|floatformat:0 }} RWF</div></td>
+                            <td>{{ line.farm|default:"—" }}</td>
+                            <td class="text-end">{{ line.gross_amount|floatformat:0 }}</td>
+                            <td class="text-end text-success">{{ line.commission_amount|floatformat:0 }}</td>
+                            <td class="text-end fw-bold">{{ line.seller_net_amount|floatformat:0 }}</td>
+                            <td><span class="badge {% if line.settlement_status == 'SETTLED' %}bg-success{% elif line.settlement_status == 'ELIGIBLE' %}bg-primary{% elif line.settlement_status == 'REVERSED' %}bg-danger{% else %}bg-secondary{% endif %}">{{ line.get_settlement_status_display }}</span></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="7" class="text-center text-muted py-5">No Marketplace sales recorded.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-bold py-3">Settlement History</div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light"><tr><th class="ps-4">Number</th><th>Status</th><th class="text-end">Payable</th><th>Date</th><th></th></tr></thead>
+                <tbody>
+                    {% for settlement in settlements %}
+                        <tr><td class="ps-4 fw-semibold">{{ settlement.settlement_number }}</td><td>{{ settlement.get_status_display }}</td><td class="text-end fw-bold">{{ settlement.total_payable|floatformat:0 }} RWF</td><td>{{ settlement.created_at|date:"d M Y" }}</td><td class="text-end pe-4"><a href="{% url 'ecommerce:seller_settlement_detail' settlement.pk %}" class="btn btn-sm btn-outline-dark">View</a></td></tr>
+                    {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No settlements created.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,34 +1,127 @@
 {% extends "ecommerce/base_ecommerce.html" %}
 
+{% block title %}Order Placed - WPG Ecommerce{% endblock %}
+
 {% block content %}
+<div class="container py-5">
+    {% if checkout %}
+        <div class="card border-0 shadow-sm overflow-hidden">
+            <div class="bg-success text-white text-center p-5">
+                <i class="bi bi-check-circle display-3"></i>
+                {% if checkout.customer_status.code == "AWAITING_PAYMENT" %}
+                    <h1 class="fw-bold mt-3">Complete Your Payment</h1>
+                {% else %}
+                    <h1 class="fw-bold mt-3">Order Received</h1>
+                {% endif %}
+                <p class="lead mb-0">
+                    Thank you, {{ checkout.customer_name }}.
+                </p>
+            </div>
 
-<div class="container py-5 text-center">
+            <div class="card-body p-4 p-lg-5">
+                <div class="row g-4 mb-4">
+                    <div class="col-md-4">
+                        <div class="text-muted small">Checkout Number</div>
+                        <div class="fw-bold">{{ checkout.checkout_number }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Contact Phone</div>
+                        <div class="fw-bold">{{ checkout.customer_phone }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Total Amount</div>
+                        <div class="fw-bold text-success">
+                            {{ checkout.total_amount|floatformat:0 }} RWF
+                        </div>
+                    </div>
+                </div>
+                {% if checkout.customer_status.code == "AWAITING_PAYMENT" %}
+                <div class="card border-warning bg-warning-subtle mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                            <div>
+                                <h4 class="fw-bold mb-1">Payment Required</h4>
+                                <p class="text-muted mb-0">
+                                    Complete payment before WPG starts processing your order.
+                                </p>
+                            </div>
 
-    <div class="card shadow p-5">
+                            <a href="{% url 'ecommerce:checkout_payment' checkout.id %}"
+                            class="btn btn-success btn-lg">
+                                <i class="bi bi-credit-card me-2"></i>
+                                Pay Now — {{ checkout.total_amount|floatformat:0 }} RWF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
 
-        <h2 class="text-success">🎉 Order Placed Successfully</h2>
+                <h4 class="fw-bold mb-3">Enterprise Orders Created</h4>
+                <div class="row g-3">
+                    {% for link in checkout_orders %}
+                        <div class="col-lg-4">
+                            <div class="border rounded h-100 p-3">
+                                <div class="text-uppercase text-muted small fw-bold">
+                                    {{ link.order.get_business_unit_display }}
+                                </div>
+                                <div class="fw-bold fs-5">
+                                    {{ link.order.order_number }}
+                                </div>
+                                <div class="small text-muted my-2">
+                                    {{ link.order.items.count }} item{{ link.order.items.count|pluralize }}
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="badge bg-light text-dark border">
+                                        {{ link.order.get_status_display }}
+                                    </span>
+                                    <span class="fw-bold">
+                                        {{ link.amount|floatformat:0 }} RWF
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-warning">
+                                No linked Enterprise Order was found.
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
 
-        <p class="mt-3">
-            Thank you <strong>{{ order.customer_name }}</strong>
-        </p>
+                <div class="alert alert-light border mt-4 mb-0">
+                    WPG will contact you using {{ checkout.customer_phone }} to
+                    confirm payment, delivery and fulfilment arrangements.
+                </div>
 
-        <h4>
-            Order ID: #{{ order.id }}
-        </h4>
-
-        <p class="text-muted">
-            We will contact you soon on {{ order.customer_phone }}
-        </p>
-
-        <a href="{% url 'ecommerce:shop' %}"
-           class="btn btn-primary mt-3">
-
-            Continue Shopping
-
-        </a>
-
-    </div>
-
+                <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+                    <a href="{% url 'ecommerce:shop' %}"
+                       class="btn btn-success">
+                        Continue Shopping
+                    </a>
+                    <a href="{% url 'orders:order_list' %}"
+                       class="btn btn-outline-dark">
+                        View Orders
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% elif order %}
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body p-5">
+                <i class="bi bi-check-circle display-3 text-success"></i>
+                <h2 class="fw-bold mt-3">Order Placed Successfully</h2>
+                <p>Thank you, <strong>{{ order.customer_name }}</strong>.</p>
+                <h4>{{ order.order_number }}</h4>
+                <p class="text-muted">
+                    We will contact you using {{ order.customer_phone }}.
+                </p>
+                <a href="{% url 'ecommerce:shop' %}"
+                   class="btn btn-success">
+                    Continue Shopping
+                </a>
+            </div>
+        </div>
+    {% endif %}
 </div>
-
 {% endblock %}

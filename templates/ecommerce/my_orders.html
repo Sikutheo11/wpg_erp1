@@ -1,0 +1,175 @@
+{% extends "ecommerce/base_ecommerce.html" %}
+
+{% block title %}My Orders - WPG Store{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+
+            <h2 class="fw-bold mb-1">
+                My Orders
+            </h2>
+
+            <p class="text-muted mb-0">
+                Review your WPG Store purchases and their current status.
+            </p>
+
+        </div>
+
+        <a href="{% url 'ecommerce:shop' %}"
+           class="btn btn-success">
+
+            <i class="bi bi-bag me-1"></i>
+            Continue Shopping
+
+        </a>
+
+    </div>
+
+    {% if checkouts %}
+
+        <div class="vstack gap-4">
+
+            {% for checkout in checkouts %}
+
+                <div class="card border-0 shadow-sm">
+
+                    <div class="card-body p-4">
+
+                        <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+
+                            <div>
+
+                                <div class="small text-muted">
+                                    Order Reference
+                                </div>
+
+                                <div class="fw-bold fs-5">
+                                    {{ checkout.checkout_number }}
+                                </div>
+
+                                <div class="small text-muted mt-1">
+                                    {{ checkout.created_at|date:"d M Y, H:i" }}
+                                </div>
+
+                            </div>
+
+                            <div class="text-md-end">
+
+                                <span class="badge {{ checkout.customer_status.css_class }}">
+                                    {{ checkout.customer_status.label }}
+                                </span>
+
+                                <div class="fw-bold text-success fs-4 mt-2">
+                                    {{ checkout.total_amount|floatformat:0 }} RWF
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="border rounded overflow-hidden">
+
+                            {% for link in checkout.checkout_orders.all %}
+
+                                {% for item in link.order.items.all %}
+
+                                    <div class="d-flex justify-content-between align-items-center gap-3 p-3
+                                                {% if not forloop.parentloop.last or not forloop.last %}
+                                                    border-bottom
+                                                {% endif %}">
+
+                                        <div>
+
+                                            <div class="fw-semibold">
+                                                {{ item.product_name }}
+                                            </div>
+
+                                            <div class="small text-muted">
+
+                                                {{ item.quantity }} ×
+                                                {{ item.price|floatformat:0 }} RWF
+
+                                            </div>
+
+                                        </div>
+
+                                        <div class="fw-semibold text-nowrap">
+                                            {{ item.subtotal|floatformat:0 }} RWF
+                                        </div>
+
+                                    </div>
+
+                                {% empty %}
+
+                                    <div class="p-3 text-muted">
+                                        No products were found.
+                                    </div>
+
+                                {% endfor %}
+
+                            {% empty %}
+
+                                <div class="p-3 text-muted">
+                                    No order items were found.
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                        <div class="text-end mt-3">
+
+                            <a href="{% url 'ecommerce:checkout_success' checkout.pk %}"
+                               class="btn btn-outline-dark">
+
+                                View Order
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <div class="card border-0 bg-light">
+
+            <div class="card-body text-center py-5">
+
+                <i class="bi bi-box-seam display-2 text-muted"></i>
+
+                <h3 class="fw-bold mt-3">
+                    No orders yet
+                </h3>
+
+                <p class="text-muted">
+                    Products you order from WPG Store will appear here.
+                </p>
+
+                <a href="{% url 'ecommerce:shop' %}"
+                   class="btn btn-success">
+
+                    Start Shopping
+
+                </a>
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

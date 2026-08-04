@@ -1,0 +1,610 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <div class="text-success fw-bold text-uppercase small">
+                WPG Unified Commerce
+            </div>
+            <h2 class="fw-bold mb-1">Ecommerce Control Center</h2>
+            <p class="text-muted mb-0">
+                One online sales channel for Furniture, Construction and Agriculture.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'ecommerce:shop' %}"
+               class="btn btn-outline-success">
+                <i class="fas fa-store me-1"></i>
+                View Public Shop
+            </a>
+            <a href="{% url 'ecommerce:online_product_create' %}"
+               class="btn btn-success">
+                <i class="fas fa-plus me-1"></i>
+                Add Online Product
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-muted small text-uppercase fw-semibold">
+                                Online Products
+                            </div>
+                            <div class="display-6 fw-bold mt-2">
+                                {{ dashboard.products.total|default:0 }}
+                            </div>
+                        </div>
+                        <span class="rounded-circle bg-primary-subtle text-primary p-3">
+                            <i class="fas fa-box-open"></i>
+                        </span>
+                    </div>
+                    <div class="small text-muted mt-2">
+                        {{ dashboard.products.published|default:0 }} published
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-muted small text-uppercase fw-semibold">
+                                Checkouts
+                            </div>
+                            <div class="display-6 fw-bold mt-2">
+                                {{ dashboard.checkouts.total|default:0 }}
+                            </div>
+                        </div>
+                        <span class="rounded-circle bg-success-subtle text-success p-3">
+                            <i class="fas fa-cart-shopping"></i>
+                        </span>
+                    </div>
+                    <div class="small text-muted mt-2">
+                        {{ dashboard.checkouts.completed|default:0 }} completed
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-muted small text-uppercase fw-semibold">
+                                Enterprise Orders
+                            </div>
+                            <div class="display-6 fw-bold mt-2">
+                                {{ dashboard.orders.total|default:0 }}
+                            </div>
+                        </div>
+                        <span class="rounded-circle bg-warning-subtle text-warning p-3">
+                            <i class="fas fa-clipboard-list"></i>
+                        </span>
+                    </div>
+                    <div class="small text-muted mt-2">
+                        {{ dashboard.orders.paid|default:0 }} paid
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-muted small text-uppercase fw-semibold">
+                                Checkout Value
+                            </div>
+                            <div class="h3 fw-bold mt-3 mb-0">
+                                {{ dashboard.checkouts.total_value|default:0|floatformat:0 }}
+                            </div>
+                        </div>
+                        <span class="rounded-circle bg-info-subtle text-info p-3">
+                            <i class="fas fa-coins"></i>
+                        </span>
+                    </div>
+                    <div class="small text-muted mt-2">RWF</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+            <div>
+                <h4 class="fw-bold mb-1">Marketplace Management</h4>
+                <p class="text-muted mb-0">
+                    Manage sellers, customer payments, commissions and seller settlements.
+                </p>
+            </div>
+            <a href="{% url 'ecommerce:marketplace_report' %}"
+               class="text-success text-decoration-none fw-semibold">
+                Open Marketplace Report
+                <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6 col-xl">
+                <a href="{% url 'ecommerce:marketplace_seller_list' %}"
+                   class="card border-0 shadow-sm h-100 text-decoration-none text-dark">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="rounded-circle bg-primary-subtle text-primary p-3">
+                                <i class="fas fa-users"></i>
+                            </span>
+                            <div>
+                                <div class="fw-bold">Sellers</div>
+                                <div class="small text-muted">Farms and product owners</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-md-6 col-xl">
+                <a href="{% url 'ecommerce:online_product_list' %}"
+                   class="card border-0 shadow-sm h-100 text-decoration-none text-dark">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="rounded-circle bg-success-subtle text-success p-3">
+                                <i class="fas fa-box-open"></i>
+                            </span>
+                            <div>
+                                <div class="fw-bold">Online Products</div>
+                                <div class="small text-muted">Listings and assignments</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-md-6 col-xl">
+                <a href="{% url 'ecommerce:payment_list' %}"
+                   class="card border-0 shadow-sm h-100 text-decoration-none text-dark">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="rounded-circle bg-warning-subtle text-warning p-3">
+                                <i class="fas fa-credit-card"></i>
+                            </span>
+                            <div>
+                                <div class="fw-bold">Payments</div>
+                                <div class="small text-muted">Verify customer payments</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-md-6 col-xl">
+                <a href="{% url 'ecommerce:seller_settlement_list' %}"
+                   class="card border-0 shadow-sm h-100 text-decoration-none text-dark">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="rounded-circle bg-info-subtle text-info p-3">
+                                <i class="fas fa-money-bill-transfer"></i>
+                            </span>
+                            <div>
+                                <div class="fw-bold">Settlements</div>
+                                <div class="small text-muted">Approve and pay sellers</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-md-6 col-xl">
+                <a href="{% url 'ecommerce:marketplace_report' %}"
+                   class="card border-0 shadow-sm h-100 text-decoration-none text-dark">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="rounded-circle bg-dark-subtle text-dark p-3">
+                                <i class="fas fa-chart-column"></i>
+                            </span>
+                            <div>
+                                <div class="fw-bold">Reports</div>
+                                <div class="small text-muted">Sales and commission analysis</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+        <div class="card-header bg-dark text-white border-0 p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="text-uppercase small fw-bold text-white-50">
+                        Marketplace Finance
+                    </div>
+                    <h4 class="fw-bold mb-1">Sales, Commission and Seller Payables</h4>
+                    <p class="mb-0 text-white-50">
+                        Amounts recognized after product delivery.
+                    </p>
+                </div>
+                <a href="{% url 'ecommerce:marketplace_report' %}"
+                   class="btn btn-outline-light">
+                    <i class="fas fa-chart-line me-1"></i>
+                    Detailed Report
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="border rounded h-100 p-3">
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+                            <div>
+                                <div class="text-muted small text-uppercase fw-semibold">
+                                    Gross Sales
+                                </div>
+                                <div class="h4 fw-bold text-success mt-2 mb-0">
+                                    {{ dashboard.marketplace.gross_sales|default:0|floatformat:0 }} RWF
+                                </div>
+                            </div>
+                            <i class="fas fa-chart-line text-success fs-4"></i>
+                        </div>
+                        <div class="small text-muted mt-2">
+                            {{ dashboard.marketplace.earned_lines|default:0 }} delivered sale line{{ dashboard.marketplace.earned_lines|default:0|pluralize }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="border rounded h-100 p-3">
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+                            <div>
+                                <div class="text-muted small text-uppercase fw-semibold">
+                                    WPG Commission
+                                </div>
+                                <div class="h4 fw-bold text-primary mt-2 mb-0">
+                                    {{ dashboard.marketplace.commission_revenue|default:0|floatformat:0 }} RWF
+                                </div>
+                            </div>
+                            <i class="fas fa-percent text-primary fs-4"></i>
+                        </div>
+                        <div class="small text-muted mt-2">
+                            Marketplace commission earned
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="border rounded h-100 p-3">
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+                            <div>
+                                <div class="text-muted small text-uppercase fw-semibold">
+                                    Pending Seller Payable
+                                </div>
+                                <div class="h4 fw-bold text-warning mt-2 mb-0">
+                                    {{ dashboard.marketplace.pending_seller_payable|default:0|floatformat:0 }} RWF
+                                </div>
+                            </div>
+                            <i class="fas fa-clock text-warning fs-4"></i>
+                        </div>
+                        <div class="small text-muted mt-2">
+                            {{ dashboard.marketplace.eligible_lines|default:0 }} eligible ·
+                            {{ dashboard.marketplace.in_settlement_lines|default:0 }} processing
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="border rounded h-100 p-3">
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+                            <div>
+                                <div class="text-muted small text-uppercase fw-semibold">
+                                    Paid to Sellers
+                                </div>
+                                <div class="h4 fw-bold text-info mt-2 mb-0">
+                                    {{ dashboard.settlements.paid_amount|default:0|floatformat:0 }} RWF
+                                </div>
+                            </div>
+                            <i class="fas fa-circle-check text-info fs-4"></i>
+                        </div>
+                        <div class="small text-muted mt-2">
+                            {{ dashboard.settlements.paid|default:0 }} paid settlement{{ dashboard.settlements.paid|default:0|pluralize }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="bg-light border rounded p-3 h-100">
+                        <h6 class="fw-bold mb-3">Marketplace Position</h6>
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span class="text-muted">Active sellers</span>
+                            <span class="fw-bold">{{ dashboard.sellers.active|default:0 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span class="text-muted">Linked farms</span>
+                            <span class="fw-bold">{{ dashboard.sellers.farms|default:0 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span class="text-muted">Seller net earned</span>
+                            <span class="fw-bold">
+                                {{ dashboard.marketplace.seller_payable_earned|default:0|floatformat:0 }} RWF
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between py-2">
+                            <span class="text-muted">Settled lines</span>
+                            <span class="fw-bold">{{ dashboard.marketplace.settled_lines|default:0 }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">Recent Seller Settlements</h6>
+                        <a href="{% url 'ecommerce:seller_settlement_list' %}"
+                           class="small text-success text-decoration-none fw-semibold">
+                            View all
+                        </a>
+                    </div>
+                    <div class="table-responsive border rounded">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Settlement</th>
+                                    <th>Seller / Farm</th>
+                                    <th>Status</th>
+                                    <th class="text-end pe-3">Payable</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for settlement in dashboard.recent_settlements %}
+                                    <tr>
+                                        <td class="ps-3">
+                                            <a href="{% url 'ecommerce:seller_settlement_detail' settlement.pk %}"
+                                               class="fw-semibold text-decoration-none">
+                                                {{ settlement.settlement_number }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <div>{{ settlement.seller.name }}</div>
+                                            <div class="small text-muted">
+                                                {{ settlement.seller.poultry_farm.name|default:"No farm linked" }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if settlement.status == "PAID" %}
+                                                <span class="badge bg-success">Paid</span>
+                                            {% elif settlement.status == "APPROVED" %}
+                                                <span class="badge bg-primary">Approved</span>
+                                            {% elif settlement.status == "DRAFT" %}
+                                                <span class="badge bg-warning text-dark">Draft</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    {{ settlement.get_status_display }}
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end fw-bold pe-3">
+                                            {{ settlement.total_payable|floatformat:0 }} RWF
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            No seller settlement has been created yet.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-end mb-3">
+        <div>
+            <h4 class="fw-bold mb-1">Business Unit Channels</h4>
+            <p class="text-muted mb-0">
+                Products and orders from all three WPG operating units.
+            </p>
+        </div>
+        <a href="{% url 'ecommerce:online_product_list' %}"
+           class="text-success text-decoration-none fw-semibold">
+            Manage all products
+        </a>
+    </div>
+
+    <div class="row g-4 mb-4">
+        {% for unit in dashboard.business_unit_cards %}
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100 overflow-hidden">
+                    <div class="bg-{{ unit.colour }} p-1"></div>
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                            <div>
+                                <div class="text-muted text-uppercase small fw-bold">
+                                    {{ unit.code }}
+                                </div>
+                                <h5 class="fw-bold mb-1">{{ unit.name }}</h5>
+                            </div>
+                            <span class="rounded-circle bg-{{ unit.colour }}-subtle text-{{ unit.colour }} p-3">
+                                <i class="fas {{ unit.icon }}"></i>
+                            </span>
+                        </div>
+
+                        <p class="text-muted small">
+                            {{ unit.description }}
+                        </p>
+
+                        <div class="row g-2 text-center mb-3">
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <div class="fw-bold fs-5">{{ unit.products }}</div>
+                                    <div class="text-muted small">Products</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <div class="fw-bold fs-5 text-success">
+                                        {{ unit.published }}
+                                    </div>
+                                    <div class="text-muted small">Published</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <div class="fw-bold fs-5">{{ unit.orders }}</div>
+                                    <div class="text-muted small">Orders</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between small mb-2">
+                            <span class="text-muted">Product views</span>
+                            <span class="fw-semibold">{{ unit.views }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-3">
+                            <span class="text-muted">Order value</span>
+                            <span class="fw-semibold">
+                                {{ unit.order_value|floatformat:0 }} RWF
+                            </span>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'ecommerce:online_product_list' %}?business_unit={{ unit.code }}"
+                               class="btn btn-outline-{{ unit.colour }}">
+                                Manage {{ unit.code|title }} Products
+                            </a>
+                            <a href="{% url 'ecommerce:shop' %}?business_unit={{ unit.code }}"
+                               class="btn btn-light border">
+                                View in Shop
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-light border">
+                    Business-unit statistics are not available.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0">Recent Checkouts</h5>
+                        <span class="text-muted small">
+                            Updated {{ dashboard.generated_at|date:"Y-m-d H:i" }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Checkout</th>
+                                    <th>Customer</th>
+                                    <th>Orders</th>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for checkout in dashboard.recent_checkouts %}
+                                    <tr>
+                                        <td class="ps-4 fw-semibold">
+                                            {{ checkout.checkout_number }}
+                                        </td>
+                                        <td>
+                                            <div>{{ checkout.customer_name }}</div>
+                                            <div class="small text-muted">
+                                                {{ checkout.customer_phone }}
+                                            </div>
+                                        </td>
+                                        <td>{{ checkout.checkout_orders.count }}</td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">
+                                                {{ checkout.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td class="fw-semibold">
+                                            {{ checkout.total_amount|floatformat:0 }} RWF
+                                        </td>
+                                        <td>{{ checkout.created_at|date:"Y-m-d H:i" }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="6"
+                                            class="text-center text-muted py-5">
+                                            No Ecommerce checkout has been created yet.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0">Commerce Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between border-bottom py-3">
+                        <span class="text-muted">Product views</span>
+                        <span class="fw-bold">{{ dashboard.views|default:0 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom py-3">
+                        <span class="text-muted">Featured products</span>
+                        <span class="fw-bold">{{ dashboard.products.featured|default:0 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom py-3">
+                        <span class="text-muted">Add to cart</span>
+                        <span class="fw-bold">{{ dashboard.products.add_to_cart|default:0 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom py-3">
+                        <span class="text-muted">Request quotation</span>
+                        <span class="fw-bold">{{ dashboard.products.request_quote|default:0 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-3">
+                        <span class="text-muted">Made to order</span>
+                        <span class="fw-bold">{{ dashboard.products.made_to_order|default:0 }}</span>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="{% url 'orders:order_list' %}"
+                           class="btn btn-dark">
+                            View Enterprise Orders
+                        </a>
+                        <a href="{% url 'ecommerce:cart_detail' %}"
+                           class="btn btn-outline-dark">
+                            Test Shopping Cart
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

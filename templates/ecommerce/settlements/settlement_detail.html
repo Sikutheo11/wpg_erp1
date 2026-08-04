@@ -1,0 +1,22 @@
+{% extends "ecommerce/base_ecommerce.html" %}
+
+{% block title %}{{ settlement.settlement_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+        <div><a href="{% url 'ecommerce:seller_settlement_list' %}" class="text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Back to settlements</a><h1 class="fw-bold mt-2 mb-1">{{ settlement.settlement_number }}</h1><div class="text-muted">{{ settlement.seller.name }}{% if settlement.seller.poultry_farm %} · {{ settlement.seller.poultry_farm.name }}{% endif %}</div></div>
+        <div class="d-flex align-items-start gap-2">
+            {% if settlement.status == "DRAFT" %}<form method="post" action="{% url 'ecommerce:seller_settlement_approve' settlement.pk %}">{% csrf_token %}<button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Approve</button></form>{% elif settlement.status == "APPROVED" %}<a href="{% url 'ecommerce:seller_settlement_pay' settlement.pk %}" class="btn btn-success"><i class="bi bi-cash-coin me-1"></i>Pay Seller</a>{% endif %}
+        </div>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">STATUS</div><div class="fs-5 fw-bold">{{ settlement.get_status_display }}</div></div></div></div>
+        <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">GROSS</div><div class="fs-4 fw-bold">{{ settlement.total_gross|floatformat:0 }} RWF</div></div></div></div>
+        <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">WPG COMMISSION</div><div class="fs-4 fw-bold text-success">{{ settlement.total_commission|floatformat:0 }} RWF</div></div></div></div>
+        <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">SELLER PAYMENT</div><div class="fs-4 fw-bold text-primary">{{ settlement.total_payable|floatformat:0 }} RWF</div></div></div></div>
+    </div>
+    <div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white fw-bold py-3">Included Sales</div><div class="table-responsive"><table class="table align-middle mb-0"><thead class="table-light"><tr><th class="ps-4">Order</th><th>Product</th><th class="text-end">Gross</th><th class="text-end">Commission</th><th class="text-end pe-4">Payable</th></tr></thead><tbody>{% for item in lines %}<tr><td class="ps-4 fw-semibold">{{ item.marketplace_order_line.order_item.order.order_number }}</td><td>{{ item.marketplace_order_line.product_name }}</td><td class="text-end">{{ item.gross_amount|floatformat:0 }} RWF</td><td class="text-end text-success">{{ item.commission_amount|floatformat:0 }} RWF</td><td class="text-end pe-4 fw-bold">{{ item.payable_amount|floatformat:0 }} RWF</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No settlement lines.</td></tr>{% endfor %}</tbody></table></div></div>
+    <div class="card border-0 shadow-sm"><div class="card-header bg-white fw-bold py-3">Audit & Payment</div><div class="card-body"><dl class="row mb-0"><dt class="col-md-3">Created</dt><dd class="col-md-9">{{ settlement.created_at|date:"d M Y H:i" }}{% if settlement.created_by %} by {{ settlement.created_by }}{% endif %}</dd><dt class="col-md-3">Approved</dt><dd class="col-md-9">{{ settlement.approved_at|date:"d M Y H:i"|default:"—" }}</dd><dt class="col-md-3">Paid</dt><dd class="col-md-9">{{ settlement.paid_at|date:"d M Y H:i"|default:"—" }}</dd><dt class="col-md-3">Payment reference</dt><dd class="col-md-9">{{ settlement.payment_reference|default:"—" }}</dd><dt class="col-md-3">Journal</dt><dd class="col-md-9">{{ settlement.journal_entry|default:"—" }}</dd><dt class="col-md-3">Notes</dt><dd class="col-md-9">{{ settlement.notes|default:"—" }}</dd></dl></div></div>
+</div>
+{% endblock %}

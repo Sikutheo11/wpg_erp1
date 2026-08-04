@@ -7,6 +7,12 @@ from Employee.models import Employee
 from inventory.models import Supplier
 from sales.models import Sale
 from accounts.models import User
+from .general_ledger_models import (
+    CustomerAdvance,
+    JournalEntry,
+    JournalLine,
+    LedgerAccount,
+)
 
 
 
@@ -681,3 +687,10 @@ def calculate_financial_summary(start_date,end_date):
         (income+receivable)-(expense+payable)
 
     }
+
+from .general_ledger_models import (
+    CustomerAdvance,
+    JournalEntry,
+    JournalLine,
+    LedgerAccount,
+)

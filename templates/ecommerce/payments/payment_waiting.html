@@ -1,0 +1,106 @@
+{% extends "ecommerce/base_ecommerce.html" %}
+
+{% block title %}Payment Status - WPG Marketplace{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm text-center overflow-hidden">
+                {% if payment.status == "CONFIRMED" %}
+                    <div class="bg-success text-white p-5">
+                        <i class="bi bi-check-circle display-3"></i>
+                        <h1 class="fw-bold mt-3">Payment Confirmed</h1>
+                        <p class="lead mb-0">Your order has been received.</p>
+                    </div>
+                {% elif payment.status == "FAILED" %}
+                    <div class="bg-danger text-white p-5">
+                        <i class="bi bi-x-circle display-3"></i>
+                        <h1 class="fw-bold mt-3">Payment Failed</h1>
+                        <p class="lead mb-0">{{ payment.failure_reason }}</p>
+                    </div>
+                {% else %}
+                    <div class="bg-warning p-5">
+                        <i class="bi bi-hourglass-split display-3"></i>
+                        <h1 class="fw-bold mt-3">Awaiting Payment Confirmation</h1>
+                        <p class="lead mb-0">
+                            We are verifying your payment.
+                        </p>
+                    </div>
+                {% endif %}
+
+                <div class="card-body p-4 p-lg-5 text-start">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Payment Reference</div>
+                            <div class="fw-bold">{{ payment.payment_number }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Order Reference</div>
+                            <div class="fw-bold">{{ checkout.checkout_number }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Payment Channel</div>
+                            <div class="fw-bold">
+                                {{ payment.get_method_display }} · {{ payment.provider }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Amount</div>
+                            <div class="fw-bold text-success">
+                                {{ payment.amount|floatformat:0 }} RWF
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Your Reference</div>
+                            <div class="fw-bold">
+                                {{ payment.customer_reference|default:"—" }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Status</div>
+                            <span class="badge {% if payment.status == 'CONFIRMED' %}bg-success{% elif payment.status == 'FAILED' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                {{ payment.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if payment.status == "INITIATED" or payment.status == "PENDING" %}
+                        <div class="alert alert-light border mt-4 mb-0">
+                            Do not submit another payment. Refresh this page after
+                            WPG verifies the transaction.
+                        </div>
+                    {% endif %}
+
+                    <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+                        {% if payment.status == "CONFIRMED" %}
+                            <a href="{% url 'ecommerce:checkout_success' checkout.id %}"
+                               class="btn btn-success">
+                                View Order
+                            </a>
+                        {% elif payment.status == "INITIATED" or payment.status == "PENDING" %}
+                            <a href="{% url 'ecommerce:payment_waiting' payment.id %}"
+                               class="btn btn-warning">
+                                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Status
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'ecommerce:my_orders' %}"
+                           class="btn btn-outline-dark">
+                            My Orders
+                        </a>
+
+                        {% if request.user.is_staff or request.user.is_superuser %}
+                            {% if payment.status == "INITIATED" or payment.status == "PENDING" %}
+                                <a href="{% url 'ecommerce:payment_confirm' payment.id %}"
+                                   class="btn btn-outline-success">
+                                    Staff: Confirm Payment
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -85,11 +85,23 @@ urlpatterns = [
     # ======================================================
     # DELIVERY WORKFLOW
     # ======================================================
-
+    path(
+        "<int:pk>/processing/",
+        views.mark_processing,
+        name="mark_processing",
+    ),
+    
+    
     path(
         "<int:pk>/ready/",
         views.mark_ready,
         name="mark_ready",
+    ),
+   
+    path(
+        "<int:pk>/shipped/",
+        views.mark_shipped,
+        name="mark_shipped",
     ),
 
     path(
@@ -108,6 +120,12 @@ urlpatterns = [
         "<int:pk>/delivery/cancel/",
         views.cancel_delivery,
         name="cancel_delivery",
+    ),
+
+    path(
+        "<int:pk>/processing/",
+        views.mark_processing,
+        name="mark_processing",
     ),
 
     # ======================================================

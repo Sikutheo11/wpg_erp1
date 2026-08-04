@@ -1,0 +1,224 @@
+{% extends "ecommerce/base_ecommerce.html" %}
+
+{% block title %}Seller Settlements - WPG Marketplace{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <div class="text-success fw-bold text-uppercase small mb-1">
+                Marketplace Finance
+            </div>
+            <h1 class="fw-bold mb-1">Seller Settlements</h1>
+            <p class="text-muted mb-0">
+                Review commission deductions and payments owed to independent sellers and farms.
+            </p>
+        </div>
+
+        <a href="{% url 'ecommerce:marketplace_seller_list' %}"
+           class="btn btn-outline-success">
+            <i class="bi bi-shop me-1"></i>
+            View Sellers
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-semibold">
+                        Gross Seller Sales
+                    </div>
+                    <div class="fs-3 fw-bold mt-2">
+                        {{ totals.gross|default_if_none:0|floatformat:0 }} RWF
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-semibold">
+                        WPG Commission
+                    </div>
+                    <div class="fs-3 fw-bold text-success mt-2">
+                        {{ totals.commission|default_if_none:0|floatformat:0 }} RWF
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-semibold">
+                        Seller Payable
+                    </div>
+                    <div class="fs-3 fw-bold text-primary mt-2">
+                        {{ totals.payable|default_if_none:0|floatformat:0 }} RWF
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-lg-4">
+                    <label for="settlement-search" class="form-label fw-semibold">
+                        Search
+                    </label>
+                    <input id="settlement-search"
+                           type="search"
+                           name="q"
+                           value="{{ search }}"
+                           class="form-control"
+                           placeholder="Settlement, seller, farm or payment reference">
+                </div>
+
+                <div class="col-md-4 col-lg-3">
+                    <label for="settlement-status" class="form-label fw-semibold">
+                        Status
+                    </label>
+                    <select id="settlement-status" name="status" class="form-select">
+                        <option value="">All statuses</option>
+                        {% for code, label in statuses %}
+                            <option value="{{ code }}"
+                                    {% if selected_status == code %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4 col-lg-3">
+                    <label for="settlement-seller" class="form-label fw-semibold">
+                        Seller
+                    </label>
+                    <select id="settlement-seller" name="seller" class="form-select">
+                        <option value="">All sellers</option>
+                        {% for seller in sellers %}
+                            <option value="{{ seller.pk }}"
+                                    {% if selected_seller == seller.pk|stringformat:'s' %}selected{% endif %}>
+                                {{ seller.name }}
+                                {% if seller.poultry_farm %} — {{ seller.poultry_farm.name }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4 col-lg-2 d-grid">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-funnel me-1"></i>
+                        Filter
+                    </button>
+                </div>
+
+                {% if search or selected_status or selected_seller %}
+                    <div class="col-12">
+                        <a href="{% url 'ecommerce:seller_settlement_list' %}"
+                           class="small text-decoration-none">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Clear filters
+                        </a>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Settlement</th>
+                        <th>Seller / Farm</th>
+                        <th class="text-end">Gross</th>
+                        <th class="text-end">Commission</th>
+                        <th class="text-end">Payable</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th class="text-end pe-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for settlement in settlements %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold">
+                                    {{ settlement.settlement_number }}
+                                </div>
+                                <div class="small text-muted">
+                                    {{ settlement.lines.count }} sale line{{ settlement.lines.count|pluralize }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ settlement.seller.name }}</div>
+                                {% if settlement.seller.poultry_farm %}
+                                    <div class="small text-muted">
+                                        <i class="bi bi-geo-alt me-1"></i>
+                                        {{ settlement.seller.poultry_farm.name }}
+                                    </div>
+                                {% else %}
+                                    <div class="small text-muted">
+                                        {{ settlement.seller.code }}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {{ settlement.total_gross|floatformat:0 }} RWF
+                            </td>
+                            <td class="text-end text-success fw-semibold">
+                                {{ settlement.total_commission|floatformat:0 }} RWF
+                            </td>
+                            <td class="text-end fw-bold">
+                                {{ settlement.total_payable|floatformat:0 }} RWF
+                            </td>
+                            <td>
+                                {% if settlement.status == "DRAFT" %}
+                                    <span class="badge bg-secondary">Draft</span>
+                                {% elif settlement.status == "APPROVED" %}
+                                    <span class="badge bg-primary">Approved</span>
+                                {% elif settlement.status == "PAID" %}
+                                    <span class="badge bg-success">Paid</span>
+                                {% elif settlement.status == "CANCELLED" %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark border">
+                                        {{ settlement.get_status_display }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>{{ settlement.created_at|date:"d M Y" }}</div>
+                                <div class="small text-muted">
+                                    {{ settlement.created_at|date:"H:i" }}
+                                </div>
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'ecommerce:seller_settlement_detail' settlement.pk %}"
+                                   class="btn btn-sm btn-outline-dark">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <i class="bi bi-file-earmark-text display-5 text-muted"></i>
+                                <h5 class="mt-3 mb-1">No settlements found</h5>
+                                <p class="text-muted mb-0">
+                                    Delivered independent-seller sales will become eligible for settlement.
+                                </p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

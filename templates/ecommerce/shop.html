@@ -1,296 +1,237 @@
 {% extends "ecommerce/base_ecommerce.html" %}
 {% load static %}
 
-{% block title %}
-WPG Online Store
-{% endblock %}
+{% block title %}WPG Online Shop{% endblock %}
 
 {% block content %}
-
-<div class="container py-5">
-
-    <!-- ================= HERO ================= -->
-
-    <div class="p-5 mb-5 rounded-4 text-white"
-         style="background:linear-gradient(135deg,#0d6efd,#198754);">
-
-        <h1 class="display-5 fw-bold">
-            WPG Online Store
-        </h1>
-
-        <p class="lead">
-            Discover quality products from Wisdom Palace Group.
-        </p>
-
-    </div>
-
-
-
-
-    <!-- ================= SEARCH ================= -->
-
-    <form method="get" class="mb-5">
-
-        <div class="input-group input-group-lg">
-
-            <input type="text"
-                   name="q"
-                   value="{{ search|default:'' }}"
-                   class="form-control"
-                   placeholder="Search products...">
-
-            <button class="btn btn-primary">
-
-                <i class="bi bi-search"></i>
-
-                Search
-
-            </button>
-
+<div class="container py-4">
+    <section class="rounded-4 text-white p-4 p-lg-5 mb-4"
+             style="background:linear-gradient(135deg,#0f5132,#198754 55%,#0d6efd);">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <div class="text-uppercase small fw-bold opacity-75 mb-2">
+                    Wisdom Palace Group
+                </div>
+                <h1 class="display-5 fw-bold">One Marketplace. Three Business Units.</h1>
+                <p class="lead mb-0">
+                    Shop Furniture, Construction solutions and Agriculture products
+                    through one trusted WPG commerce platform.
+                </p>
+            </div>
+            <div class="col-lg-4">
+                <form method="get" action="{% url 'ecommerce:shop' %}">
+                    {% if selected_business_unit %}
+                        <input type="hidden"
+                               name="business_unit"
+                               value="{{ selected_business_unit }}">
+                    {% endif %}
+                    <div class="input-group input-group-lg">
+                        <input type="search"
+                               name="q"
+                               value="{{ search }}"
+                               class="form-control"
+                               placeholder="Search WPG products">
+                        <button class="btn btn-light" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
+    </section>
 
-    </form>
-
-
-
-
-
-    <!-- ================= FEATURED ================= -->
+    <div class="row g-3 mb-5">
+        <div class="col-6 col-lg-3">
+            <a href="{% url 'ecommerce:shop' %}"
+               class="btn w-100 py-3 {% if not selected_business_unit %}btn-dark{% else %}btn-outline-dark{% endif %}">
+                All Products
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a href="{% url 'ecommerce:shop' %}?business_unit=FURNITURE"
+               class="btn w-100 py-3 {% if selected_business_unit == 'FURNITURE' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="bi bi-house-gear me-1"></i> Furniture
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a href="{% url 'ecommerce:shop' %}?business_unit=CONSTRUCTION"
+               class="btn w-100 py-3 {% if selected_business_unit == 'CONSTRUCTION' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                <i class="bi bi-building me-1"></i> Construction
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a href="{% url 'ecommerce:shop' %}?business_unit=AGRICULTURE"
+               class="btn w-100 py-3 {% if selected_business_unit == 'AGRICULTURE' %}btn-success{% else %}btn-outline-success{% endif %}">
+                <i class="bi bi-egg me-1"></i> Agriculture
+            </a>
+        </div>
+    </div>
 
     {% if featured_products %}
-
-    <h3 class="fw-bold mb-4">
-        ⭐ Featured Products
-    </h3>
-
-    <div class="row g-4 mb-5">
-
-        {% for item in featured_products %}
-
-        <div class="col-xl-3 col-lg-4 col-md-6">
-
-            <div class="card border-warning shadow h-100 product-card">
-
-                {% if item.image %}
-
-                <img src="{{ item.image.url }}"
-                     class="card-img-top"
-                     style="height:240px;object-fit:cover;">
-
-                {% else %}
-
-                <img src="{% static 'images/no-image.png' %}"
-                     class="card-img-top"
-                     style="height:240px;object-fit:cover;">
-
-                {% endif %}
-
-
-                <div class="card-body">
-
-                    <span class="badge bg-warning text-dark mb-2">
-                        Featured
-                    </span>
-
-                    <h5 class="fw-bold">
-                        {{ item.title|default:item.product.name }}
-                    </h5>
-
-                    <p class="text-muted">
-                        {{ item.short_description|truncatechars:80 }}
-                    </p>
-
-                    <h4 class="text-primary fw-bold">
-                        {{ item.selling_price }} RWF
-                    </h4>
-
-                </div>
-
+        <div class="d-flex justify-content-between align-items-end mb-3">
+            <div>
+                <div class="text-warning fw-bold text-uppercase small">Featured</div>
+                <h3 class="fw-bold mb-0">Recommended Products</h3>
             </div>
-
         </div>
 
-        {% endfor %}
-
-    </div>
-
+        <div class="row g-4 mb-5">
+            {% for item in featured_products %}
+                <div class="col-sm-6 col-xl-3">
+                    <article class="card h-100 border-warning shadow-sm">
+                        <a href="{% url 'ecommerce:product_detail' item.slug %}">
+                            {% if item.display_image %}
+                                <img src="{{ item.display_image.url }}"
+                                     alt="{{ item.display_title }}"
+                                     class="card-img-top"
+                                     style="height:220px;object-fit:cover;">
+                            {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center"
+                                     style="height:220px;">
+                                    <i class="bi bi-image fs-1 text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </a>
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between gap-2 mb-2">
+                                <span class="badge bg-warning text-dark">Featured</span>
+                                <span class="badge bg-light text-dark border">
+                                    {{ item.product.get_business_unit_display }}
+                                </span>
+                            </div>
+                            <h5 class="fw-bold">{{ item.display_title }}</h5>
+                            <p class="text-muted small">
+                                {{ item.short_description|default:item.product.description|truncatechars:90 }}
+                            </p>
+                            <div class="mt-auto">
+                                <div class="fw-bold fs-5 text-success mb-3">
+                                    {{ item.selling_price|floatformat:0 }} RWF
+                                </div>
+                                <a href="{% url 'ecommerce:product_detail' item.slug %}"
+                                   class="btn btn-outline-dark w-100">
+                                    View Product
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            {% endfor %}
+        </div>
     {% endif %}
 
-
-
-
-
-
-    <!-- ================= ALL PRODUCTS ================= -->
-
-    <h3 class="fw-bold mb-4">
-        All Products
-    </h3>
-
-
-    <div class="row g-4">
-
-        {% for item in products %}
-
-        <div class="col-xl-3 col-lg-4 col-md-6">
-
-            <div class="card shadow-sm border-0 h-100 product-card">
-
-                <!-- IMAGE -->
-
-                {% if item.image %}
-
-                <img src="{{ item.image.url }}"
-                     class="card-img-top"
-                     style="height:240px;object-fit:cover;">
-
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+        <div>
+            <div class="text-success fw-bold text-uppercase small">Catalogue</div>
+            <h3 class="fw-bold mb-0">
+                {% if selected_business_unit %}
+                    {{ selected_business_unit|title }} Products
                 {% else %}
-
-                <img src="{% static 'images/no-image.png' %}"
-                     class="card-img-top"
-                     style="height:240px;object-fit:cover;">
-
+                    All WPG Products
                 {% endif %}
-
-
-
-
-
-                <div class="card-body d-flex flex-column">
-
-
-                    <!-- FEATURED BADGE -->
-
-                    {% if item.is_featured %}
-
-                    <span class="badge bg-warning text-dark mb-2">
-                        ⭐ Featured
-                    </span>
-
-                    {% endif %}
-
-
-
-
-
-                    <!-- TITLE -->
-
-                    <h5 class="fw-bold">
-
-                        {{ item.title|default:item.product.name }}
-
-                    </h5>
-
-
-
-
-
-                    <!-- DESCRIPTION -->
-
-                    <p class="text-muted small">
-
-                        {{ item.short_description|truncatechars:90 }}
-
-                    </p>
-
-
-
-
-
-                    <!-- PRICE + VIEWS -->
-
-                    <div class="mt-auto">
-
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-
-                            <div>
-
-                                <h5 class="text-primary fw-bold mb-0">
-
-                                    {{ item.selling_price }} RWF
-
-                                </h5>
-
-                                <small class="text-muted">
-                                    Selling Price
-                                </small>
-
-                            </div>
-
-                            <small class="text-muted">
-                                👁 {{ item.views }}
-                            </small>
-
-                        </div>
-
-
-
-
-
-                        <!-- ACTIONS -->
-
-                        <div class="d-grid gap-2">
-
-
-                            <!-- VIEW DETAILS -->
-
-                            <a href="{% url 'ecommerce:product_detail' item.slug %}"
-                               class="btn btn-outline-primary btn-sm">
-
-                                <i class="bi bi-eye"></i>
-
-                                View Details
-
-                            </a>
-
-
-
-
-
-                            <!-- ADD TO CART -->
-
-                            <form method="POST"
-                                  action="{% url 'ecommerce:add_to_cart' item.id %}">
-
-                                {% csrf_token %}
-
-                                <button type="submit"
-                                        class="btn btn-outline-success btn-sm w-100">
-
-                                    <i class="bi bi-cart-plus"></i>
-
-                                    Add to Cart
-
-                                </button>
-
-                            </form>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
+            </h3>
         </div>
-
-        {% empty %}
-
-        <div class="col-12">
-
-            <div class="alert alert-warning">
-
-                No products found.
-
-            </div>
-
-        </div>
-
-        {% endfor %}
-
+        {% if search %}
+            <div class="text-muted">Results for “{{ search }}”</div>
+        {% endif %}
     </div>
 
-</div>
+    <div class="row g-4">
+        {% for item in products %}
+            <div class="col-sm-6 col-xl-3">
+                <article class="card h-100 border-0 shadow-sm">
+                    <a href="{% url 'ecommerce:product_detail' item.slug %}">
+                        {% if item.display_image %}
+                            <img src="{{ item.display_image.url }}"
+                                 alt="{{ item.display_title }}"
+                                 class="card-img-top"
+                                 style="height:230px;object-fit:cover;">
+                        {% else %}
+                            <div class="bg-light d-flex align-items-center justify-content-center"
+                                 style="height:230px;">
+                                <i class="bi bi-image fs-1 text-muted"></i>
+                            </div>
+                        {% endif %}
+                    </a>
 
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex flex-wrap gap-1 mb-2">
+                            <span class="badge bg-light text-dark border">
+                                {{ item.product.get_business_unit_display }}
+                            </span>
+                            {% if item.product.is_featured %}
+                                <span class="badge bg-warning text-dark">Featured</span>
+                            {% endif %}
+                        </div>
+
+                        <h5 class="fw-bold">{{ item.display_title }}</h5>
+                        <p class="text-muted small">
+                            {{ item.short_description|default:item.product.description|truncatechars:90 }}
+                        </p>
+
+                        <div class="mt-auto">
+                            <div class="d-flex justify-content-between align-items-end mb-3">
+                                <div>
+                                    <div class="fw-bold fs-5 text-success">
+                                        {{ item.selling_price|floatformat:0 }} RWF
+                                    </div>
+                                    <small class="text-muted">
+                                        per {{ item.product.unit }}
+                                    </small>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-eye"></i> {{ item.views }}
+                                </small>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'ecommerce:product_detail' item.slug %}"
+                                   class="btn btn-outline-dark">
+                                    View Details
+                                </a>
+
+                                {% if item.can_add_to_cart %}
+                                    <form method="post"
+                                          action="{% url 'ecommerce:add_to_cart' item.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="quantity"
+                                               value="{{ item.minimum_order_quantity }}">
+                                        <input type="hidden" name="next"
+                                               value="{{ request.get_full_path }}">
+                                        <button type="submit"
+                                                class="btn btn-success w-100">
+                                            <i class="bi bi-cart-plus"></i>
+                                            Add to Cart
+                                        </button>
+                                    </form>
+                                {% elif item.purchase_mode == "REQUEST_QUOTE" %}
+                                    <span class="btn btn-outline-primary disabled">
+                                        Request Quotation
+                                    </span>
+                                {% else %}
+                                    <span class="btn btn-outline-warning disabled">
+                                        Made to Order
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="card border-0 bg-light">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-search fs-1 text-muted"></i>
+                        <h4 class="fw-bold mt-3">No products found</h4>
+                        <p class="text-muted">Try another search or business unit.</p>
+                        <a href="{% url 'ecommerce:shop' %}"
+                           class="btn btn-dark">
+                            Reset Filters
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
 {% endblock %}

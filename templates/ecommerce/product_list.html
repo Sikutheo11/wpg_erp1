@@ -1,0 +1,185 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <div class="text-success fw-bold text-uppercase small">
+                WPG Ecommerce
+            </div>
+            <h2 class="fw-bold mb-1">Online Product Management</h2>
+            <p class="text-muted mb-0">
+                Configure how shared Inventory products appear and sell online.
+            </p>
+        </div>
+
+        <a href="{% url 'ecommerce:online_product_create' %}"
+           class="btn btn-success">
+            Add Online Product
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-lg-4">
+                    <label for="search" class="form-label fw-semibold">Search</label>
+                    <input type="search"
+                           id="search"
+                           name="q"
+                           value="{{ search }}"
+                           class="form-control"
+                           placeholder="Product name, title or code">
+                </div>
+
+                <div class="col-md-4 col-lg-3">
+                    <label for="businessUnit" class="form-label fw-semibold">
+                        Business Unit
+                    </label>
+                    <select id="businessUnit"
+                            name="business_unit"
+                            class="form-select">
+                        <option value="">All business units</option>
+                        {% for value, label in business_units %}
+                            <option value="{{ value }}"
+                                    {% if selected_business_unit == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4 col-lg-3">
+                    <label for="purchaseMode" class="form-label fw-semibold">
+                        Purchase Mode
+                    </label>
+                    <select id="purchaseMode"
+                            name="purchase_mode"
+                            class="form-select">
+                        <option value="">All purchase modes</option>
+                        {% for value, label in purchase_modes %}
+                            <option value="{{ value }}"
+                                    {% if selected_purchase_mode == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4 col-lg-2 d-grid">
+                    <button type="submit" class="btn btn-dark">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Product</th>
+                            <th>Business Unit</th>
+                            <th>Purchase Mode</th>
+                            <th>Price</th>
+                            <th>Published</th>
+                            <th>Featured</th>
+                            <th>Views</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for online_product in products %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-semibold">
+                                        {{ online_product.display_title }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        {{ online_product.product.product_code }}
+                                    </div>
+                                </td>
+                                <td>
+                                    {{ online_product.product.get_business_unit_display }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{ online_product.get_purchase_mode_display }}
+                                    </span>
+                                </td>
+                                <td class="fw-semibold">
+                                    {{ online_product.selling_price|floatformat:0 }} RWF
+                                </td>
+                                <td>
+                                    {% if online_product.product.is_published %}
+                                        <span class="badge bg-success">Published</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Hidden</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if online_product.product.is_featured %}
+                                        <span class="text-warning fw-bold">Yes</span>
+                                    {% else %}
+                                        <span class="text-muted">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ online_product.views }}</td>
+                                <td class="text-end pe-4">
+                                    <div class="d-inline-flex flex-wrap justify-content-end gap-1">
+                                        <a href="{% url 'ecommerce:product_detail' online_product.slug %}"
+                                           class="btn btn-sm btn-outline-dark">
+                                            View
+                                        </a>
+
+                                        <a href="{% url 'ecommerce:online_product_update' online_product.pk %}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Edit
+                                        </a>
+
+                                        <form method="post"
+                                              action="{% url 'ecommerce:toggle_publish' online_product.pk %}"
+                                              class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-success">
+                                                {% if online_product.product.is_published %}
+                                                    Unpublish
+                                                {% else %}
+                                                    Publish
+                                                {% endif %}
+                                            </button>
+                                        </form>
+
+                                        <form method="post"
+                                              action="{% url 'ecommerce:toggle_featured' online_product.pk %}"
+                                              class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-warning">
+                                                {% if online_product.product.is_featured %}
+                                                    Unfeature
+                                                {% else %}
+                                                    Feature
+                                                {% endif %}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="8"
+                                    class="text-center text-muted py-5">
+                                    No online products match the selected filters.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

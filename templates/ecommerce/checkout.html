@@ -1,137 +1,108 @@
 {% extends "ecommerce/base_ecommerce.html" %}
 
-{% block title %}
-Checkout
-{% endblock %}
+{% block title %}Checkout - WPG Ecommerce{% endblock %}
 
 {% block content %}
-
 <div class="container py-5">
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1">Secure Checkout</h2>
+        <p class="text-muted mb-0">
+            One checkout will create a separate Enterprise Order for each business unit.
+        </p>
+    </div>
 
-<div class="row">
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-4">Customer & Delivery Information</h4>
 
-<div class="col-lg-8">
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
 
-<div class="card shadow">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="row">
+                            {% for field in form %}
+                                <div class="{% if field.name == 'delivery_address' or field.name == 'notes' %}col-12{% else %}col-md-6{% endif %} mb-3">
+                                    <label for="{{ field.id_for_label }}"
+                                           class="form-label fw-semibold">
+                                        {{ field.label }}
+                                        {% if field.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <div class="form-text">{{ field.help_text }}</div>
+                                    {% endif %}
+                                    {% for error in field.errors %}
+                                        <div class="text-danger small mt-1">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
 
-<div class="card-body">
+                        <button type="submit"
+                                class="btn btn-success btn-lg w-100 mt-2">
+                            Place Enterprise Order
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
 
-<h3 class="mb-4">
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm position-sticky"
+                 style="top:90px;">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-3">Order Summary</h4>
 
-Checkout
+                    {% for business_unit, unit_items in grouped_items.items %}
+                        <div class="border rounded p-3 mb-3">
+                            <div class="fw-bold mb-2">
+                                {% if business_unit == "FURNITURE" %}
+                                    Furniture & Manufacturing
+                                {% elif business_unit == "CONSTRUCTION" %}
+                                    Construction & Built Environment
+                                {% elif business_unit == "AGRICULTURE" %}
+                                    Agriculture / Poultry
+                                {% else %}
+                                    {{ business_unit|title }}
+                                {% endif %}
+                            </div>
+                            {% for item in unit_items %}
+                                <div class="d-flex justify-content-between gap-3 small py-1">
+                                    <span>
+                                        {{ item.online_product.display_title }}
+                                        × {{ item.quantity }}
+                                    </span>
+                                    <span class="fw-semibold text-nowrap">
+                                        {{ item.subtotal|floatformat:0 }} RWF
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
 
-</h3>
-
-<form method="POST">
-
-{% csrf_token %}
-
-<div class="row">
-
-<div class="col-md-6 mb-3">
-<label>Full Name</label>
-{{ form.full_name }}
+                    <div class="d-flex justify-content-between border-top pt-3">
+                        <span class="fw-bold">Checkout Total</span>
+                        <span class="h4 fw-bold text-success mb-0">
+                            {{ total|floatformat:0 }} RWF
+                        </span>
+                    </div>
+                    <p class="text-muted small mt-3 mb-0">
+                        Delivery fees and payment instructions will be confirmed
+                        during order processing.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
-<div class="col-md-6 mb-3">
-<label>Phone</label>
-{{ form.phone }}
-</div>
-
-<div class="col-md-6 mb-3">
-<label>Email</label>
-{{ form.email }}
-</div>
-
-<div class="col-md-6 mb-3">
-<label>Province</label>
-{{ form.province }}
-</div>
-
-<div class="col-md-6 mb-3">
-<label>District</label>
-{{ form.district }}
-</div>
-
-<div class="col-md-6 mb-3">
-<label>Sector</label>
-{{ form.sector }}
-</div>
-
-<div class="col-md-6 mb-3">
-<label>Cell</label>
-{{ form.cell }}
-</div>
-
-<div class="col-md-6 mb-3">
-<label>Village</label>
-{{ form.village }}
-</div>
-
-<div class="mb-3">
-
-<label>Delivery Address</label>
-
-{{ form.delivery_address }}
-
-</div>
-
-<div class="mb-3">
-
-<label>Notes</label>
-
-{{ form.notes }}
-
-</div>
-
-<button class="btn btn-success btn-lg w-100">
-
-Place Order
-
-</button>
-
-</form>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-lg-4">
-
-<div class="card shadow">
-
-<div class="card-body">
-
-<h4>
-
-Order Summary
-
-</h4>
-
-<hr>
-
-<h3 class="text-primary">
-
-{{ total }} RWF
-
-</h3>
-
-<p class="text-muted">
-
-Delivery fees will be calculated later.
-
-</p>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
 {% endblock %}

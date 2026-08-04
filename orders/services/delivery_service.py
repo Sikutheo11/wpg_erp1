@@ -301,6 +301,9 @@ class DeliveryService:
 
             reservation.status = "COMPLETED"
             reservation.completed_at = timezone.now()
+            reservation.completed_quantity = (
+                reservation.reserved_quantity
+            )
 
             if note:
                 reservation.note = (
@@ -312,6 +315,7 @@ class DeliveryService:
             reservation.save(
                 update_fields=[
                     "status",
+                    "completed_quantity",
                     "completed_at",
                     "note",
                     "updated_at",
@@ -324,8 +328,30 @@ class DeliveryService:
         )
 
         receivable = None
+        revenue_result = None
 
-        if order.order_type not in {
+        if order.order_type == "ECOMMERCE":
+            if order.payment_status != "PAID":
+                raise ValidationError(
+                    (
+                        f"Ecommerce order {order.order_number} "
+                        "cannot be delivered before payment is confirmed."
+                    )
+                )
+
+            from ecommerce.services import (
+                EcommerceRevenueRecognitionService,
+            )
+
+            revenue_result = (
+                EcommerceRevenueRecognitionService
+                .recognize_delivered_order(
+                    order=order,
+                    actor=delivered_by,
+                )
+            )
+
+        elif order.order_type not in {
             "RESTOCK",
             "NEW_PRODUCT",
         }:
@@ -337,6 +363,7 @@ class DeliveryService:
                     actor=delivered_by,
                 )
             )
+
 
         EventEngine.dispatch(
             event_code="ORDER_DELIVERY_COMPLETED",
@@ -366,6 +393,26 @@ class DeliveryService:
                 "receivable_id": (
                     receivable.pk
                     if receivable
+                    else None
+                ),
+                "revenue_journal_entry_id": (
+                    revenue_result["journal_entry"].pk
+                    if revenue_result
+                    else None
+                ),
+                "customer_advance_id": (
+                    revenue_result["advance"].pk
+                    if revenue_result
+                    else None
+                ),
+                "recognized_revenue_amount": (
+                    str(revenue_result["amount"])
+                    if revenue_result
+                    else None
+                ),
+                "revenue_business_unit": (
+                    revenue_result["business_unit"]
+                    if revenue_result
                     else None
                 ),
                 "delivered_at": (
