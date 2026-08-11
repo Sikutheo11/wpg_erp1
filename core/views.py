@@ -4,11 +4,45 @@ from .dashboard import DashboardService
 from .models import Notification, AuditLog
 from .report_engine import ReportEngine
 from .executive_dashboard import ExecutiveDashboard
+from django.http import JsonResponse
+from django.db import connection
+from django.db.utils import DatabaseError
 
 
 # =====================================================
 # HOME / DASHBOARDS
 # =====================================================
+def health_check(request):
+    """
+    Public deployment health check.
+
+    It exposes no credentials or business data. A healthy response means
+    that Django is running and PostgreSQL accepts queries.
+    """
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            database_ok = cursor.fetchone()[0] == 1
+    except DatabaseError:
+        database_ok = False
+
+    if database_ok:
+        return JsonResponse(
+            {
+                "status": "ok",
+                "database": "ok",
+            },
+            status=200,
+        )
+
+    return JsonResponse(
+        {
+            "status": "unavailable",
+            "database": "unavailable",
+        },
+        status=503,
+    )
+
 
 def home(request):
     return render(request, "core/home.html")
