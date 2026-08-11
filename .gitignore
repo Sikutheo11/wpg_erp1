@@ -5,3 +5,6 @@ venv/
 *.sqlite3
 # User-uploaded Django media
 media/
+
+# User-uploaded Django media
+media/
