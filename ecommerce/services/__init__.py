@@ -9,11 +9,16 @@ from .marketplace_commission_service import (
 from .seller_settlement_service import (
     SellerSettlementService,
 )
+from .payment_provider_service import (
+    PaymentProviderConfigurationService,
+)
+
 
 __all__ = [
     "EcommerceCheckoutService",
     "EcommercePaymentService",
     "EcommerceRevenueRecognitionService",
     "MarketplaceCommissionService",
+    "PaymentProviderConfigurationService",
     "SellerSettlementService",
 ]

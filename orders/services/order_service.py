@@ -566,6 +566,17 @@ class OrderService:
         actor=None,
         reason="",
     ):
+        if order is None or not getattr(order, "pk", None):
+            raise ValidationError(
+                "A saved order is required."
+            )
+
+        order = (
+            Order.objects
+            .select_for_update()
+            .get(pk=order.pk)
+        )
+
         if order.status in {
             "DELIVERED",
             "COMPLETED",
@@ -575,26 +586,191 @@ class OrderService:
                 "This order can no longer be cancelled."
             )
 
+        reason = (reason or "").strip()
+
+        if not reason:
+            reason = "Order cancelled by authorized staff."
+
+        released_reservations = []
+        cancelled_payments = []
+        reversed_marketplace_lines = 0
+        checkout = None
+
+        if order.order_type == "ECOMMERCE":
+            from ecommerce.models import (
+                EcommerceCheckout,
+                EcommerceCheckoutOrder,
+                EcommercePayment,
+                MarketplaceOrderLine,
+            )
+            from ecommerce.services.payment_service import (
+                EcommercePaymentService,
+            )
+
+            checkout_link = (
+                EcommerceCheckoutOrder.objects
+                .select_related("checkout")
+                .select_for_update()
+                .filter(order=order)
+                .first()
+            )
+
+            if checkout_link is None:
+                raise ValidationError(
+                    (
+                        f"Ecommerce order {order.order_number} "
+                        "has no checkout link."
+                    )
+                )
+
+            checkout = (
+                EcommerceCheckout.objects
+                .select_for_update()
+                .get(pk=checkout_link.checkout_id)
+            )
+
+            confirmed_payment_exists = (
+                EcommercePayment.objects
+                .filter(
+                    checkout=checkout,
+                    status=EcommercePayment.CONFIRMED,
+                )
+                .exists()
+            )
+
+            if (
+                order.payment_status == "PAID"
+                or confirmed_payment_exists
+            ):
+                raise ValidationError(
+                    (
+                        f"Paid Ecommerce order {order.order_number} "
+                        "cannot be cancelled directly. Refund the "
+                        "customer payment first."
+                    )
+                )
+
+            active_sibling_exists = (
+                EcommerceCheckoutOrder.objects
+                .filter(checkout=checkout)
+                .exclude(order=order)
+                .exclude(order__status="CANCELLED")
+                .exists()
+            )
+
+            if active_sibling_exists:
+                raise ValidationError(
+                    (
+                        "This checkout contains multiple active orders. "
+                        "Cancelling only one order would make the checkout "
+                        "payment total incorrect. Cancel the complete "
+                        "checkout instead."
+                    )
+                )
+
+            marketplace_lines = (
+                MarketplaceOrderLine.objects
+                .select_for_update()
+                .filter(order_item__order=order)
+            )
+
+            protected_marketplace_line_exists = (
+                marketplace_lines
+                .filter(
+                    settlement_status__in={
+                        "IN_SETTLEMENT",
+                        "SETTLED",
+                    }
+                )
+                .exists()
+            )
+
+            if protected_marketplace_line_exists:
+                raise ValidationError(
+                    (
+                        "This order has Marketplace sale lines already "
+                        "included in or paid through a seller settlement."
+                    )
+                )
+
+            pending_payments = list(
+                EcommercePayment.objects
+                .select_for_update()
+                .filter(
+                    checkout=checkout,
+                    status__in={
+                        EcommercePayment.INITIATED,
+                        EcommercePayment.PENDING,
+                    },
+                )
+                .order_by("pk")
+            )
+
+            for payment in pending_payments:
+                payment, changed = (
+                    EcommercePaymentService.cancel_payment(
+                        payment=payment,
+                        reason=(
+                            f"Order {order.order_number} cancelled. "
+                            f"{reason}"
+                        ),
+                        actor=actor,
+                    )
+                )
+
+                if changed:
+                    cancelled_payments.append(payment)
+
+            reversed_marketplace_lines = (
+                marketplace_lines
+                .filter(
+                    settlement_status__in={
+                        "UNSETTLED",
+                        "ELIGIBLE",
+                    }
+                )
+                .update(
+                    settlement_status="REVERSED",
+                    eligible_at=None,
+                )
+            )
+
+            checkout.status = "CANCELLED"
+            checkout.save(
+                update_fields=[
+                    "status",
+                    "updated_at",
+                ]
+            )
+
+        from inventory.services.reservation_service import (
+            ReservationService,
+        )
+
+        release_result = (
+            ReservationService.release_order_reservations(
+                order=order,
+                actor=actor,
+                note=(
+                    f"Released because order "
+                    f"{order.order_number} was cancelled. "
+                    f"{reason}"
+                ),
+            )
+        )
+
+        released_reservations = release_result["released"]
+
+        existing_notes = (order.notes or "").strip()
+        cancellation_note = f"Cancellation reason: {reason}"
+
+        order.notes = (
+            f"{existing_notes}\n{cancellation_note}"
+            if existing_notes
+            else cancellation_note
+        )
+
         order.status = "CANCELLED"
-
-        reason = (
-            reason or ""
-        ).strip()
-
-        if reason:
-            existing_notes = (
-                order.notes or ""
-            ).strip()
-
-            cancellation_note = (
-                f"Cancellation reason: {reason}"
-            )
-
-            order.notes = (
-                f"{existing_notes}\n{cancellation_note}"
-                if existing_notes
-                else cancellation_note
-            )
 
         order.save(
             update_fields=[
@@ -611,6 +787,22 @@ class OrderService:
             title="Order Cancelled",
             metadata={
                 "reason": reason,
+                "released_reservation_ids": [
+                    reservation.pk
+                    for reservation in released_reservations
+                ],
+                "cancelled_payment_ids": [
+                    payment.pk
+                    for payment in cancelled_payments
+                ],
+                "reversed_marketplace_lines": (
+                    reversed_marketplace_lines
+                ),
+                "checkout_id": (
+                    checkout.pk
+                    if checkout is not None
+                    else None
+                ),
             },
             level="WARNING",
         )

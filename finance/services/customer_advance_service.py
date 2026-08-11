@@ -523,7 +523,6 @@ class CustomerAdvanceService:
         advance = (
             CustomerAdvance.objects
             .select_for_update()
-            .select_related("receipt_entry")
             .get(pk=advance.pk)
         )
         if advance.status in {

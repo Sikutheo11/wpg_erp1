@@ -138,10 +138,30 @@
                             <td>{{ payment.initiated_at|date:"d M Y H:i" }}</td>
                             <td class="text-end">
                                 {% if payment.status == "INITIATED" or payment.status == "PENDING" %}
-                                    <a href="{% url 'ecommerce:payment_confirm' payment.id %}"
-                                       class="btn btn-sm btn-success">
-                                        Verify & Confirm
-                                    </a>
+                                    {% if can_confirm_payment %}
+                                        <a href="{% url 'ecommerce:payment_confirm' payment.id %}"
+                                           class="btn btn-sm btn-success">
+                                            Verify & Confirm
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'ecommerce:payment_waiting' payment.id %}"
+                                           class="btn btn-sm btn-outline-dark">
+                                            View
+                                        </a>
+                                    {% endif %}
+                                {% elif payment.status == "CONFIRMED" %}
+                                    <div class="d-inline-flex flex-wrap justify-content-end gap-1">
+                                        <a href="{% url 'ecommerce:payment_waiting' payment.id %}"
+                                           class="btn btn-sm btn-outline-dark">
+                                            View
+                                        </a>
+                                        {% if can_refund_payment %}
+                                            <a href="{% url 'ecommerce:payment_refund' payment.id %}"
+                                               class="btn btn-sm btn-outline-danger">
+                                                Refund
+                                            </a>
+                                        {% endif %}
+                                    </div>
                                 {% else %}
                                     <a href="{% url 'ecommerce:payment_waiting' payment.id %}"
                                        class="btn btn-sm btn-outline-dark">

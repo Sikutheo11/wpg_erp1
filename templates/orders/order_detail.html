@@ -817,24 +817,38 @@ Order Detail
                         </div>
                     </div>
 
-                    {% if order.business_unit == "FURNITURE" and order.order_type != "CATALOGUE" %}
                     <div class="workflow-step">
-                        {% if order.production_job %}
+                        {% if order.status == "PROCESSING" or order.status == "WAITING_STOCK" or order.status == "IN_PRODUCTION" or order.status == "READY" or order.status == "DELIVERED" or order.status == "COMPLETED" %}
                             <i class="bi bi-check-circle-fill text-success"></i>
                         {% else %}
                             <i class="bi bi-circle text-muted"></i>
                         {% endif %}
                         <div>
-                            <span class="fw-semibold d-block">Production handoff</span>
-                            <small class="text-muted">
-                                {% if order.production_job %}
-                                    Production job created in Furniture &amp; Manufacturing.
-                                {% else %}
-                                    Waiting for production job creation.
-                                {% endif %}
-                            </small>
+                            <span class="fw-semibold d-block">Processing</span>
+                            <small class="text-muted">Reserved items are being prepared for fulfilment.</small>
                         </div>
                     </div>
+
+                    {% if order.business_unit == "FURNITURE" %}
+                        {% if order.order_type == "CUSTOM_FURNITURE" or order.order_type == "RESTOCK" or order.order_type == "NEW_PRODUCT" %}
+                            <div class="workflow-step">
+                                {% if order.production_job %}
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                    <i class="bi bi-circle text-muted"></i>
+                                {% endif %}
+                                <div>
+                                    <span class="fw-semibold d-block">Production handoff</span>
+                                    <small class="text-muted">
+                                        {% if order.production_job %}
+                                            Production job created in Furniture &amp; Manufacturing.
+                                        {% else %}
+                                            Waiting for production job creation.
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        {% endif %}
                     {% endif %}
 
                     <div class="workflow-step">
@@ -924,9 +938,43 @@ Order Detail
                                 <i class="bi bi-check-circle me-1"></i>
                                 Confirm Order
                             </button>
-
                         </form>
 
+                    {% endif %}
+
+                    {% if can_process %}
+                    <form method="post"
+                        action="{% url 'orders:mark_processing' order.pk %}"
+                        class="mb-2">
+
+                        {% csrf_token %}
+
+                        <button type="submit"
+                                class="btn btn-primary w-100">
+                            <i class="bi bi-gear me-1"></i>
+                            Start Processing
+                        </button>
+                    </form>
+                    {% endif %}
+
+
+                    {% if can_mark_ready %}
+                    <form method="post"
+                        action="{% url 'orders:mark_ready' order.pk %}"
+                        class="mb-2">
+
+                        {% csrf_token %}
+
+                        <input type="hidden"
+                            name="note"
+                            value="Order items prepared and ready for delivery.">
+
+                        <button type="submit"
+                                class="btn btn-warning w-100">
+                            <i class="bi bi-box-seam me-1"></i>
+                            Mark Ready
+                        </button>
+                    </form>
                     {% endif %}
 
 

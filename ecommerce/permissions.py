@@ -148,6 +148,11 @@ def marketplace_permission_context(user):
             MarketplaceFeatures.PAYMENTS,
             "approve",
         ),
+                "can_refund_payment": (
+            MarketplaceFeatures.PAYMENTS,
+            "approve",
+        ),
+
         "can_pay_settlement": (
             MarketplaceFeatures.PAYMENTS,
             "approve",
@@ -228,6 +233,11 @@ payment_confirm_required = marketplace_feature_required(
     MarketplaceFeatures.PAYMENTS,
     "approve",
 )
+payment_refund_required = marketplace_feature_required(
+    MarketplaceFeatures.PAYMENTS,
+    "approve",
+)
+
 settlement_pay_required = marketplace_feature_required(
     MarketplaceFeatures.PAYMENTS,
     "approve",

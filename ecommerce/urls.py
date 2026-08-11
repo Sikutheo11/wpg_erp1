@@ -92,6 +92,11 @@ urlpatterns = [
         name="seller_settlement_approve",
     ),
     path(
+        "management/settlements/<int:pk>/cancel/",
+        views.seller_settlement_cancel,
+        name="seller_settlement_cancel",
+    ),
+    path(
         "management/settlements/<int:pk>/pay/",
         views.seller_settlement_pay,
         name="seller_settlement_pay",
@@ -148,6 +153,11 @@ urlpatterns = [
         name="payment_waiting",
     ),
     path(
+        "payments/<int:payment_id>/refresh/",
+        views.payment_status_refresh,
+        name="payment_status_refresh",
+    ),
+    path(
         "payments/<int:payment_id>/confirm/",
         views.payment_confirm,
         name="payment_confirm",
@@ -162,5 +172,15 @@ urlpatterns = [
         "management/reports/",
         views.marketplace_report,
         name="marketplace_report",
+    ),
+    path(
+        "management/payments/<int:payment_id>/refund/",
+        views.payment_refund,
+        name="payment_refund",
+    ),
+    path(
+        "payments/provider/callback/<str:token>/",
+        views.payment_provider_callback,
+        name="payment_provider_callback",
     ),
 ]

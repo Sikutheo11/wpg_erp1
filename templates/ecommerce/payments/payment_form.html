@@ -37,14 +37,28 @@
                     {{ form.non_field_errors }}
                 </div>
             {% endif %}
+            {% if form.has_available_providers %}
+                {# card na form biri hano #}
+            {% else %}
+                <div class="alert alert-warning border-warning">
+                    <h5 class="fw-bold">Payment temporarily unavailable</h5>
+                    <p class="mb-0">
+                        No payment channel is currently available.
+                        Please try again later or contact WPG support.
+                    </p>
+                </div>
+            {% endif %}
 
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-4 p-lg-5">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
+                        {% for hidden_field in form.hidden_fields %}
+                            {{ hidden_field }}
+                        {% endfor %}
 
                         <div class="row g-4">
-                            {% for field in form %}
+                            {% for field in form.visible_fields %}
                                 <div class="{% if field.name == 'notes' %}col-12{% else %}col-md-6{% endif %}">
                                     <label class="form-label fw-semibold" for="{{ field.id_for_label }}">
                                         {{ field.label }}{% if field.field.required %}<span class="text-danger">*</span>{% endif %}

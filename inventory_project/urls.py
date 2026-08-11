@@ -30,8 +30,8 @@ urlpatterns = [
     path('finance/', include('finance.urls')),
     path("sales/", include("sales.urls")),
     path("ecommerce/", include("ecommerce.urls")),
-    path("orders/", include(("orders.urls")),
-),
+    path("orders/", include("orders.urls")),
+    path("agriculture/", include("agriculture.urls")),
 
     
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -16,6 +16,16 @@ from django.views.decorators.http import (
     require_http_methods,
     require_POST,
 )
+from django.conf import settings
+from django.core import signing
+from django.core.signing import (
+    BadSignature,
+    SignatureExpired,
+)
+from django.http import JsonResponse
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 
 from orders.models import Order
 
@@ -30,6 +40,7 @@ from .forms import (
     SellerProductAssignmentForm,
     SellerSettlementCreateForm,
     SellerSettlementPaymentForm,
+    PaymentRefundForm,
 )
 from .models import (
     EcommerceCheckout,
@@ -62,6 +73,7 @@ from .permissions import (
     settlement_approve_required,
     settlement_pay_required,
     settlement_view_required,
+    payment_refund_required,
 )
 
 
@@ -623,11 +635,66 @@ def _payment_for_user(request, payment_id):
         queryset = queryset.filter(checkout__user=request.user)
     return get_object_or_404(queryset, pk=payment_id)
 
+PAYMENT_CALLBACK_SALT = (
+    "ecommerce.payment.provider-callback.v1"
+)
+
+
+def _payment_callback_url(payment):
+    base_url = getattr(
+        settings,
+        "ECOMMERCE_PAYMENT_CALLBACK_BASE_URL",
+        "",
+    ).strip().rstrip("/")
+
+    if not base_url:
+        return ""
+
+    token = signing.dumps(
+        {
+            "payment_id": payment.pk,
+            "provider": payment.provider,
+        },
+        salt=PAYMENT_CALLBACK_SALT,
+        compress=True,
+    )
+
+    callback_path = reverse(
+        "ecommerce:payment_provider_callback",
+        kwargs={"token": token},
+    )
+
+    return f"{base_url}{callback_path}"
 
 @login_required
 @require_http_methods(["GET", "POST"])
 def checkout_payment(request, checkout_id):
     checkout = _checkout_for_user(request, checkout_id)
+    order_statuses = list(
+        checkout.checkout_orders.values_list(
+            "order__status",
+            flat=True,
+        )
+    )
+
+    if (
+        checkout.status == "CANCELLED"
+        or (
+            order_statuses
+            and all(
+                status == "CANCELLED"
+                for status in order_statuses
+            )
+        )
+    ):
+        messages.error(
+            request,
+            "This checkout was cancelled and can no longer be paid.",
+        )
+        return redirect(
+            "ecommerce:checkout_success",
+            checkout_id=checkout.pk,
+        )
 
     confirmed = checkout.payments.filter(
         status=EcommercePayment.CONFIRMED
@@ -667,9 +734,13 @@ def checkout_payment(request, checkout_id):
                         actor=request.user,
                     )
                 )
+                callback_url = _payment_callback_url(payment)
+
                 payment, unused_changed = (
-                    EcommercePaymentService.mark_pending(
+                    EcommercePaymentService
+                    .request_provider_payment(
                         payment=payment,
+                        callback_url=callback_url,
                         actor=request.user,
                     )
                 )
@@ -714,12 +785,159 @@ def payment_waiting(request, payment_id):
     return render(
         request,
         "ecommerce/payments/payment_waiting.html",
-        {
+            {
             "payment": payment,
             "checkout": payment.checkout,
+            "manual_confirmation_allowed": (
+                not EcommercePaymentService.is_automated_provider(
+                    payment.provider
+                )
+            ),
         },
     )
 
+@login_required
+@require_POST
+def payment_status_refresh(request, payment_id):
+    payment = _payment_for_user(
+        request,
+        payment_id,
+    )
+
+    try:
+        payment, changed = (
+            EcommercePaymentService.check_provider_status(
+                payment=payment,
+                actor=request.user,
+            )
+        )
+    except ValidationError as error:
+        _validation_messages(request, error)
+    else:
+        payment.refresh_from_db()
+
+        if payment.status == EcommercePayment.CONFIRMED:
+            messages.success(
+                request,
+                (
+                    f"Payment {payment.payment_number} "
+                    "has been confirmed successfully."
+                ),
+            )
+
+        elif payment.status == EcommercePayment.FAILED:
+            messages.error(
+                request,
+                "The payment provider reported that payment failed.",
+            )
+
+        elif payment.status == EcommercePayment.PENDING:
+            messages.info(
+                request,
+                "Payment is still awaiting provider confirmation.",
+            )
+
+    return redirect(
+        "ecommerce:payment_waiting",
+        payment_id=payment.pk,
+    )
+
+@csrf_exempt
+@require_POST
+def payment_provider_callback(request, token):
+    try:
+        callback_data = signing.loads(
+            token,
+            salt=PAYMENT_CALLBACK_SALT,
+            max_age=60 * 60 * 24 * 7,
+        )
+    except SignatureExpired:
+        return JsonResponse(
+            {"detail": "Callback token expired."},
+            status=410,
+        )
+    except BadSignature:
+        return JsonResponse(
+            {"detail": "Invalid callback token."},
+            status=400,
+        )
+
+    payment = (
+        EcommercePayment.objects
+        .select_related("checkout")
+        .filter(
+            pk=callback_data.get("payment_id"),
+            provider=callback_data.get("provider"),
+        )
+        .first()
+    )
+
+    if payment is None:
+        return JsonResponse(
+            {"detail": "Payment not found."},
+            status=404,
+        )
+
+    if not EcommercePaymentService.is_automated_provider(
+        payment.provider
+    ):
+        return JsonResponse(
+            {
+                "detail": (
+                    "This payment does not accept "
+                    "provider callbacks."
+                )
+            },
+            status=400,
+        )
+
+    payment.callback_received_at = timezone.now()
+    payment.save(
+        update_fields=[
+            "callback_received_at",
+            "updated_at",
+        ]
+    )
+
+    if payment.status in {
+        EcommercePayment.CONFIRMED,
+        EcommercePayment.FAILED,
+        EcommercePayment.CANCELLED,
+        EcommercePayment.REFUNDED,
+    }:
+        return JsonResponse(
+            {
+                "accepted": True,
+                "payment_status": payment.status,
+            }
+        )
+
+    try:
+        payment, unused_changed = (
+            EcommercePaymentService
+            .check_provider_status(
+                payment=payment,
+                actor=None,
+            )
+        )
+    except ValidationError as error:
+        return JsonResponse(
+            {
+                "accepted": False,
+                "errors": error.messages,
+            },
+            status=409,
+        )
+
+    payment.refresh_from_db()
+
+    return JsonResponse(
+        {
+            "accepted": True,
+            "payment_status": payment.status,
+            "provider_status": payment.provider_status,
+        }
+    )
 
 @login_required
 @payment_confirm_required
@@ -731,6 +949,21 @@ def payment_confirm(request, payment_id):
     #     )
 
     payment = _payment_for_user(request, payment_id)
+    if EcommercePaymentService.is_automated_provider(
+        payment.provider
+    ):
+        messages.error(
+            request,
+            (
+                f"{payment.get_provider_display()} payment "
+                "cannot be confirmed manually. Refresh its status "
+                "to obtain confirmation from the provider."
+            ),
+        )
+        return redirect(
+            "ecommerce:payment_waiting",
+            payment_id=payment.pk,
+        )
     initial_reference = payment.provider_reference
 
     if request.method == "POST":
@@ -768,6 +1001,98 @@ def payment_confirm(request, payment_id):
     return render(
         request,
         "ecommerce/payments/payment_confirm.html",
+        {
+            "payment": payment,
+            "checkout": payment.checkout,
+            "form": form,
+        },
+    )
+
+@login_required
+@payment_refund_required
+@require_http_methods(["GET", "POST"])
+def payment_refund(request, payment_id):
+    payment = get_object_or_404(
+        EcommercePayment.objects.select_related(
+            "checkout",
+            "checkout__user",
+            "customer_advance",
+        ),
+        pk=payment_id,
+    )
+
+    if payment.status == EcommercePayment.REFUNDED:
+        messages.info(
+            request,
+            (
+                f"Payment {payment.payment_number} "
+                "has already been refunded."
+            ),
+        )
+        return redirect(
+            "ecommerce:payment_waiting",
+            payment_id=payment.pk,
+        )
+
+    if payment.status != EcommercePayment.CONFIRMED:
+        messages.error(
+            request,
+            (
+                "Only a confirmed Ecommerce payment "
+                "can be refunded."
+            ),
+        )
+        return redirect(
+            "ecommerce:payment_waiting",
+            payment_id=payment.pk,
+        )
+
+    form = PaymentRefundForm(
+        request.POST or None
+    )
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            payment, refund_entry, created = (
+                EcommercePaymentService.refund_payment(
+                    payment=payment,
+                    reason=form.cleaned_data["reason"],
+                    actor=request.user,
+                )
+            )
+
+        except ValidationError as error:
+            _add_validation_error(
+                form,
+                error,
+            )
+
+        else:
+            if created:
+                messages.success(
+                    request,
+                    (
+                        f"Payment {payment.payment_number} "
+                        f"for {payment.amount} RWF was "
+                        "refunded successfully. "
+                        "The related Enterprise Order(s) "
+                        "may now be cancelled."
+                    ),
+                )
+            else:
+                messages.info(
+                    request,
+                    "This payment was already refunded.",
+                )
+
+            return redirect(
+                "ecommerce:payment_waiting",
+                payment_id=payment.pk,
+            )
+
+    return render(
+        request,
+        "ecommerce/payments/payment_refund.html",
         {
             "payment": payment,
             "checkout": payment.checkout,
@@ -1204,6 +1529,53 @@ def seller_settlement_approve(request, pk):
             messages.info(
                 request,
                 "This settlement was already approved.",
+            )
+
+    return redirect(
+        "ecommerce:seller_settlement_detail",
+        pk=pk,
+    )
+
+
+@login_required
+@settlement_approve_required
+@require_POST
+def seller_settlement_cancel(request, pk):
+    _require_marketplace_staff(request)
+
+    settlement = get_object_or_404(
+        SellerSettlement,
+        pk=pk,
+    )
+    reason = request.POST.get(
+        "reason",
+        "",
+    ).strip()
+
+    try:
+        settlement, changed = (
+            SellerSettlementService.cancel_settlement(
+                settlement=settlement,
+                actor=request.user,
+                reason=reason,
+            )
+        )
+    except ValidationError as error:
+        _validation_messages(request, error)
+    else:
+        if changed:
+            messages.success(
+                request,
+                (
+                    f"Settlement "
+                    f"{settlement.settlement_number} cancelled. "
+                    "Its sale lines are eligible again."
+                ),
+            )
+        else:
+            messages.info(
+                request,
+                "This settlement was already cancelled.",
             )
 
     return redirect(

@@ -17,6 +17,11 @@ from .marketplace_models import (
     SellerSettlementLine,
 )
 
+from .payment_models import (
+    EcommercePayment,
+    PaymentProviderConfiguration,
+)
+
 class OnlineProduct(models.Model):
     """
     Ecommerce merchandising metadata for a shared Inventory Product.
@@ -300,30 +305,19 @@ class EcommerceCheckout(models.Model):
 
     @property
     def customer_status(self):
-        payment_confirmed = self.payments.filter(
-            status="CONFIRMED"
-        ).exists()
+        """Return one storefront status for all linked Enterprise Orders."""
 
-        if not payment_confirmed:
-            return {
-                "code": "AWAITING_PAYMENT",
-                "label": "Awaiting payment",
-                "css_class": "bg-secondary",
-            }
+        order_statuses = list(
+            self.checkout_orders.values_list(
+                "order__status",
+                flat=True,
+            )
+        )
 
-        order_statuses = [
-            link.order.status
-            for link in self.checkout_orders.all()
-        ]
-
-        if not order_statuses:
-            return {
-                "code": "RECEIVED",
-                "label": "Order received",
-                "css_class": "bg-warning text-dark",
-            }
-
-        if all(status == "CANCELLED" for status in order_statuses):
+        if order_statuses and all(
+            status == "CANCELLED"
+            for status in order_statuses
+        ):
             return {
                 "code": "CANCELLED",
                 "label": "Cancelled",
@@ -337,11 +331,30 @@ class EcommerceCheckout(models.Model):
                 "css_class": "bg-danger",
             }
 
+        payment_confirmed = self.payments.filter(
+            status="CONFIRMED"
+        ).exists()
+
+        if not payment_confirmed:
+            return {
+                "code": "AWAITING_PAYMENT",
+                "label": "Awaiting payment",
+                "css_class": "bg-secondary",
+            }
+
+        if not order_statuses:
+            return {
+                "code": "RECEIVED",
+                "label": "Order received",
+                "css_class": "bg-warning text-dark",
+            }
+
         progress = {
             "DRAFT": 0,
             "PENDING": 0,
             "CONFIRMED": 1,
             "PROCESSING": 2,
+            "IN_PRODUCTION": 2,
             "READY": 3,
             "DELIVERED": 4,
             "COMPLETED": 4,

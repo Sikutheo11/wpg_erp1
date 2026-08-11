@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     "ecommerce.apps.EcommerceConfig",
     'Construction.apps.ConstructionConfig',
     'orders.apps.OrdersConfig',
-    
+    'agriculture'
     
 ]
 
@@ -71,6 +71,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.dashboard_context',
+                "ecommerce.context_processors.ecommerce_cart",
             ],
         },
     },
@@ -167,3 +168,11 @@ REST_FRAMEWORK = {
 
 # ALLOWED_HOSTS = ["wpg_erp.onrender.com"]  # later replace with your domain
 
+ECOMMERCE_PAYMENT_CALLBACK_BASE_URL = (
+    os.environ.get(
+        "ECOMMERCE_PAYMENT_CALLBACK_BASE_URL",
+        "",
+    )
+    .strip()
+    .rstrip("/")
+)

@@ -277,8 +277,12 @@ class GeneralLedgerService:
                 description=line_data.get("description", ""),
             )
 
-        cls.post_entry(entry=entry, actor=actor)
+        entry = cls.post_entry(
+            entry=entry,
+            actor=actor,
+        )
         return entry, True
+
 
     @classmethod
     @transaction.atomic

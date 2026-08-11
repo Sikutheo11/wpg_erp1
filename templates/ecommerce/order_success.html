@@ -36,24 +36,62 @@
                     </div>
                 </div>
                 {% if checkout.customer_status.code == "AWAITING_PAYMENT" %}
-                <div class="card border-warning bg-warning-subtle mb-4">
-                    <div class="card-body p-4">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                            <div>
-                                <h4 class="fw-bold mb-1">Payment Required</h4>
-                                <p class="text-muted mb-0">
-                                    Complete payment before WPG starts processing your order.
-                                </p>
-                            </div>
+                    <div class="card border-warning bg-warning-subtle mb-4">
+                        <div class="card-body p-4">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                                <div>
+                                    <h4 class="fw-bold mb-1">
+                                        Payment Required
+                                    </h4>
+                                    <p class="text-muted mb-0">
+                                        Complete payment before WPG starts processing
+                                        your order.
+                                    </p>
+                                </div>
 
-                            <a href="{% url 'ecommerce:checkout_payment' checkout.id %}"
-                            class="btn btn-success btn-lg">
-                                <i class="bi bi-credit-card me-2"></i>
-                                Pay Now — {{ checkout.total_amount|floatformat:0 }} RWF
-                            </a>
+                                <a href="{% url 'ecommerce:checkout_payment' checkout.id %}"
+                                class="btn btn-success btn-lg">
+                                    <i class="bi bi-credit-card me-2"></i>
+                                    Pay Now —
+                                    {{ checkout.total_amount|floatformat:0 }} RWF
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
+
+                {% elif checkout.customer_status.code == "CANCELLED" %}
+                    <div class="alert alert-danger border-danger mb-4">
+                        <div class="d-flex align-items-start gap-3">
+                            <i class="bi bi-x-circle-fill fs-4"></i>
+
+                            <div>
+                                <h5 class="alert-heading fw-bold mb-1">
+                                    Checkout Cancelled
+                                </h5>
+                                <p class="mb-0">
+                                    All orders in this checkout were cancelled.
+                                    Payment is no longer available.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                {% elif checkout.customer_status.code == "PARTIAL" %}
+                    <div class="alert alert-warning border-warning mb-4">
+                        <div class="d-flex align-items-start gap-3">
+                            <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+
+                            <div>
+                                <h5 class="alert-heading fw-bold mb-1">
+                                    Checkout Partially Cancelled
+                                </h5>
+                                <p class="mb-0">
+                                    One or more orders in this checkout were cancelled.
+                                    Contact WPG before making any payment.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 {% endif %}
 
                 <h4 class="fw-bold mb-3">Enterprise Orders Created</h4>
@@ -89,10 +127,24 @@
                     {% endfor %}
                 </div>
 
-                <div class="alert alert-light border mt-4 mb-0">
-                    WPG will contact you using {{ checkout.customer_phone }} to
-                    confirm payment, delivery and fulfilment arrangements.
-                </div>
+               {% if checkout.customer_status.code == "CANCELLED" %}
+                    <div class="alert alert-light border mt-4 mb-0">
+                        This checkout has been closed. No payment or fulfilment
+                        action is required.
+                    </div>
+
+                {% elif checkout.customer_status.code == "PARTIAL" %}
+                    <div class="alert alert-warning border mt-4 mb-0">
+                        WPG will contact you using {{ checkout.customer_phone }}
+                        about the remaining active orders.
+                    </div>
+
+                {% else %}
+                    <div class="alert alert-light border mt-4 mb-0">
+                        WPG will contact you using {{ checkout.customer_phone }}
+                        to confirm payment, delivery and fulfilment arrangements.
+                    </div>
+                {% endif %}
 
                 <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
                     <a href="{% url 'ecommerce:shop' %}"

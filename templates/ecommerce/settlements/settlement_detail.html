@@ -5,18 +5,291 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
-        <div><a href="{% url 'ecommerce:seller_settlement_list' %}" class="text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Back to settlements</a><h1 class="fw-bold mt-2 mb-1">{{ settlement.settlement_number }}</h1><div class="text-muted">{{ settlement.seller.name }}{% if settlement.seller.poultry_farm %} · {{ settlement.seller.poultry_farm.name }}{% endif %}</div></div>
-        <div class="d-flex align-items-start gap-2">
-            {% if settlement.status == "DRAFT" %}<form method="post" action="{% url 'ecommerce:seller_settlement_approve' settlement.pk %}">{% csrf_token %}<button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Approve</button></form>{% elif settlement.status == "APPROVED" %}<a href="{% url 'ecommerce:seller_settlement_pay' settlement.pk %}" class="btn btn-success"><i class="bi bi-cash-coin me-1"></i>Pay Seller</a>{% endif %}
+        <div>
+            <a href="{% url 'ecommerce:seller_settlement_list' %}"
+               class="text-decoration-none">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to settlements
+            </a>
+            <h1 class="fw-bold mt-2 mb-1">
+                {{ settlement.settlement_number }}
+            </h1>
+            <div class="text-muted">
+                {{ settlement.seller.name }}
+                {% if settlement.seller.poultry_farm %}
+                    · {{ settlement.seller.poultry_farm.name }}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-start gap-2">
+            {% if settlement.status == "DRAFT" %}
+                <form method="post"
+                      action="{% url 'ecommerce:seller_settlement_approve' settlement.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Approve
+                    </button>
+                </form>
+            {% elif settlement.status == "APPROVED" %}
+                <a href="{% url 'ecommerce:seller_settlement_pay' settlement.pk %}"
+                   class="btn btn-success">
+                    <i class="bi bi-cash-coin me-1"></i>
+                    Pay Seller
+                </a>
+            {% endif %}
+
+            {% if settlement.status == "DRAFT" or settlement.status == "APPROVED" %}
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelSettlementModal">
+                    <i class="bi bi-x-circle me-1"></i>
+                    Cancel
+                </button>
+            {% endif %}
         </div>
     </div>
+
     <div class="row g-3 mb-4">
-        <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">STATUS</div><div class="fs-5 fw-bold">{{ settlement.get_status_display }}</div></div></div></div>
-        <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">GROSS</div><div class="fs-4 fw-bold">{{ settlement.total_gross|floatformat:0 }} RWF</div></div></div></div>
-        <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">WPG COMMISSION</div><div class="fs-4 fw-bold text-success">{{ settlement.total_commission|floatformat:0 }} RWF</div></div></div></div>
-        <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">SELLER PAYMENT</div><div class="fs-4 fw-bold text-primary">{{ settlement.total_payable|floatformat:0 }} RWF</div></div></div></div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">STATUS</div>
+                    <div class="fs-5 fw-bold">
+                        {% if settlement.status == "PAID" %}
+                            <span class="badge bg-success">
+                                {{ settlement.get_status_display }}
+                            </span>
+                        {% elif settlement.status == "APPROVED" %}
+                            <span class="badge bg-primary">
+                                {{ settlement.get_status_display }}
+                            </span>
+                        {% elif settlement.status == "DRAFT" %}
+                            <span class="badge bg-warning text-dark">
+                                {{ settlement.get_status_display }}
+                            </span>
+                        {% elif settlement.status == "CANCELLED" %}
+                            <span class="badge bg-danger">
+                                {{ settlement.get_status_display }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">
+                                {{ settlement.get_status_display }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">GROSS</div>
+                    <div class="fs-4 fw-bold">
+                        {{ settlement.total_gross|floatformat:0 }} RWF
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">WPG COMMISSION</div>
+                    <div class="fs-4 fw-bold text-success">
+                        {{ settlement.total_commission|floatformat:0 }} RWF
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">SELLER PAYMENT</div>
+                    <div class="fs-4 fw-bold text-primary">
+                        {{ settlement.total_payable|floatformat:0 }} RWF
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white fw-bold py-3">Included Sales</div><div class="table-responsive"><table class="table align-middle mb-0"><thead class="table-light"><tr><th class="ps-4">Order</th><th>Product</th><th class="text-end">Gross</th><th class="text-end">Commission</th><th class="text-end pe-4">Payable</th></tr></thead><tbody>{% for item in lines %}<tr><td class="ps-4 fw-semibold">{{ item.marketplace_order_line.order_item.order.order_number }}</td><td>{{ item.marketplace_order_line.product_name }}</td><td class="text-end">{{ item.gross_amount|floatformat:0 }} RWF</td><td class="text-end text-success">{{ item.commission_amount|floatformat:0 }} RWF</td><td class="text-end pe-4 fw-bold">{{ item.payable_amount|floatformat:0 }} RWF</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No settlement lines.</td></tr>{% endfor %}</tbody></table></div></div>
-    <div class="card border-0 shadow-sm"><div class="card-header bg-white fw-bold py-3">Audit & Payment</div><div class="card-body"><dl class="row mb-0"><dt class="col-md-3">Created</dt><dd class="col-md-9">{{ settlement.created_at|date:"d M Y H:i" }}{% if settlement.created_by %} by {{ settlement.created_by }}{% endif %}</dd><dt class="col-md-3">Approved</dt><dd class="col-md-9">{{ settlement.approved_at|date:"d M Y H:i"|default:"—" }}</dd><dt class="col-md-3">Paid</dt><dd class="col-md-9">{{ settlement.paid_at|date:"d M Y H:i"|default:"—" }}</dd><dt class="col-md-3">Payment reference</dt><dd class="col-md-9">{{ settlement.payment_reference|default:"—" }}</dd><dt class="col-md-3">Journal</dt><dd class="col-md-9">{{ settlement.journal_entry|default:"—" }}</dd><dt class="col-md-3">Notes</dt><dd class="col-md-9">{{ settlement.notes|default:"—" }}</dd></dl></div></div>
+
+    {% if settlement.status == "CANCELLED" %}
+        <div class="alert alert-danger d-flex align-items-start gap-2 mb-4">
+            <i class="bi bi-x-octagon-fill mt-1"></i>
+            <div>
+                <div class="fw-bold">This settlement was cancelled.</div>
+                <div>
+                    Its sale lines were returned to the eligible settlement list.
+                    The cancellation reason is recorded in the notes below.
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white fw-bold py-3">
+            Included Sales
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Order</th>
+                        <th>Product</th>
+                        <th class="text-end">Gross</th>
+                        <th class="text-end">Commission</th>
+                        <th class="text-end pe-4">Payable</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in lines %}
+                        <tr>
+                            <td class="ps-4 fw-semibold">
+                                <a href="{% url 'orders:order_detail' item.marketplace_order_line.order_item.order_id %}"
+                                   class="text-decoration-none">
+                                    {{ item.marketplace_order_line.order_item.order.order_number }}
+                                </a>
+                            </td>
+                            <td>{{ item.marketplace_order_line.product_name }}</td>
+                            <td class="text-end">
+                                {{ item.gross_amount|floatformat:0 }} RWF
+                            </td>
+                            <td class="text-end text-success">
+                                {{ item.commission_amount|floatformat:0 }} RWF
+                            </td>
+                            <td class="text-end pe-4 fw-bold">
+                                {{ item.payable_amount|floatformat:0 }} RWF
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                {% if settlement.status == "CANCELLED" %}
+                                    Sale lines were released when this settlement was cancelled.
+                                {% else %}
+                                    No settlement lines.
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-bold py-3">
+            Audit & Payment
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-md-3">Created</dt>
+                <dd class="col-md-9">
+                    {{ settlement.created_at|date:"d M Y H:i" }}
+                    {% if settlement.created_by %}
+                        by {{ settlement.created_by }}
+                    {% endif %}
+                </dd>
+
+                <dt class="col-md-3">Approved</dt>
+                <dd class="col-md-9">
+                    {{ settlement.approved_at|date:"d M Y H:i"|default:"—" }}
+                    {% if settlement.approved_by %}
+                        by {{ settlement.approved_by }}
+                    {% endif %}
+                </dd>
+
+                <dt class="col-md-3">Paid</dt>
+                <dd class="col-md-9">
+                    {{ settlement.paid_at|date:"d M Y H:i"|default:"—" }}
+                    {% if settlement.paid_by %}
+                        by {{ settlement.paid_by }}
+                    {% endif %}
+                </dd>
+
+                <dt class="col-md-3">Payment reference</dt>
+                <dd class="col-md-9">
+                    {{ settlement.payment_reference|default:"—" }}
+                </dd>
+
+                <dt class="col-md-3">Journal</dt>
+                <dd class="col-md-9">
+                    {{ settlement.journal_entry|default:"—" }}
+                </dd>
+
+                <dt class="col-md-3">Notes</dt>
+                <dd class="col-md-9">
+                    {{ settlement.notes|default:"—"|linebreaksbr }}
+                </dd>
+            </dl>
+        </div>
+    </div>
 </div>
+
+{% if settlement.status == "DRAFT" or settlement.status == "APPROVED" %}
+    <div class="modal fade"
+         id="cancelSettlementModal"
+         tabindex="-1"
+         aria-labelledby="cancelSettlementModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post"
+                      action="{% url 'ecommerce:seller_settlement_cancel' settlement.pk %}">
+                    {% csrf_token %}
+
+                    <div class="modal-header">
+                        <h5 class="modal-title"
+                            id="cancelSettlementModalLabel">
+                            Cancel Settlement
+                        </h5>
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Close">
+                        </button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            Cancelling this settlement will return its sale lines
+                            to the eligible settlement list. A paid settlement
+                            cannot be cancelled from this screen.
+                        </div>
+
+                        <label for="cancel-reason"
+                               class="form-label fw-semibold">
+                            Cancellation reason
+                        </label>
+                        <textarea id="cancel-reason"
+                                  name="reason"
+                                  class="form-control"
+                                  rows="4"
+                                  required
+                                  minlength="3"
+                                  autocomplete="off"
+                                  placeholder="Explain why this settlement is being cancelled."></textarea>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal">
+                            Keep Settlement
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Confirm Cancellation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endif %}
 {% endblock %}

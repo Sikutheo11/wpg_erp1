@@ -8,6 +8,9 @@ from .models import (
     OnlineProduct,
     SellerProductAssignment,
 )
+from .services.payment_provider_service import (
+    PaymentProviderConfigurationService,
+)
 
 class BootstrapFormMixin:
     def _apply_bootstrap(self):
@@ -193,16 +196,25 @@ class CheckoutForm(BootstrapFormMixin, forms.Form):
 
         return cleaned_data
 
-class EcommercePaymentForm(forms.ModelForm):
-    """Customer-facing instructions/reference form."""
+class EcommercePaymentForm(
+    BootstrapFormMixin,
+    forms.ModelForm,
+):
+    """Customer-facing payment-provider form."""
+
+    PROVIDER_METHODS = {
+        "MTN_MOMO": EcommercePayment.MOBILE_MONEY,
+        "AIRTEL_MONEY": EcommercePayment.MOBILE_MONEY,
+        "RSWITCH_CARD": EcommercePayment.CARD,
+        "EKASH": EcommercePayment.EKASH,
+    }
 
     provider = forms.ChoiceField(
-        choices=(
-            ("MTN_MOMO", "MTN Mobile Money"),
-            ("AIRTEL_MONEY", "Airtel Money"),
-            ("BANK_TRANSFER", "Bank Transfer"),
-        ),
+        choices=(),
         label="Payment channel",
+        widget=forms.Select(
+            attrs={"class": "form-select"}
+        ),
     )
 
     class Meta:
@@ -211,61 +223,119 @@ class EcommercePaymentForm(forms.ModelForm):
             "method",
             "provider",
             "customer_reference",
-            "proof_image",
-            "notes",
         ]
         widgets = {
-            "method": forms.Select(attrs={"class": "form-select"}),
+            "method": forms.HiddenInput(),
             "customer_reference": forms.TextInput(
                 attrs={
-                    "class": "form-control",
                     "placeholder": (
-                        "MoMo phone number or bank transaction reference"
+                        "Enter the phone number that will pay"
                     ),
+                    "autocomplete": "tel",
                 }
-            ),
-            "proof_image": forms.ClearableFileInput(
-                attrs={"class": "form-control"}
-            ),
-            "notes": forms.Textarea(
-                attrs={"class": "form-control", "rows": 3}
             ),
         }
         labels = {
-            "customer_reference": "Payment phone / transaction reference",
-            "proof_image": "Payment proof (optional)",
-        }
+            "customer_reference": "Payment phone number",
+       }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["method"].choices = (
-            (EcommercePayment.MOBILE_MONEY, "Mobile Money"),
-            (EcommercePayment.BANK, "Bank Transfer"),
+
+        choices = (
+            PaymentProviderConfigurationService
+            .customer_provider_choices()
         )
+
+        self.fields["provider"].choices = choices
+        self.fields["method"].required = False
         self.fields["customer_reference"].required = True
+        self.has_available_providers = bool(choices)
+
+        self._apply_bootstrap()
+
+        if not self.is_bound and choices:
+            default_provider = choices[0][0]
+
+            self.initial.setdefault(
+                "provider",
+                default_provider,
+            )
+            self.initial.setdefault(
+                "method",
+                self.PROVIDER_METHODS[
+                    default_provider
+                ],
+            )
 
     def clean(self):
         cleaned_data = super().clean()
-        method = cleaned_data.get("method")
         provider = cleaned_data.get("provider")
 
-        if (
-            method == EcommercePayment.MOBILE_MONEY
-            and provider not in {"MTN_MOMO", "AIRTEL_MONEY"}
+        if not provider:
+            if not self.has_available_providers:
+                raise forms.ValidationError(
+                    (
+                        "No payment channel is currently "
+                        "available. Please try again later."
+                    )
+                )
+            return cleaned_data
+
+        if not (
+            PaymentProviderConfigurationService
+            .customer_provider_is_available(provider)
         ):
             self.add_error(
                 "provider",
-                "Choose MTN MoMo or Airtel Money.",
+                (
+                    "This payment channel is not currently "
+                    "available."
+                ),
             )
+            return cleaned_data
+
+        method = self.PROVIDER_METHODS.get(provider)
+
+        if not method:
+            self.add_error(
+                "provider",
+                "Unsupported payment channel.",
+            )
+            return cleaned_data
+
+        cleaned_data["method"] = method
+
+        phone = "".join(
+            character
+            for character in str(
+                cleaned_data.get(
+                    "customer_reference",
+                    "",
+                )
+            )
+            if character.isdigit()
+        )
 
         if (
-            method == EcommercePayment.BANK
-            and provider != "BANK_TRANSFER"
+            len(phone) == 12
+            and phone.startswith("250")
+        ):
+            phone = f"0{phone[3:]}"
+
+        if (
+            len(phone) != 10
+            or not phone.startswith("07")
         ):
             self.add_error(
-                "provider",
-                "Choose Bank Transfer for a bank payment.",
+                "customer_reference",
+                (
+                    "Enter a valid Rwanda phone number, "
+                    "for example 0788000000."
+                ),
             )
+        else:
+            cleaned_data["customer_reference"] = phone
 
         return cleaned_data
 
@@ -290,6 +360,42 @@ class PaymentConfirmationForm(forms.Form):
                 "Enter a valid provider payment reference."
             )
         return reference
+
+class PaymentRefundForm(BootstrapFormMixin, forms.Form):
+    reason = forms.CharField(
+        label="Refund reason",
+        widget=forms.Textarea(
+            attrs={
+                "rows": 4,
+                "placeholder": (
+                    "Explain why this customer payment "
+                    "must be refunded."
+                ),
+            }
+        ),
+    )
+
+    confirm_refund = forms.BooleanField(
+        required=True,
+        label=(
+            "I confirm that the full customer payment "
+            "should be refunded."
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._apply_bootstrap()
+
+    def clean_reason(self):
+        reason = self.cleaned_data["reason"].strip()
+
+        if len(reason) < 5:
+            raise forms.ValidationError(
+                "Provide a clear refund reason."
+            )
+
+        return reason
 
 class MarketplaceSellerForm(
     BootstrapFormMixin,

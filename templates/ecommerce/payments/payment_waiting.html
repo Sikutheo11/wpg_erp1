@@ -13,6 +13,14 @@
                         <h1 class="fw-bold mt-3">Payment Confirmed</h1>
                         <p class="lead mb-0">Your order has been received.</p>
                     </div>
+                {% elif payment.status == "REFUNDED" %}
+                    <div class="bg-secondary text-white p-5">
+                        <i class="bi bi-arrow-counterclockwise display-3"></i>
+                        <h1 class="fw-bold mt-3">Payment Refunded</h1>
+                        <p class="lead mb-0">
+                            The customer payment has been returned.
+                        </p>
+                    </div>
                 {% elif payment.status == "FAILED" %}
                     <div class="bg-danger text-white p-5">
                         <i class="bi bi-x-circle display-3"></i>
@@ -59,7 +67,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="text-muted small">Status</div>
-                            <span class="badge {% if payment.status == 'CONFIRMED' %}bg-success{% elif payment.status == 'FAILED' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                            <span class="badge {% if payment.status == 'CONFIRMED' %}bg-success{% elif payment.status == 'REFUNDED' %}bg-secondary{% elif payment.status == 'FAILED' or payment.status == 'CANCELLED' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
                                 {{ payment.get_status_display }}
                             </span>
                         </div>
@@ -70,6 +78,11 @@
                             Do not submit another payment. Refresh this page after
                             WPG verifies the transaction.
                         </div>
+                    {% elif payment.status == "REFUNDED" %}
+                        <div class="alert alert-secondary border mt-4 mb-0">
+                            This payment has been fully refunded. No further payment
+                            confirmation is required for this transaction.
+                        </div>
                     {% endif %}
 
                     <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
@@ -78,22 +91,36 @@
                                class="btn btn-success">
                                 View Order
                             </a>
-                        {% elif payment.status == "INITIATED" or payment.status == "PENDING" %}
-                            <a href="{% url 'ecommerce:payment_waiting' payment.id %}"
-                               class="btn btn-warning">
-                                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Status
-                            </a>
+                            {% if can_refund_payment %}
+                                <a href="{% url 'ecommerce:payment_refund' payment.id %}"
+                                   class="btn btn-outline-danger">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>
+                                    Refund Payment
+                                </a>
+                            {% endif %}
+                        {% elif payment.status == "PENDING" %}
+                            <form method="post"
+                                action="{% url 'ecommerce:payment_status_refresh' payment.id %}"
+                                class="d-inline">
+                                {% csrf_token %}
+
+                                <button type="submit"
+                                        class="btn btn-warning">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>
+                                    Refresh Status
+                                </button>
+                            </form>
                         {% endif %}
                         <a href="{% url 'ecommerce:my_orders' %}"
                            class="btn btn-outline-dark">
                             My Orders
                         </a>
 
-                        {% if request.user.is_staff or request.user.is_superuser %}
+                        {% if can_confirm_payment and manual_confirmation_allowed %}
                             {% if payment.status == "INITIATED" or payment.status == "PENDING" %}
                                 <a href="{% url 'ecommerce:payment_confirm' payment.id %}"
                                    class="btn btn-outline-success">
-                                    Staff: Confirm Payment
+                                    Confirm Payment
                                 </a>
                             {% endif %}
                         {% endif %}

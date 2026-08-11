@@ -21,11 +21,15 @@ class EcommercePayment(models.Model):
     CASH = "CASH"
     BANK = "BANK"
     MOBILE_MONEY = "MOBILE_MONEY"
+    CARD = "CARD"
+    EKASH = "EKASH"
 
     METHODS = (
         (CASH, "Cash"),
         (BANK, "Bank Transfer"),
         (MOBILE_MONEY, "Mobile Money"),
+        (CARD, "Visa / Mastercard"),
+        (EKASH, "eKash"),
     )
 
     INITIATED = "INITIATED"
@@ -79,6 +83,43 @@ class EcommercePayment(models.Model):
         blank=True,
         db_index=True,
     )
+
+    provider_request_id = models.CharField(
+        max_length=120,
+        blank=True,
+        db_index=True,
+        help_text=(
+            "Transaction/request identifier assigned when the "
+            "payment is sent to the payment provider."
+        ),
+    )
+
+    provider_status = models.CharField(
+        max_length=50,
+        blank=True,
+        db_index=True,
+        help_text="Latest raw status returned by the payment provider.",
+    )
+
+    provider_response = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "Latest non-sensitive provider response used for "
+            "payment reconciliation and audit."
+        ),
+    )
+
+    last_status_check_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    callback_received_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
     customer_reference = models.CharField(
         max_length=120,
         blank=True,
@@ -233,4 +274,93 @@ class EcommercePayment(models.Model):
             f"{self.payment_number} — "
             f"{self.checkout.checkout_number} — "
             f"{self.get_status_display()}"
+        )
+
+class PaymentProviderConfiguration(models.Model):
+    """
+    Maps an Ecommerce payment provider to the Finance account where
+    WPG receives or settles the money.
+
+    API credentials are never stored here. They belong in environment
+    variables / deployment secrets.
+    """
+
+    MTN_MOMO = "MTN_MOMO"
+    AIRTEL_MONEY = "AIRTEL_MONEY"
+    RSWITCH_CARD = "RSWITCH_CARD"
+    EKASH = "EKASH"
+
+    PROVIDERS = (
+        (MTN_MOMO, "MTN MoMo"),
+        (AIRTEL_MONEY, "Airtel Money"),
+        (RSWITCH_CARD, "Visa / Mastercard via RSwitch"),
+        (EKASH, "eKash / RNDPS"),
+    )
+
+    provider = models.CharField(
+        max_length=40,
+        choices=PROVIDERS,
+        unique=True,
+    )
+
+    settlement_account = models.ForeignKey(
+        "finance.Account",
+        on_delete=models.PROTECT,
+        related_name="ecommerce_payment_providers",
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+    )
+
+    sort_order = models.PositiveSmallIntegerField(
+        default=0,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "sort_order",
+            "provider",
+        ]
+
+    def clean(self):
+        super().clean()
+
+        if not self.settlement_account_id:
+            return
+
+        required_account_type = {
+            self.MTN_MOMO: "mobile",
+            self.AIRTEL_MONEY: "mobile",
+            self.RSWITCH_CARD: "bank",
+            self.EKASH: "bank",
+        }.get(self.provider)
+
+        if (
+            required_account_type
+            and self.settlement_account.account_type
+            != required_account_type
+        ):
+            raise ValidationError(
+                {
+                    "settlement_account": (
+                        f"{self.get_provider_display()} requires "
+                        f"a Finance {required_account_type} account."
+                    )
+                }
+            )
+
+    def __str__(self):
+        return (
+            f"{self.get_provider_display()} → "
+            f"{self.settlement_account.name}"
         )
