@@ -7,14 +7,57 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'your-default-secret-key')
+def _environment_boolean(name, default=False):
+    value = os.environ.get(
+        name,
+        "True" if default else "False",
+    )
+    return value.strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-# ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+def _environment_list(name, default=""):
+    return [
+        value.strip()
+        for value in os.environ.get(
+            name,
+            default,
+        ).split(",")
+        if value.strip()
+    ]
+
+
+DEBUG = _environment_boolean(
+    "DJANGO_DEBUG",
+    default=True,
+)
+
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    (
+        "dev-only-secret-key-change-this-before-production-"
+        "wpg-bos-local-development"
+    ),
+)
+
+if not DEBUG and not os.environ.get("DJANGO_SECRET_KEY"):
+    raise RuntimeError(
+        "DJANGO_SECRET_KEY is required when DEBUG is False."
+    )
+
+
+ALLOWED_HOSTS = _environment_list(
+    "DJANGO_ALLOWED_HOSTS",
+    default="127.0.0.1,localhost",
+)
+
+CSRF_TRUSTED_ORIGINS = _environment_list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+)
 
 
 # Application definition
@@ -141,7 +184,20 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-
+STORAGES = {
+    "default": {
+        "BACKEND": (
+            "django.core.files.storage."
+            "FileSystemStorage"
+        ),
+    },
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage."
+            "CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
 # Media files (Uploads)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/#serving-files-uploaded-by-a-user-during-development
 MEDIA_URL = '/media/'
@@ -176,3 +232,25 @@ ECOMMERCE_PAYMENT_CALLBACK_BASE_URL = (
     .strip()
     .rstrip("/")
 )
+
+# Production HTTPS and cookie security.
+SECURE_PROXY_SSL_HEADER = (
+    "HTTP_X_FORWARDED_PROTO",
+    "https",
+)
+
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
+SECURE_HSTS_SECONDS = (
+    3600
+    if not DEBUG
+    else 0
+)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"

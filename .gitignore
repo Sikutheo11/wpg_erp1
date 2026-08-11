@@ -8,3 +8,4 @@ media/
 
 # User-uploaded Django media
 media/
+staticfiles/
