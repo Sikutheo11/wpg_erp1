@@ -1,11 +1,15 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
+
 
 def _environment_boolean(name, default=False):
     value = os.environ.get(
@@ -29,6 +33,16 @@ def _environment_list(name, default=""):
         ).split(",")
         if value.strip()
     ]
+
+def _required_environment(name):
+    value = os.environ.get(name, "").strip()
+
+    if not value:
+        raise RuntimeError(
+            f"{name} environment variable is required."
+        )
+
+    return value
 
 
 DEBUG = _environment_boolean(
@@ -133,13 +147,36 @@ WSGI_APPLICATION = 'inventory_project.wsgi.application'
 #     }
 # }
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'wpg_erp',
-        'USER': 'postgres',
-        'PASSWORD': 'Rusgrdsb@12',
-        'HOST': 'localhost',
-        'PORT': '5432',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": _required_environment(
+            "POSTGRES_DB"
+        ),
+        "USER": _required_environment(
+            "POSTGRES_USER"
+        ),
+        "PASSWORD": _required_environment(
+            "POSTGRES_PASSWORD"
+        ),
+        "HOST": _required_environment(
+            "POSTGRES_HOST"
+        ),
+        "PORT": os.environ.get(
+            "POSTGRES_PORT",
+            "5432",
+        ),
+        "CONN_MAX_AGE": int(
+            os.environ.get(
+                "POSTGRES_CONN_MAX_AGE",
+                "0" if DEBUG else "60",
+            )
+        ),
+        "OPTIONS": {
+            "sslmode": os.environ.get(
+                "POSTGRES_SSLMODE",
+                "prefer",
+            ),
+        },
     }
 }
 

@@ -9,3 +9,7 @@ media/
 # User-uploaded Django media
 media/
 staticfiles/
+# Local environment secrets
+.env
+.env.*
+!.env.example
