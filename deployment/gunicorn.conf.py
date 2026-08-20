@@ -25,3 +25,6 @@ max_requests_jitter = 50
 
 # Avoid loading Django before Gunicorn forks its workers.
 preload_app = False
+
+# WPG does not use Gunicorn's optional runtime control socket.
+control_socket_disable = True
