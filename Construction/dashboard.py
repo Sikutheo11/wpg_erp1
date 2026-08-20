@@ -263,5 +263,3 @@ def get_construction_dashboard(user):
     }
 
 register_dashboard("construction", get_construction_dashboard)
-
-print("Construction dashboard loaded")
