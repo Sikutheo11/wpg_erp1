@@ -1,0 +1,20 @@
+[Unit]
+Description=WPG BOS PostgreSQL Database Backup
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=wpg
+Group=wpg
+WorkingDirectory=/var/www/wpg-bos
+EnvironmentFile=/etc/wpg-bos.env
+ExecStart=/var/www/wpg-bos/deployment/scripts/backup_database.sh
+
+UMask=0077
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/backups/wpg-bos

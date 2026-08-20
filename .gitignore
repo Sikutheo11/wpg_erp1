@@ -13,3 +13,6 @@ staticfiles/
 .env
 .env.*
 !.env.example
+# Python generated cache
+__pycache__/
+*.py[cod]

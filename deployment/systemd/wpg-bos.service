@@ -1,0 +1,32 @@
+[Unit]
+Description=WPG BOS Django Application
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=wpg
+Group=www-data
+
+WorkingDirectory=/var/www/wpg-bos
+EnvironmentFile=/etc/wpg-bos.env
+Environment=PYTHONUNBUFFERED=1
+
+RuntimeDirectory=wpg-bos
+RuntimeDirectoryMode=0750
+UMask=0007
+
+ExecStart=/var/www/wpg-bos/venv/bin/gunicorn --config /var/www/wpg-bos/deployment/gunicorn.conf.py inventory_project.wsgi:application
+
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGQUIT
+
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
