@@ -7,6 +7,7 @@ from .executive_dashboard import ExecutiveDashboard
 from django.http import JsonResponse
 from django.db import connection
 from django.db.utils import DatabaseError
+from ecommerce.models import OnlineProduct
 
 
 # =====================================================
@@ -45,7 +46,44 @@ def health_check(request):
 
 
 def home(request):
-    return render(request, "core/home.html")
+    catalogue = (
+        OnlineProduct.objects
+        .select_related(
+            "product",
+            "product__category",
+        )
+        .filter(
+            product__is_active=True,
+            product__is_published=True,
+        )
+    )
+
+    featured_products = list(
+        catalogue
+        .filter(product__is_featured=True)
+        .order_by(
+            "product__business_unit",
+            "product__name",
+        )[:8]
+    )
+
+    # A new marketplace may not yet have featured products.
+    # Show the newest published products instead of an empty homepage.
+    if not featured_products:
+        featured_products = list(
+            catalogue.order_by("-created_at")[:8]
+        )
+
+    context = {
+        "featured_products": featured_products,
+        "published_product_count": catalogue.count(),
+    }
+
+    return render(
+        request,
+        "core/home.html",
+        context,
+    )
 
 
 @login_required

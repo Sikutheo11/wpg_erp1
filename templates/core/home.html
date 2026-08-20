@@ -1,310 +1,697 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends "base.html" %}
+{% load static humanize %}
 
 {% block content %}
+<style>
+    .wpg-home {
+        --wpg-dark: #10231a;
+        --wpg-green: #178a54;
+        --wpg-green-dark: #0e6b3e;
+        --wpg-gold: #f2b632;
+        --wpg-soft: #f4f7f5;
+        --wpg-border: #dfe7e2;
+        color: #17211c;
+    }
 
-<!-- ================= HERO SECTION ================= -->
-<section class="hero-section text-white d-flex align-items-center"
-    style="
-    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
-    url('{% static "images/furniture.jpeg" %}');
-    background-size: cover;
-    background-position: center;
-    height: 90vh;
-">
+    .wpg-hero {
+        min-height: 76vh;
+        display: flex;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+        background:
+            linear-gradient(
+                90deg,
+                rgba(8, 29, 19, .94) 0%,
+                rgba(8, 29, 19, .80) 48%,
+                rgba(8, 29, 19, .36) 100%
+            ),
+            url("{% static 'images/furniture.jpeg' %}");
+        background-size: cover;
+        background-position: center;
+    }
 
-    <div class="container text-center">
-        <h1 class="display-3 fw-bold mb-4">
-            Modern Furniture For Modern Living
-        </h1>
+    .wpg-hero-content {
+        max-width: 760px;
+        padding: 6rem 0;
+    }
 
-        <p class="lead mb-4">
-            Premium Furniture • Interior Design • Construction Services
-        </p>
+    .wpg-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .5rem .9rem;
+        border: 1px solid rgba(255, 255, 255, .35);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .10);
+        color: #fff;
+        font-size: .84rem;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
 
-        <a href="{% url 'login' %}" class="btn btn-warning btn-lg px-5 py-3 shadow">
-            Login To ERP
-        </a>
-    </div>
-</section>
+    .wpg-hero h1 {
+        color: #fff;
+        font-size: clamp(2.5rem, 6vw, 5rem);
+        font-weight: 800;
+        line-height: 1.03;
+        margin: 1.4rem 0;
+    }
 
+    .wpg-hero-copy {
+        max-width: 660px;
+        color: rgba(255, 255, 255, .84);
+        font-size: 1.15rem;
+        line-height: 1.8;
+    }
 
-<!-- ================= ABOUT SECTION ================= -->
-<section class="py-5 bg-light">
-    <div class="container">
+    .wpg-search {
+        display: flex;
+        max-width: 680px;
+        margin-top: 2rem;
+        padding: .45rem;
+        border-radius: 1rem;
+        background: #fff;
+        box-shadow: 0 18px 45px rgba(0, 0, 0, .20);
+    }
 
-        <div class="row align-items-center">
+    .wpg-search input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        padding: .8rem 1rem;
+        background: transparent;
+    }
 
-            <div class="col-md-6">
-                <img src="{% static 'images/workshop.jpg' %}"
-                     class="img-fluid rounded shadow"
-                     alt="">
-            </div>
+    .wpg-search button {
+        border: 0;
+        border-radius: .75rem;
+        padding: .8rem 1.4rem;
+        background: var(--wpg-green);
+        color: #fff;
+        font-weight: 700;
+    }
 
-            <div class="col-md-6">
-                <h2 class="fw-bold mb-4">
-                    We Build Quality Furniture
-                </h2>
+    .wpg-section {
+        padding: 5rem 0;
+    }
 
-                <p class="text-muted">
-                    We create modern furniture using quality wood,
-                    skilled craftsmanship, and professional finishing.
-                    From home furniture to office interiors,
-                    we deliver elegance and durability.
+    .wpg-section-soft {
+        background: var(--wpg-soft);
+    }
+
+    .wpg-section-heading {
+        max-width: 720px;
+        margin-bottom: 2.5rem;
+    }
+
+    .wpg-section-heading h2 {
+        color: var(--wpg-dark);
+        font-weight: 800;
+        font-size: clamp(2rem, 4vw, 3rem);
+    }
+
+    .wpg-section-heading p {
+        color: #68756e;
+        font-size: 1.05rem;
+    }
+
+    .business-card {
+        display: block;
+        height: 100%;
+        padding: 2rem;
+        border: 1px solid var(--wpg-border);
+        border-radius: 1.25rem;
+        background: #fff;
+        color: inherit;
+        text-decoration: none;
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .business-card:hover {
+        color: inherit;
+        transform: translateY(-5px);
+        box-shadow: 0 18px 40px rgba(22, 68, 44, .12);
+    }
+
+    .business-icon {
+        width: 58px;
+        height: 58px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.2rem;
+        border-radius: 1rem;
+        background: rgba(23, 138, 84, .11);
+        color: var(--wpg-green);
+        font-size: 1.5rem;
+    }
+
+    .business-card h3 {
+        color: var(--wpg-dark);
+        font-size: 1.25rem;
+        font-weight: 800;
+    }
+
+    .business-card p {
+        color: #6b7770;
+        line-height: 1.7;
+    }
+
+    .product-card {
+        height: 100%;
+        overflow: hidden;
+        border: 1px solid var(--wpg-border);
+        border-radius: 1.15rem;
+        background: #fff;
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .product-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 35px rgba(17, 54, 36, .12);
+    }
+
+    .product-image {
+        width: 100%;
+        height: 235px;
+        object-fit: cover;
+        background: #edf2ef;
+    }
+
+    .product-placeholder {
+        height: 235px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #e8f1eb, #f8faf9);
+        color: var(--wpg-green);
+        font-size: 3rem;
+    }
+
+    .product-body {
+        padding: 1.25rem;
+    }
+
+    .product-unit {
+        color: var(--wpg-green);
+        font-size: .78rem;
+        font-weight: 800;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    .product-title {
+        margin: .45rem 0;
+        color: var(--wpg-dark);
+        font-size: 1.08rem;
+        font-weight: 800;
+    }
+
+    .product-description {
+        min-height: 48px;
+        color: #6b7770;
+        font-size: .92rem;
+    }
+
+    .product-price {
+        color: var(--wpg-green-dark);
+        font-size: 1.16rem;
+        font-weight: 800;
+    }
+
+    .btn-wpg {
+        border: 1px solid var(--wpg-green);
+        background: var(--wpg-green);
+        color: #fff;
+        font-weight: 700;
+    }
+
+    .btn-wpg:hover {
+        border-color: var(--wpg-green-dark);
+        background: var(--wpg-green-dark);
+        color: #fff;
+    }
+
+    .btn-wpg-outline {
+        border: 1px solid var(--wpg-green);
+        background: transparent;
+        color: var(--wpg-green);
+        font-weight: 700;
+    }
+
+    .btn-wpg-outline:hover {
+        background: var(--wpg-green);
+        color: #fff;
+    }
+
+    .wpg-custom-order {
+        overflow: hidden;
+        border-radius: 1.5rem;
+        background: var(--wpg-dark);
+        color: #fff;
+    }
+
+    .wpg-custom-copy {
+        padding: 3.5rem;
+    }
+
+    .wpg-custom-copy h2 {
+        font-weight: 800;
+    }
+
+    .wpg-custom-copy p {
+        color: rgba(255, 255, 255, .74);
+        line-height: 1.8;
+    }
+
+    .wpg-custom-image {
+        width: 100%;
+        height: 100%;
+        min-height: 340px;
+        object-fit: cover;
+    }
+
+    .trust-card {
+        height: 100%;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        background: #fff;
+        text-align: center;
+    }
+
+    .trust-card i {
+        color: var(--wpg-green);
+        font-size: 1.8rem;
+    }
+
+    .trust-card h3 {
+        margin-top: 1rem;
+        color: var(--wpg-dark);
+        font-size: 1rem;
+        font-weight: 800;
+    }
+
+    @media (max-width: 767.98px) {
+        .wpg-hero {
+            min-height: auto;
+            background-position: 65% center;
+        }
+
+        .wpg-hero-content {
+            padding: 4.5rem 0;
+        }
+
+        .wpg-search {
+            flex-direction: column;
+        }
+
+        .wpg-custom-copy {
+            padding: 2.2rem 1.5rem;
+        }
+    }
+</style>
+
+<div class="wpg-home">
+    <section class="wpg-hero">
+        <div class="container">
+            <div class="wpg-hero-content">
+                <span class="wpg-eyebrow">
+                    <i class="fas fa-store"></i>
+                    WPG Marketplace
+                </span>
+
+                <h1>
+                    Quality products and services built for Rwanda.
+                </h1>
+
+                <p class="wpg-hero-copy">
+                    Shop furniture and agriculture products, discover
+                    construction solutions, or request a product made
+                    specifically for you by Wisdom Palace Group.
                 </p>
 
-                <ul class="list-unstyled mt-4">
-                    <li class="mb-2">
-                        <i class="fas fa-check-circle text-warning"></i>
-                        Modern Designs
-                    </li>
+                <form
+                    class="wpg-search"
+                    method="get"
+                    action="{% url 'ecommerce:shop' %}"
+                >
+                    <input
+                        type="search"
+                        name="q"
+                        placeholder="Search furniture, agriculture products or services"
+                        aria-label="Search marketplace"
+                    >
+                    <button type="submit">
+                        <i class="fas fa-search me-2"></i>
+                        Search
+                    </button>
+                </form>
 
-                    <li class="mb-2">
-                        <i class="fas fa-check-circle text-warning"></i>
-                        Premium Materials
-                    </li>
+                <div class="d-flex flex-wrap gap-3 mt-4">
+                    <a
+                        href="{% url 'ecommerce:shop' %}"
+                        class="btn btn-warning btn-lg px-4 fw-bold"
+                    >
+                        Shop now
+                    </a>
 
-                    <li class="mb-2">
-                        <i class="fas fa-check-circle text-warning"></i>
-                        Skilled Workers
-                    </li>
-                </ul>
+                    {% if request.user.is_authenticated %}
+                        <a
+                            href="{% url 'core:dashboard' %}"
+                            class="btn btn-outline-light btn-lg px-4"
+                        >
+                            Open dashboard
+                        </a>
+                    {% else %}
+                        <a
+                            href="{% url 'login' %}"
+                            class="btn btn-outline-light btn-lg px-4"
+                        >
+                            Sign in
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="wpg-section">
+        <div class="container">
+            <div class="wpg-section-heading">
+                <span class="text-success fw-bold text-uppercase">
+                    Explore WPG
+                </span>
+                <h2>One marketplace, three business units</h2>
+                <p>
+                    Browse ready-to-buy products, made-to-order solutions
+                    and professional services from across Wisdom Palace Group.
+                </p>
             </div>
 
-        </div>
-    </div>
-</section>
-
-
-<!-- ================= PRODUCTS SECTION ================= -->
-<section class="py-5">
-
-    <div class="container">
-
-        <div class="text-center mb-5">
-            <h2 class="fw-bold">Featured Furniture</h2>
-            <p class="text-muted">
-                Discover our premium furniture collection
-            </p>
-        </div>
-
-        <div class="row g-4">
-
-            <!-- PRODUCT 1 -->
-            <div class="col-md-4">
-                <div class="card border-0 shadow h-100">
-
-                    <img src="{% static 'images/sofa.jpg' %}"
-                         class="card-img-top"
-                         style="height:300px; object-fit:cover;">
-
-                    <div class="card-body text-center">
-                        <h5 class="fw-bold">Luxury Sofa</h5>
-
-                        <p class="text-muted">
-                            Modern comfortable sofa for elegant homes.
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <a
+                        class="business-card"
+                        href="{% url 'ecommerce:shop' %}?business_unit=FURNITURE"
+                    >
+                        <span class="business-icon">
+                            <i class="fas fa-couch"></i>
+                        </span>
+                        <h3>Furniture & Manufacturing</h3>
+                        <p>
+                            Furniture for homes, offices, schools and
+                            institutions, including custom-made designs.
                         </p>
+                        <span class="text-success fw-bold">
+                            Explore furniture
+                            <i class="fas fa-arrow-right ms-1"></i>
+                        </span>
+                    </a>
+                </div>
 
-                        <button class="btn btn-dark">
-                            View Details
-                        </button>
+                <div class="col-lg-4">
+                    <a
+                        class="business-card"
+                        href="{% url 'ecommerce:shop' %}?business_unit=AGRICULTURE"
+                    >
+                        <span class="business-icon">
+                            <i class="fas fa-seedling"></i>
+                        </span>
+                        <h3>Agriculture & Poultry</h3>
+                        <p>
+                            Poultry and agriculture products supported by
+                            traceable production and quality management.
+                        </p>
+                        <span class="text-success fw-bold">
+                            Explore agriculture
+                            <i class="fas fa-arrow-right ms-1"></i>
+                        </span>
+                    </a>
+                </div>
+
+                <div class="col-lg-4">
+                    <a
+                        class="business-card"
+                        href="{% url 'ecommerce:shop' %}?business_unit=CONSTRUCTION"
+                    >
+                        <span class="business-icon">
+                            <i class="fas fa-hard-hat"></i>
+                        </span>
+                        <h3>Construction Solutions</h3>
+                        <p>
+                            Construction services, project solutions and
+                            made-to-order requirements for your next project.
+                        </p>
+                        <span class="text-success fw-bold">
+                            Explore construction
+                            <i class="fas fa-arrow-right ms-1"></i>
+                        </span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="wpg-section wpg-section-soft">
+        <div class="container">
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+                <div class="wpg-section-heading mb-0">
+                    <span class="text-success fw-bold text-uppercase">
+                        WPG Marketplace
+                    </span>
+                    <h2>Featured products</h2>
+                    <p class="mb-0">
+                        Carefully selected products and solutions available
+                        from our marketplace.
+                    </p>
+                </div>
+
+                <a
+                    href="{% url 'ecommerce:shop' %}"
+                    class="btn btn-wpg-outline px-4"
+                >
+                    View all products
+                </a>
+            </div>
+
+            <div class="row g-4">
+                {% for item in featured_products %}
+                    <div class="col-xl-3 col-lg-4 col-md-6">
+                        <article class="product-card">
+                            <a
+                                href="{% url 'ecommerce:product_detail' item.slug %}"
+                                class="text-decoration-none"
+                            >
+                                {% if item.display_image %}
+                                    <img
+                                        src="{{ item.display_image.url }}"
+                                        class="product-image"
+                                        alt="{{ item.display_title }}"
+                                        loading="lazy"
+                                    >
+                                {% else %}
+                                    <div class="product-placeholder">
+                                        <i class="fas fa-box-open"></i>
+                                    </div>
+                                {% endif %}
+                            </a>
+
+                            <div class="product-body">
+                                <div class="product-unit">
+                                    {{ item.product.get_business_unit_display }}
+                                </div>
+
+                                <h3 class="product-title">
+                                    <a
+                                        href="{% url 'ecommerce:product_detail' item.slug %}"
+                                        class="text-decoration-none text-dark"
+                                    >
+                                        {{ item.display_title }}
+                                    </a>
+                                </h3>
+
+                                <p class="product-description">
+                                    {% if item.short_description %}
+                                        {{ item.short_description|truncatechars:85 }}
+                                    {% else %}
+                                        {{ item.product.description|truncatechars:85 }}
+                                    {% endif %}
+                                </p>
+
+                                <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                                    {% if item.selling_price > 0 %}
+                                        <span class="product-price">
+                                            {{ item.selling_price|floatformat:0|intcomma }}
+                                            RWF
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted fw-bold">
+                                            Request price
+                                        </span>
+                                    {% endif %}
+
+                                    <small class="text-muted">
+                                        {{ item.get_purchase_mode_display }}
+                                    </small>
+                                </div>
+
+                                {% if item.can_add_to_cart %}
+                                    <form
+                                        method="post"
+                                        action="{% url 'ecommerce:add_to_cart' item.pk %}"
+                                    >
+                                        {% csrf_token %}
+                                        <input
+                                            type="hidden"
+                                            name="quantity"
+                                            value="{{ item.minimum_order_quantity }}"
+                                        >
+                                        <button
+                                            type="submit"
+                                            class="btn btn-wpg w-100"
+                                        >
+                                            <i class="fas fa-cart-plus me-2"></i>
+                                            Add to cart
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <a
+                                        href="{% url 'ecommerce:product_detail' item.slug %}"
+                                        class="btn btn-wpg w-100"
+                                    >
+                                        View details
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </article>
+                    </div>
+                {% empty %}
+                    <div class="col-12">
+                        <div class="text-center bg-white rounded-4 border p-5">
+                            <i class="fas fa-store fa-3x text-success mb-3"></i>
+                            <h3 class="fw-bold">Products are coming soon</h3>
+                            <p class="text-muted mb-4">
+                                WPG is preparing products for the marketplace.
+                            </p>
+                            <a
+                                href="{% url 'ecommerce:shop' %}"
+                                class="btn btn-wpg px-4"
+                            >
+                                Visit marketplace
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section class="wpg-section">
+        <div class="container">
+            <div class="wpg-custom-order">
+                <div class="row g-0 align-items-stretch">
+                    <div class="col-lg-6">
+                        <div class="wpg-custom-copy">
+                            <span class="text-warning fw-bold text-uppercase">
+                                Made for you
+                            </span>
+                            <h2 class="display-6 mt-2">
+                                Need a custom product or project quotation?
+                            </h2>
+                            <p>
+                                Explore made-to-order furniture and construction
+                                solutions. Choose a suitable item and submit your
+                                requirements through WPG Marketplace.
+                            </p>
+                            <div class="d-flex flex-wrap gap-3">
+                                <a
+                                    href="{% url 'ecommerce:shop' %}?business_unit=FURNITURE"
+                                    class="btn btn-warning fw-bold px-4"
+                                >
+                                    Custom furniture
+                                </a>
+                                <a
+                                    href="{% url 'ecommerce:shop' %}?business_unit=CONSTRUCTION"
+                                    class="btn btn-outline-light px-4"
+                                >
+                                    Construction solutions
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <img
+                            src="{% static 'images/workshop.jpg' %}"
+                            class="wpg-custom-image"
+                            alt="Wisdom Palace Group workshop"
+                            loading="lazy"
+                        >
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="wpg-section wpg-section-soft">
+        <div class="container">
+            <div class="text-center wpg-section-heading mx-auto">
+                <span class="text-success fw-bold text-uppercase">
+                    Why WPG
+                </span>
+                <h2>A marketplace built on real operations</h2>
+                <p>
+                    Products, orders, inventory and payments are connected
+                    through the WPG Business Operating System.
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6 col-xl-3">
+                    <div class="trust-card">
+                        <i class="fas fa-award"></i>
+                        <h3>Quality-controlled products</h3>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="trust-card">
+                        <i class="fas fa-lock"></i>
+                        <h3>Secure payment processing</h3>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="trust-card">
+                        <i class="fas fa-clipboard-check"></i>
+                        <h3>Order status tracking</h3>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="trust-card">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h3>Built in Karongi, Rwanda</h3>
                     </div>
                 </div>
             </div>
 
-
-            <!-- PRODUCT 2 -->
-            <div class="col-md-4">
-                <div class="card border-0 shadow h-100">
-
-                    <img src="{% static 'images/table.jpg' %}"
-                         class="card-img-top"
-                         style="height:300px; object-fit:cover;">
-
-                    <div class="card-body text-center">
-                        <h5 class="fw-bold">Dining Table</h5>
-
-                        <p class="text-muted">
-                            Premium wooden dining table for modern families.
-                        </p>
-
-                        <button class="btn btn-dark">
-                            View Details
-                        </button>
-                    </div>
-                </div>
+            <div class="text-center mt-5">
+                <p class="text-muted mb-3">
+                    {{ published_product_count }} published product{{ published_product_count|pluralize }}
+                    currently available.
+                </p>
+                <a
+                    href="{% url 'ecommerce:shop' %}"
+                    class="btn btn-wpg btn-lg px-5"
+                >
+                    Explore WPG Marketplace
+                </a>
             </div>
-
-
-            <!-- PRODUCT 3 -->
-            <div class="col-md-4">
-                <div class="card border-0 shadow h-100">
-
-                    <img src="{% static 'images/bed.jpg' %}"
-                         class="card-img-top"
-                         style="height:300px; object-fit:cover;">
-
-                    <div class="card-body text-center">
-                        <h5 class="fw-bold">Modern Bed</h5>
-
-                        <p class="text-muted">
-                            Elegant bedroom furniture with modern finishing.
-                        </p>
-
-                        <button class="btn btn-dark">
-                            View Details
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-
-            <!-- PRODUCT 4 -->
-            <div class="col-md-4">
-                <div class="card border-0 shadow h-100">
-
-                    <img src="{% static 'images/chair.jpg' %}"
-                         class="card-img-top"
-                         style="height:300px; object-fit:cover;">
-
-                    <div class="card-body text-center">
-                        <h5 class="fw-bold">Office Chair</h5>
-
-                        <p class="text-muted">
-                            Comfortable office chairs for productivity.
-                        </p>
-
-                        <button class="btn btn-dark">
-                            View Details
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-
-            <!-- PRODUCT 5 -->
-            <div class="col-md-4">
-                <div class="card border-0 shadow h-100">
-
-                    <img src="{% static 'images/cabinet.jpg' %}"
-                         class="card-img-top"
-                         style="height:300px; object-fit:cover;">
-
-                    <div class="card-body text-center">
-                        <h5 class="fw-bold">Wood Cabinet</h5>
-
-                        <p class="text-muted">
-                            Stylish storage cabinets with luxury finishing.
-                        </p>
-
-                        <button class="btn btn-dark">
-                            View Details
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-
-            <!-- PRODUCT 6 -->
-            <div class="col-md-4">
-                <div class="card border-0 shadow h-100">
-
-                    <img src="{% static 'images/interior.jpg' %}"
-                         class="card-img-top"
-                         style="height:300px; object-fit:cover;">
-
-                    <div class="card-body text-center">
-                        <h5 class="fw-bold">Interior Design</h5>
-
-                        <p class="text-muted">
-                            Professional interior finishing for modern spaces.
-                        </p>
-
-                        <button class="btn btn-dark">
-                            View Details
-                        </button>
-                    </div>
-                </div>
-            </div>
-
         </div>
-    </div>
-</section>
-
-
-<!-- ================= WHY CHOOSE US ================= -->
-<section class="py-5 bg-dark text-white">
-
-    <div class="container">
-
-        <div class="text-center mb-5">
-            <h2 class="fw-bold">
-                Why Choose Us
-            </h2>
-        </div>
-
-        <div class="row text-center">
-
-            <div class="col-md-3">
-                <i class="fas fa-couch fa-3x text-warning mb-3"></i>
-                <h5>Modern Design</h5>
-            </div>
-
-            <div class="col-md-3">
-                <i class="fas fa-tools fa-3x text-warning mb-3"></i>
-                <h5>Quality Craftsmanship</h5>
-            </div>
-
-            <div class="col-md-3">
-                <i class="fas fa-truck fa-3x text-warning mb-3"></i>
-                <h5>Fast Delivery</h5>
-            </div>
-
-            <div class="col-md-3">
-                <i class="fas fa-award fa-3x text-warning mb-3"></i>
-                <h5>Premium Quality</h5>
-            </div>
-
-        </div>
-    </div>
-</section>
-
-
-<!-- ================= CONTACT SECTION ================= -->
-<section class="py-5 bg-light">
-
-    <div class="container text-center">
-
-        <h2 class="fw-bold mb-4">
-            Contact Us
-        </h2>
-
-        <p class="text-muted mb-4">
-            We are ready to build your dream furniture
-        </p>
-
-        <div class="row">
-
-            <div class="col-md-4">
-                <i class="fas fa-phone fa-2x text-warning mb-3"></i>
-                <h5>Phone</h5>
-                <p>+250 7XX XXX XXX</p>
-            </div>
-
-            <div class="col-md-4">
-                <i class="fas fa-envelope fa-2x text-warning mb-3"></i>
-                <h5>Email</h5>
-                <p>info@yourcompany.com</p>
-            </div>
-
-            <div class="col-md-4">
-                <i class="fas fa-map-marker-alt fa-2x text-warning mb-3"></i>
-                <h5>Location</h5>
-                <p>Kigali, Rwanda</p>
-            </div>
-
-        </div>
-    </div>
-</section>
-
+    </section>
+</div>
 {% endblock %}
