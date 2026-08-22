@@ -1,0 +1,592 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+{{ page_title }}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">
+                Record New Debt
+            </h1>
+            <p class="text-muted mb-0">
+                {{ counterparty.name }} · {{ counterparty.phone }}
+            </p>
+        </div>
+
+        <a
+            href="{% url 'finance:counterparty_detail' counterparty.pk %}"
+            class="btn btn-outline-secondary align-self-start"
+        >
+            Back to Account
+        </a>
+    </div>
+
+    <form method="post" id="debt-form" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h2 class="h5 fw-bold mb-0">
+                    Debt Information
+                </h2>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <label
+                            for="{{ form.direction.id_for_label }}"
+                            class="form-label fw-semibold"
+                        >
+                            {{ form.direction.label }}
+                        </label>
+                        {{ form.direction }}
+                        {% for error in form.direction.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="col-lg-6">
+                        <label
+                            for="{{ form.business_unit.id_for_label }}"
+                            class="form-label fw-semibold"
+                        >
+                            {{ form.business_unit.label }}
+                        </label>
+                        {{ form.business_unit }}
+                        {% for error in form.business_unit.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label
+                            for="{{ form.transaction_date.id_for_label }}"
+                            class="form-label fw-semibold"
+                        >
+                            {{ form.transaction_date.label }}
+                        </label>
+                        {{ form.transaction_date }}
+                        {% for error in form.transaction_date.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label
+                            for="{{ form.due_date.id_for_label }}"
+                            class="form-label fw-semibold"
+                        >
+                            {{ form.due_date.label }}
+                        </label>
+                        {{ form.due_date }}
+                        {% for error in form.due_date.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="col-12">
+                        <label
+                            for="{{ form.notes.id_for_label }}"
+                            class="form-label fw-semibold"
+                        >
+                            {{ form.notes.label }}
+                        </label>
+                        {{ form.notes }}
+                        {% for error in form.notes.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="h5 fw-bold mb-1">
+                            Products, Services or Assets
+                        </h2>
+                        <p class="small text-muted mb-0">
+                            Add every item included in this debt.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        id="add-line"
+                        class="btn btn-outline-primary"
+                    >
+                        + Add Item
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body">
+                {{ line_formset.management_form }}
+
+                {% if line_formset.non_form_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in line_formset.non_form_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div id="debt-lines">
+                    {% for line_form in line_formset %}
+                        <div class="debt-line border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between mb-3">
+                                <h3 class="h6 fw-bold mb-0">
+                                    Item
+                                    <span class="line-number">
+                                        {{ forloop.counter }}
+                                    </span>
+                                </h3>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-danger remove-line"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+
+                            <div class="d-none">
+                                {{ line_form.DELETE }}
+                            </div>
+
+                            {% if line_form.non_field_errors %}
+                                <div class="alert alert-danger py-2">
+                                    {% for error in line_form.non_field_errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            <div class="row g-3">
+                                <div class="col-lg-4">
+                                    <label class="form-label">
+                                        {{ line_form.item_type.label }}
+                                    </label>
+                                    {{ line_form.item_type }}
+                                    {% for error in line_form.item_type.errors %}
+                                        <div class="text-danger small">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div
+                                    class="col-lg-8 source-field product-field"
+                                >
+                                    <label class="form-label">
+                                        {{ line_form.product.label }}
+                                    </label>
+                                    {{ line_form.product }}
+                                    {% for error in line_form.product.errors %}
+                                        <div class="text-danger small">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div
+                                    class="col-lg-8 source-field raw-material-field"
+                                >
+                                    <label class="form-label">
+                                        {{ line_form.raw_material.label }}
+                                    </label>
+                                    {{ line_form.raw_material }}
+                                    {% for error in line_form.raw_material.errors %}
+                                        <div class="text-danger small">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div
+                                    class="col-lg-8 source-field asset-field"
+                                >
+                                    <label class="form-label">
+                                        {{ line_form.asset.label }}
+                                    </label>
+                                    {{ line_form.asset }}
+                                    {% for error in line_form.asset.errors %}
+                                        <div class="text-danger small">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div
+                                    class="col-lg-8 source-field description-field"
+                                >
+                                    <label class="form-label">
+                                        {{ line_form.description.label }}
+                                    </label>
+                                    {{ line_form.description }}
+                                    {% for error in line_form.description.errors %}
+                                        <div class="text-danger small">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label">
+                                        {{ line_form.quantity.label }}
+                                    </label>
+                                    {{ line_form.quantity }}
+                                    {% for error in line_form.quantity.errors %}
+                                        <div class="text-danger small">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label">
+                                        {{ line_form.unit.label }}
+                                    </label>
+                                    {{ line_form.unit }}
+                                    {% for error in line_form.unit.errors %}
+                                        <div class="text-danger small">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label">
+                                        {{ line_form.unit_price.label }}
+                                    </label>
+                                    {{ line_form.unit_price }}
+                                    {% for error in line_form.unit_price.errors %}
+                                        <div class="text-danger small">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label">
+                                        Line total
+                                    </label>
+                                    <div
+                                        class="form-control bg-light fw-bold line-total"
+                                    >
+                                        RWF 0
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <template id="empty-line-template">
+                    <div class="debt-line border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <h3 class="h6 fw-bold mb-0">
+                                Item <span class="line-number"></span>
+                            </h3>
+
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger remove-line"
+                            >
+                                Remove
+                            </button>
+                        </div>
+
+                        <div class="d-none">
+                            {{ line_formset.empty_form.DELETE }}
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-lg-4">
+                                <label class="form-label">
+                                    Item type
+                                </label>
+                                {{ line_formset.empty_form.item_type }}
+                            </div>
+
+                            <div class="col-lg-8 source-field product-field">
+                                <label class="form-label">
+                                    Product
+                                </label>
+                                {{ line_formset.empty_form.product }}
+                            </div>
+
+                            <div class="col-lg-8 source-field raw-material-field">
+                                <label class="form-label">
+                                    Raw material
+                                </label>
+                                {{ line_formset.empty_form.raw_material }}
+                            </div>
+
+                            <div class="col-lg-8 source-field asset-field">
+                                <label class="form-label">
+                                    Asset
+                                </label>
+                                {{ line_formset.empty_form.asset }}
+                            </div>
+
+                            <div class="col-lg-8 source-field description-field">
+                                <label class="form-label">
+                                    Description
+                                </label>
+                                {{ line_formset.empty_form.description }}
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">
+                                    Quantity
+                                </label>
+                                {{ line_formset.empty_form.quantity }}
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">
+                                    Unit
+                                </label>
+                                {{ line_formset.empty_form.unit }}
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">
+                                    Unit price
+                                </label>
+                                {{ line_formset.empty_form.unit_price }}
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">
+                                    Line total
+                                </label>
+                                <div class="form-control bg-light fw-bold line-total">
+                                    RWF 0
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="card-footer bg-white py-3">
+                <div class="d-flex flex-wrap justify-content-between gap-3">
+                    <div>
+                        <span class="text-muted">
+                            Total amount
+                        </span>
+                        <div
+                            id="debt-total"
+                            class="h4 fw-bold text-primary mb-0"
+                        >
+                            RWF 0
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 align-items-center">
+                        <a
+                            href="{% url 'finance:counterparty_detail' counterparty.pk %}"
+                            class="btn btn-outline-secondary"
+                        >
+                            Cancel
+                        </a>
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary px-4"
+                        >
+                            Save Debt
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const linesContainer = document.getElementById("debt-lines");
+    const addButton = document.getElementById("add-line");
+    const totalForms = document.getElementById("id_lines-TOTAL_FORMS");
+    const emptyTemplate = document.getElementById(
+        "empty-line-template"
+    );
+    const debtTotal = document.getElementById("debt-total");
+
+    function formatMoney(value) {
+        return "RWF " + new Intl.NumberFormat("en-RW", {
+            maximumFractionDigits: 2
+        }).format(value || 0);
+    }
+
+    function visibleRows() {
+        return Array.from(
+            linesContainer.querySelectorAll(".debt-line")
+        ).filter(function (row) {
+            return !row.hidden;
+        });
+    }
+
+    function renumberRows() {
+        visibleRows().forEach(function (row, index) {
+            const number = row.querySelector(".line-number");
+
+            if (number) {
+                number.textContent = index + 1;
+            }
+        });
+    }
+
+    function calculateTotal() {
+        let total = 0;
+
+        visibleRows().forEach(function (row) {
+            const quantity = parseFloat(
+                row.querySelector(".debt-quantity")?.value
+            ) || 0;
+
+            const price = parseFloat(
+                row.querySelector(".debt-unit-price")?.value
+            ) || 0;
+
+            const lineTotal = quantity * price;
+            const output = row.querySelector(".line-total");
+
+            if (output) {
+                output.textContent = formatMoney(lineTotal);
+            }
+
+            total += lineTotal;
+        });
+
+        debtTotal.textContent = formatMoney(total);
+    }
+
+    function updateSourceFields(row) {
+        const typeField = row.querySelector(".debt-item-type");
+
+        if (!typeField) {
+            return;
+        }
+
+        const itemType = typeField.value;
+        const groups = {
+            PRODUCT: row.querySelector(".product-field"),
+            RAW_MATERIAL: row.querySelector(".raw-material-field"),
+            ASSET: row.querySelector(".asset-field"),
+            DESCRIPTION: row.querySelector(".description-field")
+        };
+
+        Object.values(groups).forEach(function (group) {
+            if (group) {
+                group.hidden = true;
+            }
+        });
+
+        let visibleGroup = groups.DESCRIPTION;
+
+        if (itemType === "PRODUCT") {
+            visibleGroup = groups.PRODUCT;
+        } else if (itemType === "RAW_MATERIAL") {
+            visibleGroup = groups.RAW_MATERIAL;
+        } else if (itemType === "ASSET") {
+            visibleGroup = groups.ASSET;
+        }
+
+        if (visibleGroup) {
+            visibleGroup.hidden = false;
+        }
+    }
+
+    function setupRow(row) {
+        updateSourceFields(row);
+
+        row.querySelector(".debt-item-type")
+            ?.addEventListener("change", function () {
+                updateSourceFields(row);
+            });
+
+        row.querySelector(".debt-quantity")
+            ?.addEventListener("input", calculateTotal);
+
+        row.querySelector(".debt-unit-price")
+            ?.addEventListener("input", calculateTotal);
+
+        row.querySelector(".remove-line")
+            ?.addEventListener("click", function () {
+                if (visibleRows().length <= 1) {
+                    window.alert(
+                        "The debt must contain at least one item."
+                    );
+                    return;
+                }
+
+                const deleteField = row.querySelector(
+                    'input[name$="-DELETE"]'
+                );
+
+                if (deleteField) {
+                    deleteField.checked = true;
+                }
+
+                row.hidden = true;
+                renumberRows();
+                calculateTotal();
+            });
+    }
+
+    linesContainer
+        .querySelectorAll(".debt-line")
+        .forEach(setupRow);
+
+    addButton.addEventListener("click", function () {
+        const index = parseInt(totalForms.value, 10);
+        const wrapper = document.createElement("div");
+
+        wrapper.innerHTML = emptyTemplate.innerHTML.replace(
+            /__prefix__/g,
+            index
+        ).trim();
+
+        const newRow = wrapper.firstElementChild;
+
+        linesContainer.appendChild(newRow);
+        totalForms.value = index + 1;
+
+        setupRow(newRow);
+        renumberRows();
+        calculateTotal();
+    });
+
+    renumberRows();
+    calculateTotal();
+});
+</script>
+{% endblock %}

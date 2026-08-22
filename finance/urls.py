@@ -157,4 +157,32 @@ urlpatterns = [
         name="record_receivable_payment",
     ),
 
+    # =================================================
+    # COUNTERPARTIES
+    # =================================================
+
+    path(
+        "counterparties/find/",
+        views.counterparty_phone_lookup,
+        name="counterparty_phone_lookup",
+    ),
+    path(
+        "counterparties/new/",
+        views.counterparty_create,
+        name="counterparty_create",
+    ),
+    path(
+        "counterparties/<int:pk>/",
+        views.counterparty_detail,
+        name="counterparty_detail",
+    ),
+    path(
+        "counterparties/<int:counterparty_pk>/debts/new/",
+        views.counterparty_debt_create,
+        name="counterparty_debt_create",
+    ),
+    path(
+        "debts/", views.debt_list, name="debt_list",
+    ),
+
 ]

@@ -1,0 +1,119 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}
+{{ counterparty.name }}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+        <div>
+            <h2 class="h4 fw-bold mb-1">
+                {{ counterparty.name }}
+            </h2>
+            <p class="text-muted mb-0">
+                {{ counterparty.get_party_type_display }}
+                · {{ counterparty.role_label }}
+            </p>
+        </div>
+
+        <a
+            href="{% url 'finance:counterparty_phone_lookup' %}"
+            class="btn btn-outline-primary align-self-start"
+        >
+            Find Another Person
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h3 class="h6 fw-bold mb-0">
+                        Contact Information
+                    </h3>
+                </div>
+
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-muted">
+                            Telephone
+                        </dt>
+                        <dd class="col-sm-8">
+                            {{ counterparty.phone }}
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">
+                            Email
+                        </dt>
+                        <dd class="col-sm-8">
+                            {{ counterparty.email|default:"—" }}
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">
+                            Address
+                        </dt>
+                        <dd class="col-sm-8">
+                            {{ counterparty.address|default:"—" }}
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">
+                            Tax number
+                        </dt>
+                        <dd class="col-sm-8">
+                            {{ counterparty.tax_number|default:"—" }}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h3 class="h6 fw-bold mb-0">
+                        Bank Information
+                    </h3>
+                </div>
+
+                <div class="card-body">
+                    {% if counterparty.bank_account_number %}
+                        <dl class="mb-0">
+                            <dt class="text-muted">
+                                Bank
+                            </dt>
+                            <dd>
+                                {{ counterparty.bank_name }}
+                            </dd>
+
+                            <dt class="text-muted">
+                                Account name
+                            </dt>
+                            <dd>
+                                {{ counterparty.bank_account_name|default:"—" }}
+                            </dd>
+
+                            <dt class="text-muted">
+                                Account number
+                            </dt>
+                            <dd class="font-monospace">
+                                {{ counterparty.bank_account_number }}
+                            </dd>
+                        </dl>
+                    {% else %}
+                        <p class="text-muted mb-0">
+                            No bank account has been recorded.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info border-0 mt-4">
+        This account is ready. The next step will add
+        product or service debt transactions without
+        registering this person again.
+    </div>
+</div>
+{% endblock %}

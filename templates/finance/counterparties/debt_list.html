@@ -1,0 +1,325 @@
+{% extends "base_dashboard.html" %}
+{% load humanize %}
+
+{% block title %}
+Debts
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">
+                Debts
+            </h1>
+            <p class="text-muted mb-0">
+                Money owed to WPG and money WPG owes others.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a
+                href="{% url 'finance:counterparty_phone_lookup' %}"
+                class="btn btn-outline-primary"
+            >
+                + Add Debt Owner
+            </a>
+
+            <a
+                href="{% url 'finance:counterparty_phone_lookup' %}"
+                class="btn btn-primary"
+            >
+                + Record New Debt
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">
+                        Total debt
+                    </div>
+                    <div class="h4 fw-bold mb-0">
+                        RWF {{ total_debt|floatformat:2|intcomma }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">
+                        Amount paid
+                    </div>
+                    <div class="h4 fw-bold text-success mb-0">
+                        RWF {{ total_paid|floatformat:2|intcomma }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">
+                        Outstanding balance
+                    </div>
+                    <div class="h4 fw-bold text-danger mb-0">
+                        RWF {{ total_balance|floatformat:2|intcomma }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-lg-5">
+                    <label for="debt-search" class="form-label">
+                        Search
+                    </label>
+                    <input
+                        id="debt-search"
+                        type="search"
+                        name="q"
+                        value="{{ search }}"
+                        class="form-control"
+                        placeholder="Reference, name, phone or item"
+                    >
+                </div>
+
+                <div class="col-md-4 col-lg-3">
+                    <label for="direction-filter" class="form-label">
+                        Direction
+                    </label>
+                    <select
+                        id="direction-filter"
+                        name="direction"
+                        class="form-select"
+                    >
+                        <option value="">All directions</option>
+
+                        {% for value, label in direction_choices %}
+                            <option
+                                value="{{ value }}"
+                                {% if selected_direction == value %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4 col-lg-2">
+                    <label for="status-filter" class="form-label">
+                        Status
+                    </label>
+                    <select
+                        id="status-filter"
+                        name="status"
+                        class="form-select"
+                    >
+                        <option value="">All statuses</option>
+
+                        {% for value, label in status_choices %}
+                            <option
+                                value="{{ value }}"
+                                {% if selected_status == value %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4 col-lg-2 d-flex align-items-end">
+                    <button
+                        type="submit"
+                        class="btn btn-dark w-100"
+                    >
+                        Filter
+                    </button>
+                </div>
+
+                {% if search or selected_direction or selected_status %}
+                    <div class="col-12">
+                        <a
+                            href="{% url 'finance:debt_list' %}"
+                            class="small"
+                        >
+                            Clear filters
+                        </a>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h2 class="h5 fw-bold mb-0">
+                Debt Records
+            </h2>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Reference</th>
+                        <th>Person / Company</th>
+                        <th>Direction</th>
+                        <th>Date</th>
+                        <th>Due date</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">Paid</th>
+                        <th class="text-end">Balance</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for debt in debts %}
+                        <tr>
+                            <td>
+                                <span class="font-monospace fw-semibold">
+                                    {{ debt.reference }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="fw-semibold">
+                                    {{ debt.counterparty.name }}
+                                </div>
+                                <div class="small text-muted">
+                                    {{ debt.counterparty.phone }}
+                                </div>
+                            </td>
+
+                            <td>
+                                {% if debt.direction == "THEY_OWE_US" %}
+                                    <span class="badge text-bg-success">
+                                        They owe WPG
+                                    </span>
+                                {% else %}
+                                    <span class="badge text-bg-warning">
+                                        WPG owes them
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ debt.transaction_date|date:"d M Y" }}
+                            </td>
+
+                            <td>
+                                {% if debt.due_date %}
+                                    {{ debt.due_date|date:"d M Y" }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+
+                            <td class="text-end">
+                                RWF {{ debt.total_amount|floatformat:2|intcomma }}
+                            </td>
+
+                            <td class="text-end text-success">
+                                RWF {{ debt.amount_paid|floatformat:2|intcomma }}
+                            </td>
+
+                            <td class="text-end fw-bold">
+                                RWF {{ debt.balance|floatformat:2|intcomma }}
+                            </td>
+
+                            <td>
+                                {% if debt.status == "PAID" %}
+                                    <span class="badge text-bg-success">
+                                        {{ debt.get_status_display }}
+                                    </span>
+                                {% elif debt.status == "CANCELLED" %}
+                                    <span class="badge text-bg-secondary">
+                                        {{ debt.get_status_display }}
+                                    </span>
+                                {% elif debt.status == "OVERDUE" %}
+                                    <span class="badge text-bg-danger">
+                                        {{ debt.get_status_display }}
+                                    </span>
+                                {% elif debt.status == "PARTIAL" %}
+                                    <span class="badge text-bg-info">
+                                        {{ debt.get_status_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge text-bg-primary">
+                                        {{ debt.get_status_display }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a
+                                        href="{% url 'finance:counterparty_detail' debt.counterparty.pk %}"
+                                        class="btn btn-outline-dark"
+                                    >
+                                        View
+                                    </a>
+
+                                    <a
+                                        href="{% url 'finance:counterparty_debt_create' debt.counterparty.pk %}"
+                                        class="btn btn-outline-primary"
+                                    >
+                                        Add Debt
+                                    </a>
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-secondary"
+                                        disabled
+                                        title="Debt editing is added in the next step"
+                                    >
+                                        Edit
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-danger"
+                                        disabled
+                                        title="Secure cancellation is added in the next step"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center py-5">
+                                <div class="text-muted mb-3">
+                                    No debt records were found.
+                                </div>
+
+                                <a
+                                    href="{% url 'finance:counterparty_phone_lookup' %}"
+                                    class="btn btn-primary"
+                                >
+                                    Record the First Debt
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -13,12 +13,20 @@ from django.shortcuts import (
 from django.utils import timezone
 
 from .dashboard import get_finance_dashboard
+
 from .forms import (
+    CounterpartyCreateForm,
+    CounterpartyPhoneLookupForm,
+    DebtLineFormSet,
+    DirectDebtForm,
     PayableForm,
     ReceivablePaymentForm,
 )
+
 from .models import (
     Account,
+    Counterparty,
+    DebtRecord,
     Income,
     Expense,
     Receivable,
@@ -31,6 +39,388 @@ from .services import (
     PayableService,
     PaymentService,
 )
+
+from .services.counterparty_service import (
+    CounterpartyService,
+)
+
+from .services.debt_service import DebtService
+
+
+# =====================================================
+# COUNTERPARTY PHONE-FIRST REGISTRATION
+# =====================================================
+
+@login_required
+def counterparty_phone_lookup(request):
+    """
+    Require a telephone lookup before an existing
+    counterparty is selected or a new one is created.
+    """
+    if request.method == "POST":
+        form = CounterpartyPhoneLookupForm(
+            request.POST
+        )
+
+        if form.is_valid():
+            phone = form.cleaned_data["phone"]
+
+            counterparty = (
+                CounterpartyService.find_by_phone(
+                    phone
+                )
+            )
+
+            if counterparty is not None:
+                request.session.pop(
+                    "counterparty_pending_phone",
+                    None,
+                )
+
+                messages.info(
+                    request,
+                    (
+                        f"{counterparty.name} is already "
+                        "registered. Use this account for "
+                        "the new transaction."
+                    ),
+                )
+
+                return redirect(
+                    "finance:counterparty_detail",
+                    pk=counterparty.pk,
+                )
+
+            request.session[
+                "counterparty_pending_phone"
+            ] = phone
+
+            return redirect(
+                "finance:counterparty_create",
+            )
+
+    else:
+        request.session.pop(
+            "counterparty_pending_phone",
+            None,
+        )
+        form = CounterpartyPhoneLookupForm()
+
+    return render(
+        request,
+        "finance/counterparties/phone_lookup.html",
+        {
+            "form": form,
+            "page_title": "Find Person or Company",
+        },
+    )
+
+
+@login_required
+def counterparty_create(request):
+    pending_phone = request.session.get(
+        "counterparty_pending_phone"
+    )
+
+    if not pending_phone:
+        messages.warning(
+            request,
+            (
+                "Search for the telephone number before "
+                "creating a new person or company."
+            ),
+        )
+        return redirect(
+            "finance:counterparty_phone_lookup",
+        )
+
+    if request.method == "POST":
+        form = CounterpartyCreateForm(
+            request.POST,
+            pending_phone=pending_phone,
+        )
+
+        if form.is_valid():
+            data = form.cleaned_data
+            relationship = data["relationship"]
+
+            try:
+                counterparty = (
+                    CounterpartyService
+                    .create_counterparty(
+                        name=data["name"],
+                        phone=data["phone"],
+                        party_type=data[
+                            "party_type"
+                        ],
+                        email=data.get(
+                            "email",
+                            "",
+                        ),
+                        address=data.get(
+                            "address",
+                            "",
+                        ),
+                        tax_number=data.get(
+                            "tax_number",
+                            "",
+                        ),
+                        bank_name=data.get(
+                            "bank_name",
+                            "",
+                        ),
+                        bank_account_name=data.get(
+                            "bank_account_name",
+                            "",
+                        ),
+                        bank_account_number=data.get(
+                            "bank_account_number",
+                            "",
+                        ),
+                        is_customer=(
+                            relationship
+                            in {
+                                CounterpartyCreateForm
+                                .CUSTOMER,
+                                CounterpartyCreateForm
+                                .BOTH,
+                            }
+                        ),
+                        is_supplier=(
+                            relationship
+                            in {
+                                CounterpartyCreateForm
+                                .SUPPLIER,
+                                CounterpartyCreateForm
+                                .BOTH,
+                            }
+                        ),
+                    )
+                )
+
+            except ValidationError as error:
+                if hasattr(
+                    error,
+                    "message_dict",
+                ):
+                    for (
+                        field,
+                        field_messages,
+                    ) in error.message_dict.items():
+                        target_field = (
+                            field
+                            if field in form.fields
+                            else None
+                        )
+
+                        for error_message in field_messages:
+                            form.add_error(
+                                target_field,
+                                error_message,
+                            )
+                else:
+                    for error_message in error.messages:
+                        form.add_error(
+                            None,
+                            error_message,
+                        )
+
+            else:
+                request.session.pop(
+                    "counterparty_pending_phone",
+                    None,
+                )
+
+                messages.success(
+                    request,
+                    (
+                        f"{counterparty.name} was "
+                        "registered successfully."
+                    ),
+                )
+
+                return redirect(
+                    "finance:counterparty_detail",
+                    pk=counterparty.pk,
+                )
+
+    else:
+        form = CounterpartyCreateForm(
+            pending_phone=pending_phone,
+            initial={
+                "phone": pending_phone,
+            },
+        )
+
+    return render(
+        request,
+        "finance/counterparties/counterparty_form.html",
+        {
+            "form": form,
+            "pending_phone": pending_phone,
+            "page_title": "Register Person or Company",
+        },
+    )
+
+
+@login_required
+def counterparty_detail(request, pk):
+    counterparty = get_object_or_404(
+        Counterparty.objects.select_related(
+            "sales_customer",
+            "inventory_supplier",
+        ),
+        pk=pk,
+    )
+
+    return render(
+        request,
+        "finance/counterparties/counterparty_detail.html",
+        {
+            "counterparty": counterparty,
+            "page_title": counterparty.name,
+        },
+    )
+
+
+@login_required
+def counterparty_debt_create(
+    request,
+    counterparty_pk,
+):
+    counterparty = get_object_or_404(
+        Counterparty.objects.select_related(
+            "sales_customer",
+            "inventory_supplier",
+        ).prefetch_related(
+            "debt_records__lines",
+        ),
+        pk=counterparty_pk,
+    )
+
+    if request.method == "POST":
+        form = DirectDebtForm(request.POST)
+        line_formset = DebtLineFormSet(
+            request.POST,
+            prefix="lines",
+        )
+
+        if form.is_valid() and line_formset.is_valid():
+            lines = []
+
+            for line_form in line_formset:
+                line_data = line_form.cleaned_data
+
+                if not line_data:
+                    continue
+
+                if line_data.get("DELETE"):
+                    continue
+
+                lines.append(
+                    {
+                        "item_type": line_data[
+                            "item_type"
+                        ],
+                        "product": line_data.get(
+                            "product"
+                        ),
+                        "raw_material": line_data.get(
+                            "raw_material"
+                        ),
+                        "asset": line_data.get(
+                            "asset"
+                        ),
+                        "description": line_data.get(
+                            "description",
+                            "",
+                        ),
+                        "quantity": line_data[
+                            "quantity"
+                        ],
+                        "unit": line_data["unit"],
+                        "unit_price": line_data[
+                            "unit_price"
+                        ],
+                    }
+                )
+
+            try:
+                debt = DebtService.create_debt(
+                    counterparty=counterparty,
+                    direction=form.cleaned_data[
+                        "direction"
+                    ],
+                    business_unit=form.cleaned_data[
+                        "business_unit"
+                    ],
+                    transaction_date=(
+                        form.cleaned_data[
+                            "transaction_date"
+                        ]
+                    ),
+                    due_date=form.cleaned_data.get(
+                        "due_date"
+                    ),
+                    notes=form.cleaned_data.get(
+                        "notes",
+                        "",
+                    ),
+                    lines=lines,
+                    actor=request.user,
+                )
+
+            except ValidationError as error:
+                if hasattr(error, "message_dict"):
+                    error_messages = []
+
+                    for field_messages in (
+                        error.message_dict.values()
+                    ):
+                        error_messages.extend(
+                            field_messages
+                        )
+                else:
+                    error_messages = error.messages
+
+                for error_message in error_messages:
+                    form.add_error(
+                        None,
+                        error_message,
+                    )
+
+            else:
+                messages.success(
+                    request,
+                    (
+                        f"Debt {debt.reference} was "
+                        "recorded successfully."
+                    ),
+                )
+
+                return redirect(
+                    "finance:counterparty_detail",
+                    pk=counterparty.pk,
+                )
+
+    else:
+        form = DirectDebtForm()
+        line_formset = DebtLineFormSet(
+            prefix="lines",
+        )
+
+    return render(
+        request,
+        "finance/counterparties/debt_form.html",
+        {
+            "counterparty": counterparty,
+            "form": form,
+            "line_formset": line_formset,
+            "page_title": (
+                f"Record Debt — {counterparty.name}"
+            ),
+        },
+    )
 
 
 # =====================================================
@@ -381,8 +771,7 @@ def record_receivable_payment(request, pk):
 
     if request.method != "POST":
         return redirect(
-            "finance:receivable_detail",
-            pk=receivable.pk,
+            "finance:debt_list",
         )
 
     form = ReceivablePaymentForm(
@@ -830,5 +1219,89 @@ def financial_report(request):
             "summary": summary,
             "start_date": start_date,
             "end_date": end_date,
+        },
+    )
+
+@login_required
+def debt_list(request):
+    debts = (
+        DebtRecord.objects
+        .select_related(
+            "counterparty",
+            "created_by",
+        )
+        .prefetch_related("lines")
+        .order_by(
+            "-transaction_date",
+            "-pk",
+        )
+    )
+
+    search = request.GET.get("q", "").strip()
+    direction = (
+        request.GET.get("direction", "")
+        .strip()
+        .upper()
+    )
+    status = (
+        request.GET.get("status", "")
+        .strip()
+        .upper()
+    )
+
+    if search:
+        debts = debts.filter(
+            Q(reference__icontains=search)
+            | Q(counterparty__name__icontains=search)
+            | Q(counterparty__phone__icontains=search)
+            | Q(lines__description__icontains=search)
+        ).distinct()
+
+    valid_directions = {
+        value
+        for value, unused_label
+        in DebtRecord.DIRECTIONS
+    }
+
+    if direction in valid_directions:
+        debts = debts.filter(direction=direction)
+    else:
+        direction = ""
+
+    valid_statuses = {
+        value
+        for value, unused_label
+        in DebtRecord.STATUSES
+    }
+
+    if status in valid_statuses:
+        debts = debts.filter(status=status)
+    else:
+        status = ""
+
+    summary = debts.aggregate(
+        total_debt=Sum("total_amount"),
+        total_paid=Sum("amount_paid"),
+    )
+
+    total_debt = summary["total_debt"] or 0
+    total_paid = summary["total_paid"] or 0
+
+    return render(
+        request,
+        "finance/counterparties/debt_list.html",
+        {
+            "debts": debts,
+            "search": search,
+            "selected_direction": direction,
+            "selected_status": status,
+            "direction_choices": DebtRecord.DIRECTIONS,
+            "status_choices": DebtRecord.STATUSES,
+            "total_debt": total_debt,
+            "total_paid": total_paid,
+            "total_balance": (
+                total_debt - total_paid
+            ),
+            "page_title": "Debts",
         },
     )
