@@ -161,7 +161,7 @@ body{
 
 {% else %}
 
-<img src="{% static 'images/company-cover.jpg' %}">
+<img src="{% static 'images/workshop.jpg' %}">
 
 {% endif %}
 
@@ -193,7 +193,12 @@ body{
 
 {% else %}
 
-<img src="{% static 'images/default-user.png' %}" class="avatar">
+<div
+    class="avatar d-inline-flex align-items-center justify-content-center bg-light text-secondary border"
+    aria-label="Default user profile"
+>
+    <i class="fa fa-user fa-3x"></i>
+</div>
 
 {% endif %}
 
