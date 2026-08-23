@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+from core.permissions import wpg_permission_required
 from inventory.models import Product
 from .dashboard import get_sales_dashboard
 from .models import (
@@ -45,6 +47,7 @@ def _parse_date(value):
 
 
 @login_required
+@wpg_permission_required("sales.view_sale", feature_code="SALES_DASHBOARD")
 def sales_dashboard(request):
     return render(
         request,
@@ -54,6 +57,7 @@ def sales_dashboard(request):
 
 
 @login_required
+@wpg_permission_required("sales.view_customer", feature_code="CUSTOMER_LIST")
 def customer_list(request):
     search = request.GET.get("q", "").strip()
     customer_type = request.GET.get(
@@ -85,6 +89,7 @@ def customer_list(request):
 
 
 @login_required
+@wpg_permission_required("sales.view_customer", feature_code="CUSTOMER_LIST")
 def customer_detail(request, pk):
     customer = get_object_or_404(
         Customer.objects.select_related("user"),
@@ -102,6 +107,7 @@ def customer_detail(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.add_customer", feature_code="CUSTOMER_LIST", action="add")
 def customer_create(request):
     if request.method == "POST":
         try:
@@ -140,6 +146,7 @@ def customer_create(request):
 
 
 @login_required
+@wpg_permission_required("sales.change_customer", feature_code="CUSTOMER_LIST", action="change")
 def customer_update(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
 
@@ -188,6 +195,7 @@ def customer_update(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.delete_customer", feature_code="CUSTOMER_LIST", action="delete")
 def customer_delete(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
 
@@ -211,6 +219,8 @@ def customer_delete(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.change_customer", feature_code="CUSTOMER_LIST", action="change")
+@require_POST
 def customer_activate(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
 
@@ -229,6 +239,7 @@ def customer_activate(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.view_salesquotation", feature_code="QUOTATION_LIST")
 def quotation_list(request):
     base_queryset = SalesQuotation.objects.select_related(
         "customer",
@@ -282,6 +293,7 @@ def quotation_list(request):
 
 
 @login_required
+@wpg_permission_required("sales.view_salesquotation", feature_code="QUOTATION_LIST")
 def quotation_detail(request, pk):
     quotation = get_object_or_404(
         SalesQuotation.objects.select_related(
@@ -357,6 +369,7 @@ def quotation_detail(request, pk):
     )
 
 @login_required
+@wpg_permission_required("sales.add_salesquotation", feature_code="QUOTATION_LIST", action="add")
 def quotation_create(request):
     quotation = SalesQuotation()
 
@@ -517,6 +530,7 @@ def quotation_create(request):
     )
 
 @login_required
+@wpg_permission_required("sales.change_salesquotation", feature_code="QUOTATION_LIST", action="change")
 def quotation_item_create(request, pk):
     quotation = get_object_or_404(
         SalesQuotation,
@@ -567,6 +581,7 @@ def quotation_item_create(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.change_salesquotation", feature_code="QUOTATION_LIST", action="change")
 def quotation_item_update(request, pk, item_pk):
     quotation = get_object_or_404(
         SalesQuotation,
@@ -623,6 +638,8 @@ def quotation_item_update(request, pk, item_pk):
 
 
 @login_required
+@wpg_permission_required("sales.change_salesquotation", feature_code="QUOTATION_LIST", action="change")
+@require_POST
 def quotation_item_delete(request, pk, item_pk):
     quotation = get_object_or_404(
         SalesQuotation,
@@ -650,6 +667,8 @@ def quotation_item_delete(request, pk, item_pk):
 
 
 @login_required
+@wpg_permission_required("sales.change_salesquotation", feature_code="QUOTATION_LIST", action="change")
+@require_POST
 def quotation_submit(request, pk):
     quotation = get_object_or_404(SalesQuotation, pk=pk)
 
@@ -668,6 +687,8 @@ def quotation_submit(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.approve_salesquotation", feature_code="QUOTATION_APPROVAL", action="approve")
+@require_POST
 def quotation_approve(request, pk):
     quotation = get_object_or_404(SalesQuotation, pk=pk)
 
@@ -687,6 +708,8 @@ def quotation_approve(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.approve_salesquotation", feature_code="QUOTATION_APPROVAL", action="approve")
+@require_POST
 def quotation_reject(request, pk):
     quotation = get_object_or_404(SalesQuotation, pk=pk)
 
@@ -706,6 +729,8 @@ def quotation_reject(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.change_salesquotation", feature_code="QUOTATION_LIST", action="change")
+@require_POST
 def quotation_cancel(request, pk):
     quotation = get_object_or_404(SalesQuotation, pk=pk)
 
@@ -725,6 +750,8 @@ def quotation_cancel(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.convert_salesquotation", feature_code="QUOTATION_APPROVAL", action="approve")
+@require_POST
 def quotation_convert(request, pk):
     quotation = get_object_or_404(
         SalesQuotation,
@@ -766,6 +793,7 @@ def quotation_convert(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.view_sale", feature_code="SALES_LIST")
 def sale_list(request):
     sales = Sale.objects.select_related(
         "customer",
@@ -781,6 +809,7 @@ def sale_list(request):
 
 
 @login_required
+@wpg_permission_required("sales.view_sale", feature_code="SALES_LIST")
 def sale_detail(request, pk):
     sale = get_object_or_404(
         Sale.objects.select_related(
@@ -799,6 +828,7 @@ def sale_detail(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.change_sale", feature_code="SALES_LIST", action="change")
 def complete_sale_view(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
 
@@ -814,6 +844,7 @@ def complete_sale_view(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.view_invoice", feature_code="SALES_INVOICES")
 def invoice_list(request):
     invoices = Invoice.objects.select_related(
         "sale",
@@ -828,6 +859,7 @@ def invoice_list(request):
 
 
 @login_required
+@wpg_permission_required("sales.view_invoice", feature_code="SALES_INVOICES")
 def invoice_detail(request, pk):
     invoice = get_object_or_404(
         Invoice.objects.select_related(
@@ -845,6 +877,7 @@ def invoice_detail(request, pk):
 
 
 @login_required
+@wpg_permission_required("sales.view_customerpayment", feature_code="SALES_PAYMENTS")
 def payment_list(request):
     payments = CustomerPayment.objects.select_related(
         "invoice",
@@ -860,6 +893,7 @@ def payment_list(request):
 
 
 @login_required
+@wpg_permission_required("sales.view_sale", feature_code="SALES_REPORTS")
 def sales_report(request):
     return render(
         request,

@@ -146,39 +146,47 @@ WSGI_APPLICATION = 'inventory_project.wsgi.application'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": _required_environment(
-            "POSTGRES_DB"
-        ),
-        "USER": _required_environment(
-            "POSTGRES_USER"
-        ),
-        "PASSWORD": _required_environment(
-            "POSTGRES_PASSWORD"
-        ),
-        "HOST": _required_environment(
-            "POSTGRES_HOST"
-        ),
-        "PORT": os.environ.get(
-            "POSTGRES_PORT",
-            "5432",
-        ),
-        "CONN_MAX_AGE": int(
-            os.environ.get(
-                "POSTGRES_CONN_MAX_AGE",
-                "0" if DEBUG else "60",
-            )
-        ),
-        "OPTIONS": {
-            "sslmode": os.environ.get(
-                "POSTGRES_SSLMODE",
-                "prefer",
-            ),
-        },
+if _environment_boolean("DJANGO_USE_SQLITE", default=False):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": _required_environment(
+                "POSTGRES_DB"
+            ),
+            "USER": _required_environment(
+                "POSTGRES_USER"
+            ),
+            "PASSWORD": _required_environment(
+                "POSTGRES_PASSWORD"
+            ),
+            "HOST": _required_environment(
+                "POSTGRES_HOST"
+            ),
+            "PORT": os.environ.get(
+                "POSTGRES_PORT",
+                "5432",
+            ),
+            "CONN_MAX_AGE": int(
+                os.environ.get(
+                    "POSTGRES_CONN_MAX_AGE",
+                    "0" if DEBUG else "60",
+                )
+            ),
+            "OPTIONS": {
+                "sslmode": os.environ.get(
+                    "POSTGRES_SSLMODE",
+                    "prefer",
+                ),
+            },
+        }
+    }
 
 
 # Password validation

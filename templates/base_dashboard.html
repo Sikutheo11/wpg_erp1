@@ -299,13 +299,15 @@ body{
 
                 {% for note in request.user.notifications.all|slice:":5" %}
                     <li>
-                        <a class="dropdown-item"
-                        href="{% url 'core:notification_mark_read' note.id %}">
-                            <strong>{{ note.title }}</strong><br>
-                            <small class="text-muted">
-                                {{ note.message }}
-                            </small>
-                        </a>
+                        <form method="post" action="{% url 'core:notification_mark_read' note.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item text-start">
+                                <strong>{{ note.title }}</strong><br>
+                                <small class="text-muted">
+                                    {{ note.message }}
+                                </small>
+                            </button>
+                        </form>
                     </li>
                 {% empty %}
                     <li>
@@ -368,11 +370,13 @@ body{
                 </li>
 
                 <li>
-                    <a class="dropdown-item text-danger"
-                       href="{% url 'logout' %}">
-                        <i class="bi bi-box-arrow-right me-2"></i>
-                        Logout
-                    </a>
+                    <form method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button class="dropdown-item text-danger" type="submit">
+                            <i class="bi bi-box-arrow-right me-2"></i>
+                            Logout
+                        </button>
+                    </form>
                 </li>
 
             </ul>

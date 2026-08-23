@@ -1,5 +1,5 @@
 from django.apps import apps
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -181,6 +181,29 @@ class Command(BaseCommand):
         },
     ]
 
+    FEATURE_PERMISSIONS = {
+        "AGRICULTURE_DASHBOARD": {"view_permission": "agriculture.view_agricultureoperation"},
+        "AGRICULTURE_FARMS": {"view_permission": "agriculture.view_poultryfarm", "add_permission": "agriculture.add_poultryfarm", "change_permission": "agriculture.change_poultryfarm", "delete_permission": "agriculture.delete_poultryfarm"},
+        "AGRICULTURE_HOUSES": {"view_permission": "agriculture.view_poultryhouse", "add_permission": "agriculture.add_poultryhouse", "change_permission": "agriculture.change_poultryhouse", "delete_permission": "agriculture.delete_poultryhouse"},
+        "AGRICULTURE_BREEDS": {"view_permission": "agriculture.view_poultrybreed", "add_permission": "agriculture.add_poultrybreed", "change_permission": "agriculture.change_poultrybreed", "delete_permission": "agriculture.delete_poultrybreed"},
+        "AGRICULTURE_OPERATIONS": {"view_permission": "agriculture.view_agricultureoperation", "add_permission": "agriculture.add_agricultureoperation", "change_permission": "agriculture.change_agricultureoperation", "delete_permission": "agriculture.delete_agricultureoperation"},
+        "AGRICULTURE_FLOCKS": {"view_permission": "agriculture.view_poultryflock", "add_permission": "agriculture.add_poultryflock", "change_permission": "agriculture.change_poultryflock", "delete_permission": "agriculture.delete_poultryflock"},
+        "AGRICULTURE_DAILY_RECORDS": {"view_permission": "agriculture.view_dailyflockrecord", "add_permission": "agriculture.add_dailyflockrecord", "change_permission": "agriculture.change_dailyflockrecord", "delete_permission": "agriculture.delete_dailyflockrecord"},
+        "AGRICULTURE_EGG_PRODUCTION": {"view_permission": "agriculture.view_eggproduction", "add_permission": "agriculture.add_eggproduction", "change_permission": "agriculture.change_eggproduction", "delete_permission": "agriculture.delete_eggproduction"},
+        "AGRICULTURE_FEEDING": {"view_permission": "agriculture.view_feedingrecord", "add_permission": "agriculture.add_feedingrecord", "change_permission": "agriculture.change_feedingrecord", "delete_permission": "agriculture.delete_feedingrecord", "approve_permission": "agriculture.change_feedingrecord"},
+        "AGRICULTURE_HEALTH": {"view_permission": "agriculture.view_healthrecord", "add_permission": "agriculture.add_healthrecord", "change_permission": "agriculture.change_healthrecord", "delete_permission": "agriculture.delete_healthrecord", "approve_permission": "agriculture.change_healthrecord"},
+        "AGRICULTURE_MORTALITY": {"view_permission": "agriculture.view_mortalityrecord", "add_permission": "agriculture.add_mortalityrecord", "change_permission": "agriculture.change_mortalityrecord", "delete_permission": "agriculture.delete_mortalityrecord"},
+        "AGRICULTURE_INCUBATION": {"view_permission": "agriculture.view_incubationbatch", "add_permission": "agriculture.add_incubationbatch", "change_permission": "agriculture.change_incubationbatch", "delete_permission": "agriculture.delete_incubationbatch"},
+        "AGRICULTURE_REPORTS": {"view_permission": "agriculture.view_agricultureoperation"},
+        "AGRICULTURE_OPERATION_SUBMIT": {"change_permission": "agriculture.change_agricultureoperation"},
+        "AGRICULTURE_OPERATION_APPROVE": {"approve_permission": "agriculture.approve_agricultureoperation"},
+        "AGRICULTURE_OPERATION_START": {"change_permission": "agriculture.change_agricultureoperation"},
+        "AGRICULTURE_OPERATION_HOLD": {"change_permission": "agriculture.change_agricultureoperation"},
+        "AGRICULTURE_OPERATION_RESUME": {"change_permission": "agriculture.change_agricultureoperation"},
+        "AGRICULTURE_OPERATION_COMPLETE": {"approve_permission": "agriculture.complete_agricultureoperation"},
+        "AGRICULTURE_OPERATION_CANCEL": {"delete_permission": "agriculture.delete_agricultureoperation"},
+    }
+
     KPI_WIDGETS = [
         {
             "code": "AGRICULTURE_ACTIVE_FARMS",
@@ -327,6 +350,29 @@ class Command(BaseCommand):
         }
         return cls._supported(RoleFeature, values)
 
+    @staticmethod
+    def _sync_group_permissions(group, feature, rule):
+        action_fields = (
+            ("can_view", "view_permission"),
+            ("can_add", "add_permission"),
+            ("can_edit", "change_permission"),
+            ("can_delete", "delete_permission"),
+            ("can_approve", "approve_permission"),
+        )
+        for rule_field, feature_field in action_fields:
+            if not rule.get(rule_field):
+                continue
+            permission_name = getattr(feature, feature_field, "").strip()
+            if not permission_name or "." not in permission_name:
+                continue
+            app_label, codename = permission_name.split(".", 1)
+            permission = Permission.objects.filter(
+                content_type__app_label=app_label,
+                codename=codename,
+            ).first()
+            if permission:
+                group.permissions.add(permission)
+
     @classmethod
     def _seed_kpi_widgets(cls, business_unit, module):
         try:
@@ -383,6 +429,7 @@ class Command(BaseCommand):
         for definition in self.FEATURES:
             defaults = {
                 **definition,
+                **self.FEATURE_PERMISSIONS.get(definition["code"], {}),
                 "module": module,
                 "business_unit": business_unit,
                 "engine": None,
@@ -423,6 +470,11 @@ class Command(BaseCommand):
                     role=role,
                     feature=feature,
                     defaults=self._permission_defaults(rule),
+                )
+                self._sync_group_permissions(
+                    role,
+                    feature,
+                    rule,
                 )
                 role_feature_count += 1
 

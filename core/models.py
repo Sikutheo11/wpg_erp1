@@ -185,6 +185,10 @@ class AuditLog(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        permissions = [
+            ("view_reports", "Can access the reports centre"),
+            ("view_executivereport", "Can view executive reports"),
+        ]
 
     def __str__(self):
         return f"{self.action} - {self.app_label}.{self.model_name}"
@@ -370,6 +374,32 @@ class Feature(models.Model):
     icon = models.CharField(
         max_length=50,
         blank=True
+    )
+
+    view_permission = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Django permission required to see and open this feature.",
+    )
+    add_permission = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Django permission required to create records.",
+    )
+    change_permission = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Django permission required to edit records.",
+    )
+    delete_permission = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Django permission required to delete records.",
+    )
+    approve_permission = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Custom Django permission required to approve records.",
     )
 
     order = models.PositiveIntegerField(default=0)

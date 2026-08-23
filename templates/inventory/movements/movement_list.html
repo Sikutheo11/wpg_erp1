@@ -1,4 +1,5 @@
 {% extends 'inventory/base_inventory.html' %}
+{% load permission_tags %}
 
 
 
@@ -14,12 +15,14 @@ Stock Movements
 
 
 
-<a href="{% url 'stock_create' %}"
+{% if request.user|can_add:"INVENTORY_STOCK_MOVEMENTS" %}
+<a href="{% url 'inventory:stock_create' %}"
 class="btn btn-primary">
 
 + New Movement
 
 </a>
+{% endif %}
 
 
 </div>

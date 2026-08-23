@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.views.decorators.http import require_POST
-from core.permissions import PermissionService
+from core.permissions import PermissionService, wpg_permission_required
 from .models import Order
 from .services.delivery_service import DeliveryService
 from django.shortcuts import (
@@ -237,6 +237,7 @@ def _validation_message(error):
 # =========================================================
 
 @login_required
+@wpg_permission_required("orders.add_order", feature_code="ORDER_LIST", action="add")
 def business_unit_select(request):
     return render(
         request,
@@ -252,6 +253,7 @@ def business_unit_select(request):
 # =========================================================
 
 @login_required
+@wpg_permission_required("orders.add_order", feature_code="ORDER_LIST", action="add")
 def order_type_select(request):
     business_unit = request.GET.get(
         "business_unit",
@@ -312,6 +314,7 @@ def order_type_select(request):
 # =========================================================
 
 @login_required
+@wpg_permission_required("orders.add_order", feature_code="ORDER_LIST", action="add")
 def order_create(request):
     business_unit = (
         request.GET.get("business_unit")
@@ -468,6 +471,7 @@ def order_create(request):
 # =========================================================
 
 @login_required
+@wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
 def order_list(request):
     orders = (
         Order.objects
@@ -589,6 +593,7 @@ def order_list(request):
 # ORDER DETAIL
 
 @login_required
+@wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
 def order_detail(request, pk):
 
     order = get_object_or_404(
@@ -723,6 +728,7 @@ def order_detail(request, pk):
 # =========================================================
 
 @login_required
+@wpg_permission_required("orders.change_order", feature_code="ORDER_LIST", action="change")
 def add_order_item(request, pk):
     order = get_object_or_404(
         Order,
@@ -818,6 +824,7 @@ def add_order_item(request, pk):
 # =========================================================
 
 @login_required
+@wpg_permission_required("orders.change_order", feature_code="ORDER_LIST", action="change")
 def edit_order_item(request, pk):
     item = get_object_or_404(
         OrderItem.objects.select_related(
@@ -921,6 +928,8 @@ def edit_order_item(request, pk):
 # =========================================================
 
 @login_required
+@wpg_permission_required("orders.change_order", feature_code="ORDER_LIST", action="change")
+@require_POST
 def remove_order_item(request, pk):
     item = get_object_or_404(
         OrderItem.objects.select_related(
@@ -964,6 +973,8 @@ def remove_order_item(request, pk):
 # =========================================================
 
 @login_required
+@wpg_permission_required("orders.change_order", feature_code="ORDER_LIST", action="change")
+@require_POST
 def submit_order(request, pk):
     order = get_object_or_404(
         Order,
@@ -1007,6 +1018,8 @@ def submit_order(request, pk):
 # =========================================================
 
 @login_required
+@wpg_permission_required("orders.approve_order", feature_code="ORDER_APPROVAL", action="approve")
+@require_POST
 def confirm_order(request, pk):
     order = get_object_or_404(
         Order,
@@ -1052,6 +1065,8 @@ def confirm_order(request, pk):
 # =========================================================
 
 @login_required
+@wpg_permission_required("orders.approve_order", feature_code="ORDER_APPROVAL", action="approve")
+@require_POST
 def cancel_order(request, pk):
     order = get_object_or_404(
         Order,
@@ -1100,6 +1115,8 @@ def cancel_order(request, pk):
     )
 
 @login_required
+@wpg_permission_required("orders.fulfil_order", feature_code="ORDER_FULFILMENT", action="approve")
+@require_POST
 def mark_shipped(request, pk):
     order = get_object_or_404(
         Order,
@@ -1136,6 +1153,8 @@ def mark_shipped(request, pk):
     )
 
 @login_required
+@wpg_permission_required("orders.fulfil_order", feature_code="ORDER_FULFILMENT", action="approve")
+@require_POST
 def deliver_order(request, pk):
     order = get_object_or_404(
         Order,
@@ -1198,6 +1217,7 @@ def _validation_message(error):
     return str(error)
 
 @login_required
+@wpg_permission_required("orders.fulfil_order", feature_code="ORDER_FULFILMENT", action="approve")
 @require_POST
 def mark_ready(request, pk):
     order = get_object_or_404(
@@ -1246,6 +1266,7 @@ def mark_ready(request, pk):
     )
 
 @login_required
+@wpg_permission_required("orders.fulfil_order", feature_code="ORDER_FULFILMENT", action="approve")
 @require_POST
 def order_dispatch(request, pk):
     order = get_object_or_404(
@@ -1298,6 +1319,7 @@ def order_dispatch(request, pk):
     )
 
 @login_required
+@wpg_permission_required("orders.fulfil_order", feature_code="ORDER_FULFILMENT", action="approve")
 @require_POST
 def order_mark_delivered(request, pk):
     order = get_object_or_404(
@@ -1349,6 +1371,7 @@ def order_mark_delivered(request, pk):
     )
 
 @login_required
+@wpg_permission_required("orders.fulfil_order", feature_code="ORDER_FULFILMENT", action="approve")
 @require_POST
 def cancel_delivery(request, pk):
     order = get_object_or_404(
@@ -1412,6 +1435,7 @@ def cancel_delivery(request, pk):
 
     
 @login_required
+@wpg_permission_required("orders.fulfil_order", feature_code="ORDER_FULFILMENT", action="approve")
 @require_POST
 def mark_processing(request, pk):
     order = get_object_or_404(

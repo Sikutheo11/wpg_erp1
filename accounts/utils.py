@@ -1,4 +1,7 @@
 from django.shortcuts import redirect
+from django.urls import NoReverseMatch
+
+from core.permissions import PermissionService
 
 
 def redirect_by_role(user):
@@ -11,44 +14,29 @@ def redirect_by_role(user):
         )
 
 
-    # Groups (Roles)
-
-    groups = user.groups.values_list(
-        "name",
-        flat=True
+    # Roles are Django Groups. The first permitted feature with a URL is the
+    # user's landing page; no Group name is hardcoded for employee roles.
+    feature = (
+        PermissionService.get_allowed_features(user)
+        .exclude(url_name="")
+        .first()
     )
 
+    if feature:
+        try:
+            return redirect(feature.url_name)
+        except NoReverseMatch:
+            pass
 
-    if "Construction Manager" in groups:
-
-        return redirect(
-            "construction:dashboard"
-        )
-
-
-    if "Finance Manager" in groups:
+    if user.groups.filter(name="Customer").exists():
 
         return redirect(
-            "finance:dashboard"
-        )
-
-
-    if "Store Keeper" in groups:
-
-        return redirect(
-            "inventory:dashboard"
-        )
-
-
-    if "Customer" in groups:
-
-        return redirect(
-            "accounts:customer_dashboard"
+            "core:customer_dashboard"
         )
 
 
     # Default
 
     return redirect(
-        "core:dashboard"
+        "profile"
     )

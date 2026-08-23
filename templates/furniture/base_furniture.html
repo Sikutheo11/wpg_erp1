@@ -506,11 +506,13 @@ WPG ERP Furniture Production
             <hr class="dropdown-divider">
         </li>
         <li>
-            <a href="{% url 'logout' %}"
-               class="dropdown-item text-danger">
-                <i class="bi bi-box-arrow-right me-2"></i>
-                Logout
-            </a>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item text-danger">
+                    <i class="bi bi-box-arrow-right me-2"></i>
+                    Logout
+                </button>
+            </form>
         </li>
     </ul>
 </div>

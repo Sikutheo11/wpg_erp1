@@ -156,6 +156,18 @@ class Order(models.Model):
 
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        permissions = [
+            (
+                "approve_order",
+                "Can confirm or cancel enterprise orders",
+            ),
+            (
+                "fulfil_order",
+                "Can process and deliver enterprise orders",
+            ),
+        ]
+
 
     def save(self, *args, **kwargs):
 

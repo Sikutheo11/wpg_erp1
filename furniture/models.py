@@ -456,6 +456,11 @@ class Quotation(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        permissions = [
+            ("approve_quotation", "Can approve furniture quotations"),
+        ]
+
     @property
     def total_cost(self):
         return (
@@ -1742,6 +1747,12 @@ class QualityInspection(models.Model):
 
     class Meta:
         ordering = ["-inspected_at"]
+        permissions = [
+            (
+                "approve_qualityinspection",
+                "Can approve furniture quality inspections",
+            ),
+        ]
         indexes = [
             models.Index(
                 fields=["production_job", "result"],
@@ -2068,6 +2079,9 @@ class ReworkOrder(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        permissions = [
+            ("verify_reworkorder", "Can verify furniture rework orders"),
+        ]
 
     def save(self, *args, **kwargs):
         if not self.rework_code:

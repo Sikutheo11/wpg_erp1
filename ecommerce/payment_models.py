@@ -169,6 +169,16 @@ class EcommercePayment(models.Model):
 
     class Meta:
         ordering = ["-initiated_at", "-pk"]
+        permissions = [
+            (
+                "confirm_ecommercepayment",
+                "Can confirm ecommerce payments",
+            ),
+            (
+                "refund_ecommercepayment",
+                "Can refund ecommerce payments",
+            ),
+        ]
         indexes = [
             models.Index(
                 fields=["checkout", "status"],

@@ -16,38 +16,38 @@ CONSTRUCTION_ROLES = {
     "Construction Manager": [
 
         # Project
-        "construction.view_project",
-        "construction.add_project",
-        "construction.change_project",
+        "Construction.view_project",
+        "Construction.add_project",
+        "Construction.change_project",
 
         # Site
-        "construction.view_site",
-        "construction.add_site",
-        "construction.change_site",
+        "Construction.view_site",
+        "Construction.add_site",
+        "Construction.change_site",
 
         # Task
-        "construction.view_task",
-        "construction.add_task",
-        "construction.change_task",
+        "Construction.view_task",
+        "Construction.add_task",
+        "Construction.change_task",
 
         # Materials
-        "construction.view_constructionmaterial",
-        "construction.add_constructionmaterial",
-        "construction.change_constructionmaterial",
+        "Construction.view_constructionmaterial",
+        "Construction.add_constructionmaterial",
+        "Construction.change_constructionmaterial",
 
         # Assets
-        "construction.view_constructionassetusage",
-        "construction.add_constructionassetusage",
+        "Construction.view_constructionassetusage",
+        "Construction.add_constructionassetusage",
 
         # Labour
-        "construction.view_constructionlabour",
-        "construction.add_constructionlabour",
-        "construction.change_constructionlabour",
+        "Construction.view_constructionlabour",
+        "Construction.add_constructionlabour",
+        "Construction.change_constructionlabour",
 
         # Expenses
-        "construction.view_constructionexpense",
-        "construction.add_constructionexpense",
-        "construction.change_constructionexpense",
+        "Construction.view_constructionexpense",
+        "Construction.add_constructionexpense",
+        "Construction.change_constructionexpense",
 
     ],
 
@@ -62,28 +62,28 @@ CONSTRUCTION_ROLES = {
 
 
         # Project view only
-        "construction.view_project",
+        "Construction.view_project",
 
 
         # Site
-        "construction.view_site",
-        "construction.change_site",
+        "Construction.view_site",
+        "Construction.change_site",
 
 
         # Tasks
-        "construction.view_task",
-        "construction.add_task",
-        "construction.change_task",
+        "Construction.view_task",
+        "Construction.add_task",
+        "Construction.change_task",
 
 
         # Material usage
-        "construction.view_constructionmaterial",
-        "construction.add_constructionmaterial",
+        "Construction.view_constructionmaterial",
+        "Construction.add_constructionmaterial",
 
 
         # Asset usage
-        "construction.view_constructionassetusage",
-        "construction.add_constructionassetusage",
+        "Construction.view_constructionassetusage",
+        "Construction.add_constructionassetusage",
 
 
     ],
@@ -97,13 +97,13 @@ CONSTRUCTION_ROLES = {
     # ==================================================
 
     "Project Supervisor": [
-        "construction.view_project",
-        "construction.view_site",
-        "construction.change_site",
-        "construction.view_task",
-        "construction.add_task",
-        "construction.change_task",
-        "construction.view_constructionmaterial",
+        "Construction.view_project",
+        "Construction.view_site",
+        "Construction.change_site",
+        "Construction.view_task",
+        "Construction.add_task",
+        "Construction.change_task",
+        "Construction.view_constructionmaterial",
     ],
 
 
@@ -117,18 +117,18 @@ CONSTRUCTION_ROLES = {
     "Construction Accountant": [
 
 
-        "construction.view_project",
+        "Construction.view_project",
 
 
-        "construction.view_constructionexpense",
-        "construction.add_constructionexpense",
-        "construction.change_constructionexpense",
+        "Construction.view_constructionexpense",
+        "Construction.add_constructionexpense",
+        "Construction.change_constructionexpense",
 
 
-        "construction.view_constructionlabour",
+        "Construction.view_constructionlabour",
 
 
-        "construction.view_constructionmaterial",
+        "Construction.view_constructionmaterial",
 
 
     ],
@@ -144,19 +144,19 @@ CONSTRUCTION_ROLES = {
     "Construction Viewer": [
 
 
-        "construction.view_project",
+        "Construction.view_project",
 
-        "construction.view_site",
+        "Construction.view_site",
 
-        "construction.view_task",
+        "Construction.view_task",
 
-        "construction.view_constructionmaterial",
+        "Construction.view_constructionmaterial",
 
-        "construction.view_constructionassetusage",
+        "Construction.view_constructionassetusage",
 
-        "construction.view_constructionlabour",
+        "Construction.view_constructionlabour",
 
-        "construction.view_constructionexpense",
+        "Construction.view_constructionexpense",
 
     ],
 

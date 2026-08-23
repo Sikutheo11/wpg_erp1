@@ -1,8 +1,17 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate,logout, login as auth_login
+from django.contrib import messages
+from django.contrib.auth import (
+    authenticate,
+    login as auth_login,
+    logout as auth_logout,
+)
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import Group
+from django.db import transaction
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
+
 from .forms import LoginForm, UserForm, UserProfileForm
-from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import UserProfile
+from .models import User
 from .utils import redirect_by_role
 
 def registerUser(request):
@@ -10,12 +19,17 @@ def registerUser(request):
         form = UserForm(request.POST)
        
         if form.is_valid():
-            user = form.save(commit=False)
-            user.set_password(form.cleaned_data['password'])
-            user.save()
-            
-            # login automatically
-            login(request)
+            with transaction.atomic():
+                user = form.save(commit=False)
+                user.set_password(form.cleaned_data['password'])
+                user.save()
+
+                customer_group, unused_created = Group.objects.get_or_create(
+                    name="Customer"
+                )
+                user.groups.add(customer_group)
+
+            auth_login(request, user)
 
             return redirect('profile')
 
@@ -31,25 +45,33 @@ def login(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
-            username = form.cleaned_data['username']
+            identifier = form.cleaned_data['username'].strip()
             password = form.cleaned_data['password']
+            email = (
+                User.objects.filter(username=identifier)
+                .values_list("email", flat=True)
+                .first()
+                or identifier
+            )
             user = authenticate(
                 request,
-                username=username,
+                username=email,
                 password=password
             )
             if user is not None:
                 auth_login(request, user)
 
                 return redirect_by_role(user)
+            form.add_error(
+                None,
+                "The email/username or password is incorrect.",
+            )
     return render(request,'accounts/login.html',{'form':form})
 
 
+@require_POST
 def logout(request):
-
-    if request.method == "POST":
-        logout(request)
-
+    auth_logout(request)
     return redirect('login')
 
 @login_required
@@ -59,7 +81,8 @@ def profile(request):
         form = UserProfileForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
             form.save()
-            return redirect(redirect_by_role(request.user))
+            messages.success(request, "Profile updated successfully.")
+            return redirect_by_role(request.user)
     else:
 
         form = UserProfileForm(instance=profile)

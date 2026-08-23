@@ -173,6 +173,16 @@ class AgricultureOperation(TimeStampedModel):
 
     class Meta:
         ordering = ["-created_at", "-pk"]
+        permissions = [
+            (
+                "approve_agricultureoperation",
+                "Can approve or return agriculture operations",
+            ),
+            (
+                "complete_agricultureoperation",
+                "Can complete agriculture operations",
+            ),
+        ]
         indexes = [
             models.Index(
                 fields=["operation_type", "status"],
