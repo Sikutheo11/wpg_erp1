@@ -268,6 +268,8 @@ Receivable Detail
             </div>
 
 
+            <div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white"><h5 class="mb-0">Items</h5></div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Description</th><th>Qty</th><th>Unit</th><th class="text-end">Unit price</th><th class="text-end">Total</th></tr></thead><tbody>{% for line in receivable.lines.all %}<tr><td>{{ line.description }}</td><td>{{ line.quantity }}</td><td>{{ line.unit }}</td><td class="text-end">{{ line.unit_price }}</td><td class="text-end fw-bold">{{ line.line_total }}</td></tr>{% empty %}<tr><td colspan="5" class="text-muted">No item details.</td></tr>{% endfor %}</tbody></table></div></div>
+
             <!-- PAYMENT HISTORY -->
 
             <div class="card border-0 shadow-sm">

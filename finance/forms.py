@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django import forms
-from django.forms import formset_factory
+from django.forms import formset_factory, inlineformset_factory
 from django.utils import timezone
 from inventory.models import Product
 from .models import (
@@ -14,6 +14,7 @@ from .models import (
     Payable,
     Payment,
     Payroll,
+    ObligationLine,
 )
 
 from .identity import normalize_rwanda_phone
@@ -205,49 +206,42 @@ class ExpenseForm(forms.ModelForm):
         return amount
 
 
-class ReceivableForm(forms.ModelForm):
+class ObligationFormMixin:
+    common_fields = [
+        "counterparty", "business_unit", "transaction_date",
+        "due_date", "notes",
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["counterparty"].queryset = Counterparty.objects.filter(
+            is_active=True
+        ).order_by("name")
+        for name in ("transaction_date", "due_date"):
+            self.fields[name].input_formats = ["%Y-%m-%d"]
+
+
+class ReceivableForm(ObligationFormMixin, forms.ModelForm):
     class Meta:
         model = Receivable
         fields = [
-            "order",
-            "customer",
+            "counterparty",
             "invoice_number",
-            "total_amount",
-            "amount_paid",
+            "business_unit",
+            "transaction_date",
             "due_date",
-            "status",
+            "notes",
         ]
         widgets = {
-            "order": forms.Select(
-                attrs={
-                    "class": "form-select",
-                }
-            ),
-            "customer": forms.Select(
-                attrs={
-                    "class": "form-select",
-                }
-            ),
+            "counterparty": forms.Select(attrs={"class": "form-select"}),
             "invoice_number": forms.TextInput(
                 attrs={
                     "class": "form-control",
                     "placeholder": "Invoice number",
                 }
             ),
-            "total_amount": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "min": "0",
-                    "step": "0.01",
-                }
-            ),
-            "amount_paid": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "min": "0",
-                    "step": "0.01",
-                }
-            ),
+            "business_unit": forms.Select(attrs={"class": "form-select"}),
+            "transaction_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
             "due_date": forms.DateInput(
                 attrs={
                     "class": "form-control",
@@ -255,11 +249,7 @@ class ReceivableForm(forms.ModelForm):
                 },
                 format="%Y-%m-%d",
             ),
-            "status": forms.Select(
-                attrs={
-                    "class": "form-select",
-                }
-            ),
+            "notes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -269,91 +259,29 @@ class ReceivableForm(forms.ModelForm):
             "%Y-%m-%d",
         ]
 
-        self.fields["order"].required = False
-        self.fields["customer"].required = False
-        self.fields["status"].required = False
-
-    def clean(self):
-        cleaned_data = super().clean()
-
-        total_amount = cleaned_data.get(
-            "total_amount"
-        )
-        amount_paid = cleaned_data.get(
-            "amount_paid"
-        )
-
-        if (
-            total_amount is not None
-            and total_amount < 0
-        ):
-            self.add_error(
-                "total_amount",
-                "Total amount cannot be negative.",
-            )
-
-        if (
-            amount_paid is not None
-            and amount_paid < 0
-        ):
-            self.add_error(
-                "amount_paid",
-                "Amount paid cannot be negative.",
-            )
-
-        if (
-            total_amount is not None
-            and amount_paid is not None
-            and amount_paid > total_amount
-        ):
-            self.add_error(
-                "amount_paid",
-                (
-                    "Amount paid cannot exceed "
-                    "the total amount."
-                ),
-            )
-
-        return cleaned_data
 
 
-class PayableForm(forms.ModelForm):
+class PayableForm(ObligationFormMixin, forms.ModelForm):
     class Meta:
         model = Payable
         fields = [
-            "supplier",
+            "counterparty",
             "reference",
-            "total_amount",
-            "amount_paid",
+            "business_unit",
+            "transaction_date",
             "due_date",
-            "status",
+            "notes",
         ]
         widgets = {
-            "supplier": forms.Select(
-                attrs={
-                    "class": "form-select",
-                }
-            ),
+            "counterparty": forms.Select(attrs={"class": "form-select"}),
             "reference": forms.TextInput(
                 attrs={
                     "class": "form-control",
                     "placeholder": "Payable reference",
                 }
             ),
-            "total_amount": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "min": "0",
-                    "step": "0.01",
-                }
-            ),
-            "amount_paid": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "min": "0",
-                    "step": "0.01",
-                }
-            ),
+            "business_unit": forms.Select(attrs={"class": "form-select"}),
+            "transaction_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
             "due_date": forms.DateInput(
                 attrs={
                     "class": "form-control",
@@ -361,11 +289,7 @@ class PayableForm(forms.ModelForm):
                 },
                 format="%Y-%m-%d",
             ),
-            "status": forms.Select(
-                attrs={
-                    "class": "form-select",
-                }
-            ),
+            "notes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -375,50 +299,33 @@ class PayableForm(forms.ModelForm):
             "%Y-%m-%d",
         ]
 
-        self.fields["status"].required = False
 
-    def clean(self):
-        cleaned_data = super().clean()
 
-        total_amount = cleaned_data.get(
-            "total_amount"
-        )
-        amount_paid = cleaned_data.get(
-            "amount_paid"
-        )
+class ObligationLineForm(forms.ModelForm):
+    class Meta:
+        model = ObligationLine
+        fields = ["item_type", "product", "raw_material", "asset", "worker", "description", "quantity", "unit", "unit_price"]
+        widgets = {
+            "item_type": forms.Select(attrs={"class": "form-select obligation-type"}),
+            "product": forms.Select(attrs={"class": "form-select"}),
+            "raw_material": forms.Select(attrs={"class": "form-select"}),
+            "asset": forms.Select(attrs={"class": "form-select"}),
+            "worker": forms.Select(attrs={"class": "form-select"}),
+            "description": forms.TextInput(attrs={"class": "form-control"}),
+            "quantity": forms.NumberInput(attrs={"class": "form-control", "min": "0.001", "step": "0.001"}),
+            "unit": forms.TextInput(attrs={"class": "form-control"}),
+            "unit_price": forms.NumberInput(attrs={"class": "form-control", "min": "0", "step": "0.01"}),
+        }
 
-        if (
-            total_amount is not None
-            and total_amount < 0
-        ):
-            self.add_error(
-                "total_amount",
-                "Total amount cannot be negative.",
-            )
 
-        if (
-            amount_paid is not None
-            and amount_paid < 0
-        ):
-            self.add_error(
-                "amount_paid",
-                "Amount paid cannot be negative.",
-            )
-
-        if (
-            total_amount is not None
-            and amount_paid is not None
-            and amount_paid > total_amount
-        ):
-            self.add_error(
-                "amount_paid",
-                (
-                    "Amount paid cannot exceed "
-                    "the total amount."
-                ),
-            )
-
-        return cleaned_data
+ReceivableLineFormSet = inlineformset_factory(
+    Receivable, ObligationLine, form=ObligationLineForm, fk_name="receivable",
+    extra=1, can_delete=True, min_num=1, validate_min=True,
+)
+PayableLineFormSet = inlineformset_factory(
+    Payable, ObligationLine, form=ObligationLineForm, fk_name="payable",
+    extra=1, can_delete=True, min_num=1, validate_min=True,
+)
 
 
 class PaymentForm(forms.ModelForm):

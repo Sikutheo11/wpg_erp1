@@ -184,5 +184,12 @@ urlpatterns = [
     path(
         "debts/", views.debt_list, name="debt_list",
     ),
+    path("debts/export.csv", views.debt_report_csv, name="debt_report_csv"),
+    path("debts/export.pdf", views.debt_report_pdf, name="debt_report_pdf"),
+    path(
+        'receivables/create/',
+        views.receivable_create,
+        name='receivable_create'
+    ),
 
 ]
