@@ -1,13 +1,49 @@
-<form method="post" id="obligation-form">
+<form method="post" id="obligation-form" class="obligation-form">
   {% csrf_token %}
   {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-  <div class="row g-3">
-    {% for field in form %}<div class="col-12 col-md-6"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}{% if field.name == "counterparty" %}<a class="btn btn-sm btn-outline-primary mt-2" href="{% url counterparty_create_url %}?next={{ obligation_kind }}"><i class="bi bi-person-plus"></i> Add person / company</a>{% endif %}</div>{% endfor %}
+  <div class="d-flex flex-wrap justify-content-end gap-2 obligation-actions">
+    <a class="btn btn-outline-primary" href="{% url counterparty_create_url %}?next={{ obligation_kind }}"><i class="bi bi-person-plus"></i> Add who</a>
+    <a class="btn btn-outline-primary" id="add-group-link" href="{% url group_create_url %}?next={{ obligation_kind }}"><i class="bi bi-plus-lg"></i> Add item group</a>
+    <a class="btn btn-outline-primary" id="add-catalog-item-link" href="{% url item_create_url %}?next={{ obligation_kind }}"><i class="bi bi-plus-lg"></i> Add item</a>
+    <button type="button" class="btn btn-outline-primary" id="add-line"><i class="bi bi-plus-circle"></i> Add row</button>
   </div>
-  <hr class="my-4"><div class="d-flex justify-content-between align-items-center mb-3"><h5 class="mb-0">Items</h5><button type="button" class="btn btn-sm btn-outline-primary" id="add-line"><i class="bi bi-plus-circle"></i> Add item</button></div>
-  {{ formset.management_form }}{% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
-  <div id="line-list">{% for line_form in formset %}<div class="card mb-3 obligation-line"><div class="card-body py-3">{% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}<div class="row g-2">{% for field in line_form.visible_fields %}<div class="col-6 col-lg-3 {% if field.name == 'description' %}col-lg-6{% endif %}"><label class="form-label small">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}</div></div></div>{% endfor %}</div>
-  <template id="empty-line"><div class="card mb-3 obligation-line"><div class="card-body py-3"><div class="row g-2">{% for field in formset.empty_form.visible_fields %}<div class="col-6 col-lg-3 {% if field.name == 'description' %}col-lg-6{% endif %}"><label class="form-label small">{{ field.label }}</label>{{ field }}</div>{% endfor %}</div></div></div></template>
-  <div class="d-flex gap-2 mt-4"><button class="btn btn-primary" type="submit"><i class="bi bi-check-circle"></i> Save</button><a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancel</a></div>
+  <div class="row g-3 mt-2">
+    <div class="col-12"><label class="form-label">Counterparty</label>{{ form.counterparty }}{% for error in form.counterparty.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+    <div class="col-12 col-md-4"><label class="form-label">Business unit</label>{{ form.business_unit }}{% for error in form.business_unit.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+    <div class="col-12 col-md-4"><label class="form-label">Item group</label>{{ form.item_group }}{% for error in form.item_group.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+    <div class="col-12 col-md-4"><label class="form-label">Debt date</label>{{ form.transaction_date }}{% for error in form.transaction_date.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+  </div>
+  {{ formset.management_form }}
+  {% if formset.non_form_errors %}<div class="alert alert-danger mt-3">{{ formset.non_form_errors }}</div>{% endif %}
+  <div class="obligation-lines mt-4" id="line-list">
+    {% for line_form in formset %}
+    <div class="obligation-line">{% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
+      <div class="line-grid">
+        <div><label class="form-label small">Item type</label>{{ line_form.catalog_item }}{% for error in line_form.catalog_item.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+        <div><label class="form-label small">Quantity</label>{{ line_form.quantity }}{% for error in line_form.quantity.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+        <div><label class="form-label small">Unit price</label>{{ line_form.unit_price }}{% for error in line_form.unit_price.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+        <div><label class="form-label small">Line total</label><input class="form-control line-total" readonly value="RWF 0.00"></div>
+        <div class="line-delete">{{ line_form.DELETE }}<button type="button" class="btn btn-link text-danger remove-line" title="Delete item"><i class="bi bi-trash3"></i></button></div>
+      </div>
+    </div>{% endfor %}
+  </div>
+  <template id="empty-line"><div class="obligation-line">{% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}<div class="line-grid"><div><label class="form-label small">Item type</label>{{ formset.empty_form.catalog_item }}</div><div><label class="form-label small">Quantity</label>{{ formset.empty_form.quantity }}</div><div><label class="form-label small">Unit price</label>{{ formset.empty_form.unit_price }}</div><div><label class="form-label small">Line total</label><input class="form-control line-total" readonly value="RWF 0.00"></div><div class="line-delete">{{ formset.empty_form.DELETE }}<button type="button" class="btn btn-link text-danger remove-line" title="Delete item"><i class="bi bi-trash3"></i></button></div></div></div></template>
+  <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top"><button class="btn btn-primary px-4" type="submit">Save</button><a href="{{ cancel_url }}" class="btn btn-outline-primary px-4">Cancel</a></div>
 </form>
-<script>document.getElementById('add-line').addEventListener('click',function(){const total=document.getElementById('id_lines-TOTAL_FORMS');const index=Number(total.value);const html=document.getElementById('empty-line').innerHTML.replaceAll('__prefix__',index);document.getElementById('line-list').insertAdjacentHTML('beforeend',html);total.value=index+1;});</script>
+<style>
+.obligation-form{max-width:1200px;margin:auto}.obligation-actions{margin-top:-4.5rem}.obligation-lines{border:1px solid #d7dde5;border-radius:.6rem;overflow:hidden}.obligation-line{padding:1rem;border-bottom:1px solid #e5e9ef}.obligation-line:last-child{border-bottom:0}.line-grid{display:grid;grid-template-columns:1.25fr .8fr 1fr 1fr 3rem;gap:1rem;align-items:end}.line-delete{padding-bottom:.35rem}.line-delete>input{display:none}.remove-line{font-size:1.25rem;text-decoration:none}
+@media(max-width:767.98px){.obligation-actions{margin:0 0 1rem}.obligation-actions .btn{font-size:.75rem;padding:.35rem .5rem}.line-grid{grid-template-columns:1fr 1fr;gap:.65rem}.line-grid>div:first-child{grid-column:1/-1}.obligation-line{padding:.75rem}.form-label{font-size:.8rem}}
+</style>
+<script>
+(() => {
+ const unit=document.getElementById('id_business_unit'),group=document.getElementById('id_item_group'),list=document.getElementById('line-list'),total=document.getElementById('id_lines-TOTAL_FORMS');
+ const groupsUrl="{% url 'finance:obligation_item_groups_json' %}",itemsUrl="{% url 'finance:obligation_item_types_json' %}",groupLink=document.getElementById('add-group-link'),itemLink=document.getElementById('add-catalog-item-link');
+ const money=n=>`RWF ${n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+ function links(){groupLink.href=`{% url group_create_url %}?next={{ obligation_kind }}&business_unit=${encodeURIComponent(unit.value)}`;itemLink.href=`{% url item_create_url %}?next={{ obligation_kind }}&item_group=${encodeURIComponent(group.value)}`}
+ function calc(row){row.querySelector('.line-total').value=money(Number(row.querySelector('[name$="-quantity"]')?.value||0)*Number(row.querySelector('[name$="-unit_price"]')?.value||0))}
+ function bind(row){row.querySelectorAll('[name$="-quantity"],[name$="-unit_price"]').forEach(x=>x.addEventListener('input',()=>calc(row)));row.querySelector('.remove-line').addEventListener('click',()=>{const d=row.querySelector('[name$="-DELETE"]');if(d)d.checked=true;row.hidden=true});calc(row)}
+ async function loadItems(){const data=await(await fetch(`${itemsUrl}?item_group=${encodeURIComponent(group.value)}`)).json();document.querySelectorAll('.catalog-item').forEach(s=>{const old=s.value;s.innerHTML='<option value="">---------</option>'+data.results.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');if([...s.options].some(x=>x.value===old))s.value=old});links()}
+ async function loadGroups(){const data=await(await fetch(`${groupsUrl}?business_unit=${encodeURIComponent(unit.value)}`)).json();group.innerHTML='<option value="">---------</option>'+data.results.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');await loadItems()}
+ document.querySelectorAll('.obligation-line').forEach(bind);unit.addEventListener('change',loadGroups);group.addEventListener('change',loadItems);document.getElementById('add-line').addEventListener('click',()=>{const i=Number(total.value),w=document.createElement('div');w.innerHTML=document.getElementById('empty-line').innerHTML.replaceAll('__prefix__',i).trim();const row=w.firstElementChild;list.appendChild(row);total.value=i+1;bind(row);loadItems()});links();
+})();
+</script>

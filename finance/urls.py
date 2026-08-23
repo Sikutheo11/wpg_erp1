@@ -4,6 +4,10 @@ app_name = "finance"
 
 
 urlpatterns = [
+    path("catalog/groups/new/", views.obligation_item_group_create, name="obligation_item_group_create"),
+    path("catalog/items/new/", views.obligation_item_type_create, name="obligation_item_type_create"),
+    path("catalog/groups.json", views.obligation_item_groups_json, name="obligation_item_groups_json"),
+    path("catalog/items.json", views.obligation_item_types_json, name="obligation_item_types_json"),
 
     # =====================================================
     # FINANCE DASHBOARD
