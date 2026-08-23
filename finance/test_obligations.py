@@ -120,6 +120,16 @@ class ObligationWorkflowTests(TestCase):
         self.assertContains(response, reverse("finance:receivable_create"))
         self.assertContains(response, "New Receivable")
 
+    def test_payable_list_has_responsive_mobile_cards(self):
+        view_permission = Permission.objects.get(
+            content_type__app_label="finance", codename="view_payable"
+        )
+        self.user.groups.first().permissions.add(view_permission)
+        response = self.client.get(reverse("finance:payable_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "mobile-register")
+        self.assertContains(response, "desktop-register")
+
     def test_missing_counterparty_returns_form_error_instead_of_crashing(self):
         response = self.client.post(reverse("finance:receivable_create"), {
             "counterparty": "",

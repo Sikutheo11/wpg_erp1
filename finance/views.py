@@ -809,6 +809,7 @@ def payable_list(request):
         Payable.objects
         .select_related(
             "supplier",
+            "counterparty",
         )
         .order_by(
             "-created_at",
@@ -829,6 +830,8 @@ def payable_list(request):
         payables = payables.filter(
             Q(reference__icontains=search)
             | Q(supplier__name__icontains=search)
+            | Q(counterparty__name__icontains=search)
+            | Q(counterparty__phone__icontains=search)
         )
 
     outstanding_total = (
