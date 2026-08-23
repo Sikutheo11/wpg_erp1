@@ -92,32 +92,31 @@ def configure_permissions(apps, schema_editor):
 
     # New menu entries inherit access from the closest legacy feature. This
     # preserves existing roles while future roles use Django permissions only.
+    inherited_actions = (
+        ("can_view", "view_permission"),
+        ("can_add", "add_permission"),
+        ("can_edit", "change_permission"),
+        ("can_delete", "delete_permission"),
+    )
     for target_code, source_codes in INHERIT_FROM.items():
         target = Feature.objects.filter(code=target_code).first()
         if not target:
             continue
-        permission_names = [
-            getattr(target, field, "").strip()
-            for field in (
-                "view_permission",
-                "add_permission",
-                "change_permission",
-                "delete_permission",
+        for legacy_field, feature_field in inherited_actions:
+            permission_name = getattr(target, feature_field, "").strip()
+            permission = (
+                _find_permission(Permission, permission_name)
+                if permission_name
+                else None
             )
-        ]
-        permission_ids = [
-            permission.pk
-            for name in permission_names
-            if name and (permission := _find_permission(Permission, name))
-        ]
-        if not permission_ids:
-            continue
-        group_ids = RoleFeature.objects.filter(
-            feature__code__in=source_codes,
-            can_view=True,
-        ).values_list("role_id", flat=True).distinct()
-        for group in Group.objects.filter(pk__in=group_ids):
-            group.permissions.add(*permission_ids)
+            if not permission:
+                continue
+            group_ids = RoleFeature.objects.filter(
+                feature__code__in=source_codes,
+                **{legacy_field: True},
+            ).values_list("role_id", flat=True).distinct()
+            for group in Group.objects.filter(pk__in=group_ids):
+                group.permissions.add(permission.pk)
 
 
 class Migration(migrations.Migration):

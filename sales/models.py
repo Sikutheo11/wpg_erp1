@@ -182,6 +182,16 @@ class SalesQuotation(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        permissions = [
+            (
+                "approve_salesquotation",
+                "Can approve or reject sales quotations",
+            ),
+            (
+                "convert_salesquotation",
+                "Can convert sales quotations to orders",
+            ),
+        ]
 
     def clean(self):
         super().clean()

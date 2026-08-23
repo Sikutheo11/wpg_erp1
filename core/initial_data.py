@@ -227,17 +227,23 @@ BUSINESS_UNIT_FEATURES = {
 
 ENGINE_FEATURES = {
     "CUSTOMER": [
-        ("Customers", "CUSTOMER_LIST", "", "bi bi-people", 1),
-        ("Customer History", "CUSTOMER_HISTORY", "", "bi bi-clock-history", 2),
+        ("Customers", "CUSTOMER_LIST", "sales:customer_list", "bi bi-people", 1),
+        ("Customer History", "CUSTOMER_HISTORY", "sales:customer_list", "bi bi-clock-history", 2),
     ],
     "ORDER": [
         ("All Orders", "ORDER_LIST", "orders:order_list", "bi bi-list-ul", 1),
-        ("Restock Orders", "ORDER_RESTOCK", "orders:restock_order_create", "bi bi-arrow-repeat", 2),
-        ("Order Detail", "ORDER_DETAIL", "", "bi bi-eye", 3),
+        ("Restock Orders", "ORDER_RESTOCK", "orders:business_unit_select", "bi bi-arrow-repeat", 2),
+        ("Order Approval", "ORDER_APPROVAL", "orders:order_list", "bi bi-check-circle", 3),
+        ("Order Fulfilment", "ORDER_FULFILMENT", "orders:order_list", "bi bi-truck", 4),
+        ("Sales Dashboard", "SALES_DASHBOARD", "sales:sales_dashboard", "bi bi-speedometer2", 5),
+        ("Sales", "SALES_LIST", "sales:sale_list", "bi bi-receipt", 6),
+        ("Invoices", "SALES_INVOICES", "sales:invoice_list", "bi bi-file-earmark-text", 7),
+        ("Customer Payments", "SALES_PAYMENTS", "sales:payment_list", "bi bi-cash-coin", 8),
+        ("Sales Reports", "SALES_REPORTS", "sales:sales_report", "bi bi-bar-chart", 9),
     ],
     "QUOTATION": [
-        ("Quotations", "QUOTATION_LIST", "", "bi bi-file-earmark-text", 1),
-        ("Quotation Approval", "QUOTATION_APPROVAL", "", "bi bi-check-circle", 2),
+        ("Quotations", "QUOTATION_LIST", "sales:quotation_list", "bi bi-file-earmark-text", 1),
+        ("Quotation Approval", "QUOTATION_APPROVAL", "sales:quotation_list", "bi bi-check-circle", 2),
     ],
     "INVENTORY": [
         ("Dashboard", "INVENTORY_DASHBOARD", "inventory:inventory_dashboard", "bi bi-speedometer2", 1),
@@ -600,6 +606,67 @@ ROLE_FEATURES = {
 # store these names so newly created Groups can gain access from Django Admin
 # without adding their names to application code.
 FEATURE_DJANGO_PERMISSIONS = {
+    "CUSTOMER_LIST": {
+        "view_permission": "sales.view_customer",
+        "add_permission": "sales.add_customer",
+        "change_permission": "sales.change_customer",
+        "delete_permission": "sales.delete_customer",
+    },
+    "CUSTOMER_HISTORY": {
+        "view_permission": "sales.view_customer",
+    },
+    "QUOTATION_LIST": {
+        "view_permission": "sales.view_salesquotation",
+        "add_permission": "sales.add_salesquotation",
+        "change_permission": "sales.change_salesquotation",
+        "delete_permission": "sales.delete_salesquotation",
+    },
+    "QUOTATION_APPROVAL": {
+        "view_permission": "sales.view_salesquotation",
+        "approve_permission": "sales.approve_salesquotation",
+    },
+    "ORDER_LIST": {
+        "view_permission": "orders.view_order",
+        "add_permission": "orders.add_order",
+        "change_permission": "orders.change_order",
+        "delete_permission": "orders.delete_order",
+    },
+    "ORDER_RESTOCK": {
+        "view_permission": "orders.view_order",
+        "add_permission": "orders.add_order",
+    },
+    "ORDER_APPROVAL": {
+        "view_permission": "orders.view_order",
+        "approve_permission": "orders.approve_order",
+    },
+    "ORDER_FULFILMENT": {
+        "view_permission": "orders.view_order",
+        "approve_permission": "orders.fulfil_order",
+    },
+    "SALES_DASHBOARD": {
+        "view_permission": "sales.view_sale",
+    },
+    "SALES_LIST": {
+        "view_permission": "sales.view_sale",
+        "add_permission": "sales.add_sale",
+        "change_permission": "sales.change_sale",
+        "delete_permission": "sales.delete_sale",
+    },
+    "SALES_INVOICES": {
+        "view_permission": "sales.view_invoice",
+        "add_permission": "sales.add_invoice",
+        "change_permission": "sales.change_invoice",
+        "delete_permission": "sales.delete_invoice",
+    },
+    "SALES_PAYMENTS": {
+        "view_permission": "sales.view_customerpayment",
+        "add_permission": "sales.add_customerpayment",
+        "change_permission": "sales.change_customerpayment",
+        "delete_permission": "sales.delete_customerpayment",
+    },
+    "SALES_REPORTS": {
+        "view_permission": "sales.view_sale",
+    },
     "FINANCE_DASHBOARD": {
         "view_permission": "finance.view_account",
     },
