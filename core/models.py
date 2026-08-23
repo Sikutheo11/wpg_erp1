@@ -412,6 +412,30 @@ class Feature(models.Model):
     def __str__(self):
         owner = self.business_unit or self.engine
         return f"{owner} - {self.name}"
+
+
+class GroupAccessProfile(models.Model):
+    group = models.OneToOneField(
+        Group,
+        on_delete=models.CASCADE,
+        related_name="access_profile",
+    )
+    landing_feature = models.ForeignKey(
+        Feature,
+        on_delete=models.PROTECT,
+        related_name="landing_groups",
+        help_text="The first page opened after a member of this group logs in.",
+    )
+    priority = models.PositiveIntegerField(
+        default=100,
+        help_text="Lower values win when a user belongs to several groups.",
+    )
+
+    class Meta:
+        ordering = ["priority", "group__name"]
+
+    def __str__(self):
+        return f"{self.group.name} → {self.landing_feature.name}"
         
 # ==========================================
 # ROLE FEATURE PERMISSIONS

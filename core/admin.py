@@ -13,6 +13,7 @@ from .models import (
     KPIWidget,
     AuditLog,
     Notification,
+    GroupAccessProfile,
 )
 
 
@@ -143,6 +144,28 @@ class FeatureAdmin(admin.ModelAdmin):
     ordering = (
         "order",
         "name",
+    )
+
+
+@admin.register(GroupAccessProfile)
+class GroupAccessProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "group",
+        "landing_feature",
+        "priority",
+    )
+    list_select_related = (
+        "group",
+        "landing_feature",
+    )
+    search_fields = (
+        "group__name",
+        "landing_feature__name",
+        "landing_feature__code",
+    )
+    ordering = (
+        "priority",
+        "group__name",
     )
 
 
