@@ -11,6 +11,8 @@ from django.contrib.auth.decorators import (
     permission_required
 )
 
+from core.permissions import wpg_permission_required
+
 
 from .dashboard import get_construction_dashboard
 
@@ -43,6 +45,10 @@ from .forms import (
 # ======================================================
 
 @login_required
+@wpg_permission_required(
+    "Construction.view_project",
+    feature_code="CONSTRUCTION_DASHBOARD",
+)
 def construction_dashboard(request):
 
     context = get_construction_dashboard(request.user)
@@ -56,7 +62,7 @@ def construction_dashboard(request):
 
 @login_required
 @permission_required(
-    "construction.view_project",
+    "Construction.view_project",
     raise_exception=True
 )
 def project_list(request):
@@ -77,7 +83,7 @@ def project_list(request):
 
 @login_required
 @permission_required(
-    "construction.add_project",
+    "Construction.add_project",
     raise_exception=True
 )
 def project_create(request):
@@ -121,7 +127,7 @@ def project_create(request):
 
 @login_required
 @permission_required(
-    "construction.view_project",
+    "Construction.view_project",
     raise_exception=True
 )
 def project_detail(request, pk):
@@ -144,7 +150,7 @@ def project_detail(request, pk):
 
 @login_required
 @permission_required(
-    "construction.change_project",
+    "Construction.change_project",
     raise_exception=True
 )
 def project_update(request, pk):
@@ -203,7 +209,7 @@ def project_update(request, pk):
 
 @login_required
 @permission_required(
-    "construction.add_site",
+    "Construction.add_site",
     raise_exception=True
 )
 def site_create(request, project_id):
@@ -266,7 +272,7 @@ def site_create(request, project_id):
 
 @login_required
 @permission_required(
-    "construction.add_task",
+    "Construction.add_task",
     raise_exception=True
 )
 def task_create(request, project_id):
@@ -329,7 +335,7 @@ def task_create(request, project_id):
 
 @login_required
 @permission_required(
-    "construction.add_constructionmaterial",
+    "Construction.add_constructionmaterial",
     raise_exception=True
 )
 def material_create(request, project_id):
@@ -392,7 +398,7 @@ def material_create(request, project_id):
 
 @login_required
 @permission_required(
-    "construction.add_constructionlabour",
+    "Construction.add_constructionlabour",
     raise_exception=True
 )
 def labour_create(request, project_id):
@@ -455,7 +461,7 @@ def labour_create(request, project_id):
 
 @login_required
 @permission_required(
-    "construction.add_constructionassetusage",
+    "Construction.add_constructionassetusage",
     raise_exception=True
 )
 def asset_usage_create(request, project_id):
@@ -518,7 +524,7 @@ def asset_usage_create(request, project_id):
 
 @login_required
 @permission_required(
-    "construction.add_constructionexpense",
+    "Construction.add_constructionexpense",
     raise_exception=True
 )
 def expense_create(request, project_id):

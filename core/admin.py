@@ -116,6 +116,7 @@ class FeatureAdmin(admin.ModelAdmin):
         "business_unit",
         "engine",
         "url_name",
+        "view_permission",
         "order",
         "is_active",
     )
@@ -130,6 +131,11 @@ class FeatureAdmin(admin.ModelAdmin):
         "name",
         "code",
         "url_name",
+        "view_permission",
+        "add_permission",
+        "change_permission",
+        "delete_permission",
+        "approve_permission",
         "business_unit__name",
         "engine__name",
     )

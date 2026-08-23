@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.db import connection
 from django.db.utils import DatabaseError
 from ecommerce.models import OnlineProduct
+from .permissions import wpg_permission_required
 
 
 # =====================================================
@@ -159,6 +160,10 @@ def notification_mark_all_read(request):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "core.view_auditlog",
+    feature_code="AUDIT_LOGS",
+)
 def audit_log_list(request):
     logs = AuditLog.objects.select_related(
         "user"

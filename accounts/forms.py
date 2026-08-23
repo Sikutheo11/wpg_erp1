@@ -1,4 +1,6 @@
 from django import forms
+from django.contrib.auth.password_validation import validate_password
+
 from .models import User, UserProfile
 
 class UserForm(forms.ModelForm):
@@ -8,7 +10,7 @@ class UserForm(forms.ModelForm):
         model = User
         fields = ['first_name', 'last_name', 'email', 'username', 'phone','password' ]
     def clean(self):
-        cleaned_data = super(UserForm, self).clean()
+        cleaned_data = super().clean()
         password = cleaned_data.get('password')
         confirm_password = cleaned_data.get('confirm_password')
 
@@ -17,9 +19,20 @@ class UserForm(forms.ModelForm):
                 "Password does not match!"
             )
 
+        if password:
+            validate_password(password, user=self.instance)
+
+        return cleaned_data
+
 class LoginForm(forms.Form):
     username = forms.CharField(
-        widget=forms.TextInput(attrs={'class': 'form-control','placeholder': 'Enter Username' })
+        label="Email or username",
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter email or username',
+            }
+        ),
     )
 
     password = forms.CharField(

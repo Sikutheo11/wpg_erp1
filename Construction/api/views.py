@@ -1,9 +1,17 @@
 from django.shortcuts import render
 from django.db.models import Sum
+from django.contrib.auth.decorators import login_required
 
-from .models import Project, Site
+from core.permissions import wpg_permission_required
+
+from ..models import Project, Site
 
 
+@login_required
+@wpg_permission_required(
+    "Construction.view_project",
+    feature_code="CONSTRUCTION_DASHBOARD",
+)
 def construction_dashboard(request):
 
     total_projects = Project.objects.count()

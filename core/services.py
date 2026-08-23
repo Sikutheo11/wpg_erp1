@@ -20,6 +20,7 @@ from .initial_data import (
     KPI_WIDGETS,
     GROUPS,
     ROLE_FEATURES,
+    FEATURE_DJANGO_PERMISSIONS,
 )
 
 
@@ -119,6 +120,7 @@ class CoreSetupService:
                 continue
 
             for name, code, url_name, icon, order in features:
+                django_permissions = FEATURE_DJANGO_PERMISSIONS.get(code, {})
                 obj, created = Feature.objects.update_or_create(
                     code=code,
                     defaults={
@@ -129,6 +131,7 @@ class CoreSetupService:
                         "icon": icon,
                         "order": order,
                         "is_active": True,
+                        **django_permissions,
                     },
                 )
 
@@ -153,6 +156,7 @@ class CoreSetupService:
                 continue
 
             for name, code, url_name, icon, order in features:
+                django_permissions = FEATURE_DJANGO_PERMISSIONS.get(code, {})
                 obj, created = Feature.objects.update_or_create(
                     code=code,
                     defaults={
@@ -163,6 +167,7 @@ class CoreSetupService:
                         "icon": icon,
                         "order": order,
                         "is_active": True,
+                        **django_permissions,
                     },
                 )
 

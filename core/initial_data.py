@@ -587,3 +587,67 @@ ROLE_FEATURES = {
         "MARKETPLACE_ORDERS": {"view": True, "add": True},
     },
 }
+
+
+# Django permissions are the authorization source of truth. Feature records
+# store these names so newly created Groups can gain access from Django Admin
+# without adding their names to application code.
+FEATURE_DJANGO_PERMISSIONS = {
+    "CONSTRUCTION_DASHBOARD": {
+        "view_permission": "Construction.view_project",
+    },
+    "CONSTRUCTION_PROJECTS": {
+        "view_permission": "Construction.view_project",
+        "add_permission": "Construction.add_project",
+        "change_permission": "Construction.change_project",
+        "delete_permission": "Construction.delete_project",
+    },
+    "CONSTRUCTION_SITES": {
+        "view_permission": "Construction.view_site",
+        "add_permission": "Construction.add_site",
+        "change_permission": "Construction.change_site",
+        "delete_permission": "Construction.delete_site",
+    },
+    "CONSTRUCTION_TASKS": {
+        "view_permission": "Construction.view_task",
+        "add_permission": "Construction.add_task",
+        "change_permission": "Construction.change_task",
+        "delete_permission": "Construction.delete_task",
+    },
+    "INVENTORY_DASHBOARD": {
+        "view_permission": "inventory.view_product",
+    },
+    "INVENTORY_PRODUCTS": {
+        "view_permission": "inventory.view_product",
+        "add_permission": "inventory.add_product",
+        "change_permission": "inventory.change_product",
+        "delete_permission": "inventory.delete_product",
+    },
+    "INVENTORY_RAW_MATERIALS": {
+        "view_permission": "inventory.view_rawmaterial",
+        "add_permission": "inventory.add_rawmaterial",
+        "change_permission": "inventory.change_rawmaterial",
+        "delete_permission": "inventory.delete_rawmaterial",
+    },
+    "INVENTORY_STOCK_MOVEMENTS": {
+        "view_permission": "inventory.view_stockmovement",
+        "add_permission": "inventory.add_stockmovement",
+        "change_permission": "inventory.change_stockmovement",
+        "delete_permission": "inventory.delete_stockmovement",
+    },
+    "ASSET_LIST": {
+        "view_permission": "inventory.view_asset",
+        "add_permission": "inventory.add_asset",
+        "change_permission": "inventory.change_asset",
+        "delete_permission": "inventory.delete_asset",
+    },
+    "ASSET_ASSIGNMENTS": {
+        "view_permission": "inventory.view_assetassignment",
+        "add_permission": "inventory.add_assetassignment",
+        "change_permission": "inventory.change_assetassignment",
+        "delete_permission": "inventory.delete_assetassignment",
+    },
+    "AUDIT_LOGS": {
+        "view_permission": "core.view_auditlog",
+    },
+}
