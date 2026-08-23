@@ -167,6 +167,7 @@ def ecommerce_dashboard(request):
 
 
 @login_required
+@product_view_required
 def online_product_list(request):
     products = (
         OnlineProduct.objects
@@ -208,6 +209,7 @@ def online_product_list(request):
 
 
 @login_required
+@product_add_required
 def online_product_create(request):
     form = OnlineProductForm(
         request.POST or None,
@@ -234,6 +236,7 @@ def online_product_create(request):
 
 
 @login_required
+@product_edit_required
 def online_product_update(request, pk):
     online_product = get_object_or_404(
         OnlineProduct.objects.select_related("product"),
@@ -266,6 +269,7 @@ def online_product_update(request, pk):
 
 
 @login_required
+@product_edit_required
 @require_POST
 def toggle_publish(request, pk):
     online_product = get_object_or_404(
@@ -285,6 +289,7 @@ def toggle_publish(request, pk):
 
 
 @login_required
+@product_edit_required
 @require_POST
 def toggle_featured(request, pk):
     online_product = get_object_or_404(
@@ -1583,21 +1588,10 @@ def seller_settlement_cancel(request, pk):
         pk=pk,
     )
 
-def _require_marketplace_staff(request):
-    if request.user.is_superuser or request.user.is_staff:
-        return
-
-    raise PermissionDenied(
-        "Only authorized Marketplace staff can perform this action."
-    )
-
-
 @login_required
 @settlement_pay_required
 @require_http_methods(["GET", "POST"])
 def seller_settlement_pay(request, pk):
-    _require_marketplace_staff(request)
-
     settlement = get_object_or_404(
         SellerSettlement.objects.select_related(
             "seller",

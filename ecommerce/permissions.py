@@ -17,6 +17,9 @@ class MarketplaceFeatures:
     SETTLEMENTS = "MARKETPLACE_SETTLEMENTS"
     PAYMENTS = "MARKETPLACE_PAYMENTS"
     REPORTS = "MARKETPLACE_REPORTS"
+    PAYMENT_CONFIRM = "MARKETPLACE_PAYMENT_CONFIRM"
+    PAYMENT_REFUND = "MARKETPLACE_PAYMENT_REFUND"
+    SETTLEMENT_PAY = "MARKETPLACE_SETTLEMENT_PAY"
 
 
 VALID_ACTIONS = {"view", "add", "edit", "delete", "approve"}
@@ -145,16 +148,16 @@ def marketplace_permission_context(user):
         ),
         "can_view_payments": (MarketplaceFeatures.PAYMENTS, "view"),
         "can_confirm_payment": (
-            MarketplaceFeatures.PAYMENTS,
+            MarketplaceFeatures.PAYMENT_CONFIRM,
             "approve",
         ),
-                "can_refund_payment": (
-            MarketplaceFeatures.PAYMENTS,
+        "can_refund_payment": (
+            MarketplaceFeatures.PAYMENT_REFUND,
             "approve",
         ),
 
         "can_pay_settlement": (
-            MarketplaceFeatures.PAYMENTS,
+            MarketplaceFeatures.SETTLEMENT_PAY,
             "approve",
         ),
         "can_view_marketplace_reports": (
@@ -230,16 +233,16 @@ payment_view_required = marketplace_feature_required(
     "view",
 )
 payment_confirm_required = marketplace_feature_required(
-    MarketplaceFeatures.PAYMENTS,
+    MarketplaceFeatures.PAYMENT_CONFIRM,
     "approve",
 )
 payment_refund_required = marketplace_feature_required(
-    MarketplaceFeatures.PAYMENTS,
+    MarketplaceFeatures.PAYMENT_REFUND,
     "approve",
 )
 
 settlement_pay_required = marketplace_feature_required(
-    MarketplaceFeatures.PAYMENTS,
+    MarketplaceFeatures.SETTLEMENT_PAY,
     "approve",
 )
 report_view_required = marketplace_feature_required(

@@ -230,6 +230,11 @@ BUSINESS_UNIT_FEATURES = {
         ("Shop", "MARKETPLACE_SHOP", "ecommerce:shop", "bi bi-shop", 2),
         ("Online Products", "MARKETPLACE_PRODUCTS", "ecommerce:online_product_list", "bi bi-tags", 3),
         ("Online Orders", "MARKETPLACE_ORDERS", "", "bi bi-cart-check", 4),
+        ("Sellers", "MARKETPLACE_SELLERS", "ecommerce:marketplace_seller_list", "bi bi-people", 5),
+        ("Commissions", "MARKETPLACE_COMMISSIONS", "ecommerce:marketplace_seller_list", "bi bi-percent", 6),
+        ("Settlements", "MARKETPLACE_SETTLEMENTS", "ecommerce:seller_settlement_list", "bi bi-wallet2", 7),
+        ("Payments", "MARKETPLACE_PAYMENTS", "ecommerce:payment_list", "bi bi-credit-card", 8),
+        ("Reports", "MARKETPLACE_REPORTS", "ecommerce:marketplace_report", "bi bi-graph-up", 9),
     ],
 }
 
@@ -615,6 +620,17 @@ ROLE_FEATURES = {
 # store these names so newly created Groups can gain access from Django Admin
 # without adding their names to application code.
 FEATURE_DJANGO_PERMISSIONS = {
+    "MARKETPLACE_DASHBOARD": {"view_permission": "ecommerce.view_onlineproduct"},
+    "MARKETPLACE_PRODUCTS": {"view_permission": "ecommerce.view_onlineproduct", "add_permission": "ecommerce.add_onlineproduct", "change_permission": "ecommerce.change_onlineproduct", "delete_permission": "ecommerce.delete_onlineproduct"},
+    "MARKETPLACE_ORDERS": {"view_permission": "ecommerce.view_ecommercecheckout", "add_permission": "ecommerce.add_ecommercecheckout", "change_permission": "ecommerce.change_ecommercecheckout", "delete_permission": "ecommerce.delete_ecommercecheckout"},
+    "MARKETPLACE_SELLERS": {"view_permission": "ecommerce.view_marketplaceseller", "add_permission": "ecommerce.add_marketplaceseller", "change_permission": "ecommerce.change_marketplaceseller", "delete_permission": "ecommerce.delete_marketplaceseller"},
+    "MARKETPLACE_COMMISSIONS": {"view_permission": "ecommerce.view_sellerproductassignment", "add_permission": "ecommerce.add_sellerproductassignment", "change_permission": "ecommerce.change_sellerproductassignment", "delete_permission": "ecommerce.delete_sellerproductassignment"},
+    "MARKETPLACE_SETTLEMENTS": {"view_permission": "ecommerce.view_sellersettlement", "add_permission": "ecommerce.add_sellersettlement", "change_permission": "ecommerce.change_sellersettlement", "delete_permission": "ecommerce.delete_sellersettlement", "approve_permission": "ecommerce.approve_sellersettlement"},
+    "MARKETPLACE_PAYMENTS": {"view_permission": "ecommerce.view_ecommercepayment", "add_permission": "ecommerce.add_ecommercepayment", "change_permission": "ecommerce.change_ecommercepayment", "delete_permission": "ecommerce.delete_ecommercepayment", "approve_permission": "ecommerce.confirm_ecommercepayment"},
+    "MARKETPLACE_REPORTS": {"view_permission": "ecommerce.view_marketplaceorderline"},
+    "MARKETPLACE_PAYMENT_CONFIRM": {"approve_permission": "ecommerce.confirm_ecommercepayment"},
+    "MARKETPLACE_PAYMENT_REFUND": {"approve_permission": "ecommerce.refund_ecommercepayment"},
+    "MARKETPLACE_SETTLEMENT_PAY": {"approve_permission": "ecommerce.pay_sellersettlement"},
     "FURNITURE_DASHBOARD": {"view_permission": "furniture.view_productionjob"},
     "FURNITURE_PRODUCTION_JOBS": {"view_permission": "furniture.view_productionjob", "add_permission": "furniture.add_productionjob", "change_permission": "furniture.change_productionjob", "delete_permission": "furniture.delete_productionjob"},
     "FURNITURE_QUOTATIONS": {"view_permission": "furniture.view_quotation", "add_permission": "furniture.add_quotation", "change_permission": "furniture.change_quotation", "delete_permission": "furniture.delete_quotation", "approve_permission": "furniture.approve_quotation"},

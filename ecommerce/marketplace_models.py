@@ -360,6 +360,16 @@ class SellerSettlement(models.Model):
 
     class Meta:
         ordering = ["-created_at", "-pk"]
+        permissions = [
+            (
+                "approve_sellersettlement",
+                "Can approve or cancel seller settlements",
+            ),
+            (
+                "pay_sellersettlement",
+                "Can pay seller settlements",
+            ),
+        ]
         indexes = [
             models.Index(
                 fields=["seller", "status"],
