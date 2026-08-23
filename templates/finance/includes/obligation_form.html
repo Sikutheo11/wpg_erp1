@@ -1,0 +1,13 @@
+<form method="post" id="obligation-form">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="row g-3">
+    {% for field in form %}<div class="col-12 col-md-6"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}{% if field.name == "counterparty" %}<a class="btn btn-sm btn-outline-primary mt-2" href="{% url counterparty_create_url %}?next={{ obligation_kind }}"><i class="bi bi-person-plus"></i> Add person / company</a>{% endif %}</div>{% endfor %}
+  </div>
+  <hr class="my-4"><div class="d-flex justify-content-between align-items-center mb-3"><h5 class="mb-0">Items</h5><button type="button" class="btn btn-sm btn-outline-primary" id="add-line"><i class="bi bi-plus-circle"></i> Add item</button></div>
+  {{ formset.management_form }}{% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
+  <div id="line-list">{% for line_form in formset %}<div class="card mb-3 obligation-line"><div class="card-body py-3">{% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}<div class="row g-2">{% for field in line_form.visible_fields %}<div class="col-6 col-lg-3 {% if field.name == 'description' %}col-lg-6{% endif %}"><label class="form-label small">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}</div></div></div>{% endfor %}</div>
+  <template id="empty-line"><div class="card mb-3 obligation-line"><div class="card-body py-3"><div class="row g-2">{% for field in formset.empty_form.visible_fields %}<div class="col-6 col-lg-3 {% if field.name == 'description' %}col-lg-6{% endif %}"><label class="form-label small">{{ field.label }}</label>{{ field }}</div>{% endfor %}</div></div></div></template>
+  <div class="d-flex gap-2 mt-4"><button class="btn btn-primary" type="submit"><i class="bi bi-check-circle"></i> Save</button><a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancel</a></div>
+</form>
+<script>document.getElementById('add-line').addEventListener('click',function(){const total=document.getElementById('id_lines-TOTAL_FORMS');const index=Number(total.value);const html=document.getElementById('empty-line').innerHTML.replaceAll('__prefix__',index);document.getElementById('line-list').insertAdjacentHTML('beforeend',html);total.value=index+1;});</script>

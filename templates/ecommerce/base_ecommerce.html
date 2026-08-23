@@ -158,8 +158,45 @@
             .ecommerce-content {
                 padding: 0 8px 20px;
             }
+
+            .ecommerce-topbar > .d-flex {
+                flex-wrap: wrap;
+                gap: 8px!important;
+            }
+
+            .topbar-search {
+                order: 3;
+                flex: 0 0 100%;
+            }
+
+            .ecommerce-topbar .btn {
+                min-height: 44px;
+            }
+
+            .ecommerce-content .form-control,
+            .ecommerce-content .form-select {
+                min-height: 46px;
+                font-size: 16px;
+            }
+
+            .account-label {
+                display: none;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .ecommerce-content .mobile-card-table thead{display:none}
+            .ecommerce-content .mobile-card-table,.ecommerce-content .mobile-card-table tbody,.ecommerce-content .mobile-card-table tr,.ecommerce-content .mobile-card-table td{display:block;width:100%}
+            .ecommerce-content .mobile-card-table tbody{padding:.75rem}
+            .ecommerce-content .mobile-card-table tr{border:1px solid #e5e7eb;border-radius:12px;margin-bottom:1rem;padding:.45rem .75rem;background:#fff;box-shadow:0 2px 8px rgba(15,23,42,.06)}
+            .ecommerce-content .mobile-card-table td{border:0;border-bottom:1px solid #eef0f3;padding:.65rem 0;text-align:right!important;overflow-wrap:anywhere}
+            .ecommerce-content .mobile-card-table td::before{content:attr(data-mobile-label);float:left;max-width:45%;padding-right:.75rem;color:#6b7280;font-size:.8rem;font-weight:600;text-align:left}
+            .ecommerce-content .mobile-card-table td:last-child{border-bottom:0}
+            .ecommerce-content .mobile-card-table td[data-mobile-empty="true"]{text-align:center!important}
+            .ecommerce-content .mobile-card-table td[data-mobile-empty="true"]::before{display:none}
         }
     </style>
+    {% include "includes/mobile_density.html" %}
 
     {% block extra_css %}{% endblock %}
 </head>
@@ -284,7 +321,7 @@
                                     type="button"
                                     data-bs-toggle="dropdown">
                                 <i class="bi bi-person-circle me-1"></i>
-                                Account
+                                <span class="account-label">Account</span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
@@ -355,6 +392,24 @@
             }
 
             overlay.addEventListener("click", closeSidebar);
+
+            document.querySelectorAll(".ecommerce-content table.table").forEach((table) => {
+                const labels = Array.from(table.querySelectorAll("thead th")).map(
+                    (heading) => heading.textContent.trim() || "Details"
+                );
+                if (!labels.length) return;
+                table.classList.add("mobile-card-table");
+                table.querySelectorAll("tbody tr").forEach((row) => {
+                    Array.from(row.children).forEach((cell, index) => {
+                        if (cell.tagName !== "TD") return;
+                        if (cell.hasAttribute("colspan")) {
+                            cell.dataset.mobileEmpty = "true";
+                            return;
+                        }
+                        cell.dataset.mobileLabel = labels[index] || "Details";
+                    });
+                });
+            });
         })();
     </script>
 

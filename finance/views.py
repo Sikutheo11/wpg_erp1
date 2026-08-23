@@ -1,9 +1,12 @@
 from datetime import date
+import csv
+from io import BytesIO
 
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.http import HttpResponse
 from django.db.models import F, Q, Sum
 from django.shortcuts import (
     get_object_or_404,
@@ -19,9 +22,10 @@ from .dashboard import get_finance_dashboard
 from .forms import (
     CounterpartyCreateForm,
     CounterpartyPhoneLookupForm,
-    DebtLineFormSet,
-    DirectDebtForm,
     PayableForm,
+    PayableLineFormSet,
+    ReceivableForm,
+    ReceivableLineFormSet,
     ReceivablePaymentForm,
 )
 
@@ -40,13 +44,14 @@ from .models import (
 from .services import (
     PayableService,
     PaymentService,
+    ObligationService,
+    DebtReportService,
 )
 
 from .services.counterparty_service import (
     CounterpartyService,
 )
 
-from .services.debt_service import DebtService
 
 
 # =====================================================
@@ -63,6 +68,9 @@ def counterparty_phone_lookup(request):
     Require a telephone lookup before an existing
     counterparty is selected or a new one is created.
     """
+    return_target = request.GET.get("next") or request.POST.get("next")
+    if return_target in {"payable", "receivable"}:
+        request.session["counterparty_return_target"] = return_target
     if request.method == "POST":
         form = CounterpartyPhoneLookupForm(
             request.POST
@@ -92,10 +100,10 @@ def counterparty_phone_lookup(request):
                     ),
                 )
 
-                return redirect(
-                    "finance:counterparty_detail",
-                    pk=counterparty.pk,
-                )
+                target = request.session.pop("counterparty_return_target", None)
+                if target:
+                    return redirect(f"/finance/{target}s/create/?counterparty={counterparty.pk}")
+                return redirect("finance:counterparty_detail", pk=counterparty.pk)
 
             request.session[
                 "counterparty_pending_phone"
@@ -250,10 +258,10 @@ def counterparty_create(request):
                     ),
                 )
 
-                return redirect(
-                    "finance:counterparty_detail",
-                    pk=counterparty.pk,
-                )
+                target = request.session.pop("counterparty_return_target", None)
+                if target:
+                    return redirect(f"/finance/{target}s/create/?counterparty={counterparty.pk}")
+                return redirect("finance:counterparty_detail", pk=counterparty.pk)
 
     else:
         form = CounterpartyCreateForm(
@@ -308,139 +316,10 @@ def counterparty_debt_create(
     request,
     counterparty_pk,
 ):
-    counterparty = get_object_or_404(
-        Counterparty.objects.select_related(
-            "sales_customer",
-            "inventory_supplier",
-        ).prefetch_related(
-            "debt_records__lines",
-        ),
-        pk=counterparty_pk,
-    )
-
-    if request.method == "POST":
-        form = DirectDebtForm(request.POST)
-        line_formset = DebtLineFormSet(
-            request.POST,
-            prefix="lines",
-        )
-
-        if form.is_valid() and line_formset.is_valid():
-            lines = []
-
-            for line_form in line_formset:
-                line_data = line_form.cleaned_data
-
-                if not line_data:
-                    continue
-
-                if line_data.get("DELETE"):
-                    continue
-
-                lines.append(
-                    {
-                        "item_type": line_data[
-                            "item_type"
-                        ],
-                        "product": line_data.get(
-                            "product"
-                        ),
-                        "raw_material": line_data.get(
-                            "raw_material"
-                        ),
-                        "asset": line_data.get(
-                            "asset"
-                        ),
-                        "description": line_data.get(
-                            "description",
-                            "",
-                        ),
-                        "quantity": line_data[
-                            "quantity"
-                        ],
-                        "unit": line_data["unit"],
-                        "unit_price": line_data[
-                            "unit_price"
-                        ],
-                    }
-                )
-
-            try:
-                debt = DebtService.create_debt(
-                    counterparty=counterparty,
-                    direction=form.cleaned_data[
-                        "direction"
-                    ],
-                    business_unit=form.cleaned_data[
-                        "business_unit"
-                    ],
-                    transaction_date=(
-                        form.cleaned_data[
-                            "transaction_date"
-                        ]
-                    ),
-                    due_date=form.cleaned_data.get(
-                        "due_date"
-                    ),
-                    notes=form.cleaned_data.get(
-                        "notes",
-                        "",
-                    ),
-                    lines=lines,
-                    actor=request.user,
-                )
-
-            except ValidationError as error:
-                if hasattr(error, "message_dict"):
-                    error_messages = []
-
-                    for field_messages in (
-                        error.message_dict.values()
-                    ):
-                        error_messages.extend(
-                            field_messages
-                        )
-                else:
-                    error_messages = error.messages
-
-                for error_message in error_messages:
-                    form.add_error(
-                        None,
-                        error_message,
-                    )
-
-            else:
-                messages.success(
-                    request,
-                    (
-                        f"Debt {debt.reference} was "
-                        "recorded successfully."
-                    ),
-                )
-
-                return redirect(
-                    "finance:counterparty_detail",
-                    pk=counterparty.pk,
-                )
-
-    else:
-        form = DirectDebtForm()
-        line_formset = DebtLineFormSet(
-            prefix="lines",
-        )
-
-    return render(
-        request,
-        "finance/counterparties/debt_form.html",
-        {
-            "counterparty": counterparty,
-            "form": form,
-            "line_formset": line_formset,
-            "page_title": (
-                f"Record Debt — {counterparty.name}"
-            ),
-        },
-    )
+    counterparty = get_object_or_404(Counterparty, pk=counterparty_pk)
+    return render(request, "finance/counterparties/obligation_choice.html", {
+        "counterparty": counterparty, "page_title": "Choose Debt Type",
+    })
 
 
 # =====================================================
@@ -679,39 +558,19 @@ def expense_list(request):
     feature_code="FINANCE_RECEIVABLES",
 )
 def receivable_list(request):
-    base_queryset = (
-        Receivable.objects
-        .select_related(
-            "order",
-            "customer",
-        )
-        .order_by(
-            "-created_at",
-        )
-    )
-
-    search = (
-        request.GET.get(
-            "q",
-            "",
-        )
-        .strip()
-    )
-
-    status = (
-        request.GET.get(
-            "status",
-            "",
-        )
-        .strip()
-        .lower()
-    )
+    base_queryset = Receivable.objects.select_related(
+        "order", "customer", "counterparty"
+    ).order_by("-created_at")
+    search = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "").strip().lower()
 
     receivables = base_queryset
 
     if search:
         receivables = receivables.filter(
             Q(invoice_number__icontains=search)
+            | Q(counterparty__name__icontains=search)
+            | Q(counterparty__phone__icontains=search)
             | Q(order__order_number__icontains=search)
             | Q(order__customer_name__icontains=search)
             | Q(order__customer_phone__icontains=search)
@@ -751,6 +610,28 @@ def receivable_list(request):
     )
 
 
+@login_required
+@wpg_permission_required(
+    "finance.add_receivable", feature_code="FINANCE_RECEIVABLES", action="add",
+)
+def receivable_create(request):
+    instance = Receivable()
+    form = ReceivableForm(request.POST or None, instance=instance, initial={"counterparty": request.GET.get("counterparty")})
+    formset = ReceivableLineFormSet(request.POST or None, instance=instance, prefix="lines")
+    if request.method == "POST" and form.is_valid() and formset.is_valid():
+        try:
+            receivable = ObligationService.create(form=form, formset=formset, kind="receivable")
+        except ValidationError as error:
+            form.add_error(None, _validation_message(error))
+        else:
+            messages.success(request, f"Receivable {receivable.invoice_number} created successfully.")
+            return redirect("finance:receivable_detail", pk=receivable.pk)
+    return render(request, "finance/receivables/receivable_form.html", {
+        "form": form, "formset": formset, "page_title": "Create Receivable",
+        "counterparty_create_url": "finance:counterparty_phone_lookup", "obligation_kind": "receivable",
+    })
+
+
 # =====================================================
 # RECEIVABLE DETAIL
 # =====================================================
@@ -765,8 +646,10 @@ def receivable_detail(request, pk):
         Receivable.objects.select_related(
             "order",
             "customer",
+            "counterparty",
         ).prefetch_related(
             "payment_set",
+            "lines",
         ),
         pk=pk,
     )
@@ -970,56 +853,27 @@ def payable_list(request):
     action="add",
 )
 def payable_create(request):
-    if request.method == "POST":
-        form = PayableForm(
-            request.POST
-        )
-
-        if form.is_valid():
-            data = form.cleaned_data
-
-            try:
-                payable = (
-                    PayableService.create_payable(
-                        supplier=data["supplier"],
-                        reference=data["reference"],
-                        total_amount=data[
-                            "total_amount"
-                        ],
-                        due_date=data["due_date"],
-                        actor=request.user,
-                    )
-                )
-
-            except ValidationError as error:
-                form.add_error(
-                    None,
-                    _validation_message(error),
-                )
-
-            else:
-                messages.success(
-                    request,
-                    (
-                        f"Payable {payable.reference} "
-                        "created successfully."
-                    ),
-                )
-
-                return redirect(
-                    "finance:payable_detail",
-                    pk=payable.pk,
-                )
-
-    else:
-        form = PayableForm()
+    instance = Payable()
+    form = PayableForm(request.POST or None, instance=instance, initial={"counterparty": request.GET.get("counterparty")})
+    formset = PayableLineFormSet(request.POST or None, instance=instance, prefix="lines")
+    if request.method == "POST" and form.is_valid() and formset.is_valid():
+        try:
+            payable = ObligationService.create(form=form, formset=formset, kind="payable")
+        except ValidationError as error:
+            form.add_error(None, _validation_message(error))
+        else:
+            messages.success(request, f"Payable {payable.reference} created successfully.")
+            return redirect("finance:payable_detail", pk=payable.pk)
 
     return render(
         request,
         "finance/payables/payable_form.html",
         {
             "form": form,
+            "formset": formset,
             "page_title": "Create Payable",
+            "counterparty_create_url": "finance:counterparty_phone_lookup",
+            "obligation_kind": "payable",
         },
     )
 
@@ -1037,6 +891,9 @@ def payable_detail(request, pk):
     payable = get_object_or_404(
         Payable.objects.select_related(
             "supplier",
+            "counterparty",
+        ).prefetch_related(
+            "lines",
         ),
         pk=pk,
     )
@@ -1307,84 +1164,49 @@ def financial_report(request):
     feature_code="FINANCE_DEBTS",
 )
 def debt_list(request):
-    debts = (
-        DebtRecord.objects
-        .select_related(
-            "counterparty",
-            "created_by",
-        )
-        .prefetch_related("lines")
-        .order_by(
-            "-transaction_date",
-            "-pk",
-        )
-    )
+    report = DebtReportService.build(request.GET)
+    return render(request, "finance/counterparties/debt_list.html", {
+        **report, "page_title": "Debt Report", "filters": request.GET,
+        "status_choices": Receivable.STATUS, "business_units": DebtRecord.BUSINESS_UNITS,
+    })
 
-    search = request.GET.get("q", "").strip()
-    direction = (
-        request.GET.get("direction", "")
-        .strip()
-        .upper()
-    )
-    status = (
-        request.GET.get("status", "")
-        .strip()
-        .upper()
-    )
 
-    if search:
-        debts = debts.filter(
-            Q(reference__icontains=search)
-            | Q(counterparty__name__icontains=search)
-            | Q(counterparty__phone__icontains=search)
-            | Q(lines__description__icontains=search)
-        ).distinct()
+@login_required
+@wpg_permission_required("finance.view_debtrecord", feature_code="FINANCE_DEBTS")
+def debt_report_csv(request):
+    report = DebtReportService.build(request.GET)
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="wpg-debt-report.csv"'
+    response.write("\ufeff")
+    writer = csv.writer(response)
+    writer.writerow(["Direction", "Reference", "Person / Company", "Phone", "Date", "Due date", "Business unit", "Total RWF", "Paid RWF", "Balance RWF", "Status"])
+    for row in report["rows"]:
+        writer.writerow([row["direction"], row["reference"], row["party"], row["phone"], row["date"], row["due_date"], row["business_unit"], row["total"], row["paid"], row["balance"], row["status"]])
+    writer.writerow([])
+    writer.writerow(["Receivable balance", report["receivable_balance"]])
+    writer.writerow(["Payable balance", report["payable_balance"]])
+    writer.writerow(["Net position", report["net"]])
+    return response
 
-    valid_directions = {
-        value
-        for value, unused_label
-        in DebtRecord.DIRECTIONS
-    }
 
-    if direction in valid_directions:
-        debts = debts.filter(direction=direction)
-    else:
-        direction = ""
-
-    valid_statuses = {
-        value
-        for value, unused_label
-        in DebtRecord.STATUSES
-    }
-
-    if status in valid_statuses:
-        debts = debts.filter(status=status)
-    else:
-        status = ""
-
-    summary = debts.aggregate(
-        total_debt=Sum("total_amount"),
-        total_paid=Sum("amount_paid"),
-    )
-
-    total_debt = summary["total_debt"] or 0
-    total_paid = summary["total_paid"] or 0
-
-    return render(
-        request,
-        "finance/counterparties/debt_list.html",
-        {
-            "debts": debts,
-            "search": search,
-            "selected_direction": direction,
-            "selected_status": status,
-            "direction_choices": DebtRecord.DIRECTIONS,
-            "status_choices": DebtRecord.STATUSES,
-            "total_debt": total_debt,
-            "total_paid": total_paid,
-            "total_balance": (
-                total_debt - total_paid
-            ),
-            "page_title": "Debts",
-        },
-    )
+@login_required
+@wpg_permission_required("finance.view_debtrecord", feature_code="FINANCE_DEBTS")
+def debt_report_pdf(request):
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    report = DebtReportService.build(request.GET)
+    stream = BytesIO()
+    document = SimpleDocTemplate(stream, pagesize=landscape(A4), leftMargin=24, rightMargin=24, topMargin=24, bottomMargin=24)
+    styles = getSampleStyleSheet()
+    data = [["Type", "Reference", "Person / Company", "Date", "Due", "Total", "Paid", "Balance", "Status"]]
+    for row in report["rows"]:
+        data.append([row["direction"], row["reference"], row["party"], str(row["date"]), str(row["due_date"] or "—"), f'{row["total"]:,.0f}', f'{row["paid"]:,.0f}', f'{row["balance"]:,.0f}', row["status"].title()])
+    table = Table(data, repeatRows=1, colWidths=[55, 90, 140, 60, 60, 70, 70, 70, 55])
+    table.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#123047")), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white), ("GRID", (0, 0), (-1, -1), .25, colors.grey), ("FONTSIZE", (0, 0), (-1, -1), 7), ("VALIGN", (0, 0), (-1, -1), "TOP"), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f7fa")])]))
+    story = [Paragraph("WPG Debt Report", styles["Title"]), Paragraph(f'Receivables: RWF {report["receivable_balance"]:,.0f} &nbsp;&nbsp; Payables: RWF {report["payable_balance"]:,.0f} &nbsp;&nbsp; Net: RWF {report["net"]:,.0f}', styles["Normal"]), Spacer(1, 12), table]
+    document.build(story)
+    response = HttpResponse(stream.getvalue(), content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="wpg-debt-report.pdf"'
+    return response

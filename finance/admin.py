@@ -9,7 +9,27 @@ from .models import (
     Payable,
     Payment,
     Payroll,
+    Counterparty,
+    ObligationLine,
 )
+
+
+class ReceivableLineInline(admin.TabularInline):
+    model = ObligationLine
+    fk_name = "receivable"
+    extra = 0
+    readonly_fields = ("line_total",)
+
+
+class PayableLineInline(ReceivableLineInline):
+    fk_name = "payable"
+
+
+@admin.register(Counterparty)
+class CounterpartyAdmin(admin.ModelAdmin):
+    list_display = ("name", "phone", "is_customer", "is_supplier", "is_active")
+    search_fields = ("name", "phone", "email", "tax_number")
+    list_filter = ("party_type", "is_customer", "is_supplier", "is_active")
 
 
 
@@ -134,6 +154,8 @@ class ExpenseAdmin(admin.ModelAdmin):
 
 @admin.register(Receivable)
 class ReceivableAdmin(admin.ModelAdmin):
+    inlines = (ReceivableLineInline,)
+    readonly_fields = ("total_amount", "amount_paid", "status")
 
     list_display = (
         'invoice_number',
@@ -166,6 +188,8 @@ class ReceivableAdmin(admin.ModelAdmin):
 
 @admin.register(Payable)
 class PayableAdmin(admin.ModelAdmin):
+    inlines = (PayableLineInline,)
+    readonly_fields = ("total_amount", "amount_paid", "status")
 
     list_display = (
         'reference',

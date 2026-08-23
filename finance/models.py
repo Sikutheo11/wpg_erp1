@@ -186,7 +186,6 @@ class Counterparty(models.Model):
     updated_at = models.DateTimeField(
         auto_now=True,
     )
-
     class Meta:
         ordering = [
             "name",
@@ -407,7 +406,6 @@ class DebtRecord(models.Model):
     updated_at = models.DateTimeField(
         auto_now=True,
     )
-
     class Meta:
         ordering = [
             "-transaction_date",
@@ -1079,6 +1077,21 @@ class Receivable(models.Model):
         null=True,
         blank=True,
     )
+    counterparty = models.ForeignKey(
+        Counterparty,
+        on_delete=models.PROTECT,
+        related_name="receivables",
+        null=True,
+        blank=True,
+    )
+    business_unit = models.CharField(
+        max_length=30,
+        choices=DebtRecord.BUSINESS_UNITS,
+        default="GENERAL",
+        db_index=True,
+    )
+    transaction_date = models.DateField(default=timezone.localdate)
+    notes = models.TextField(blank=True)
 
     customer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -1136,12 +1149,30 @@ class Payable(models.Model):
 
     supplier=models.ForeignKey(
         Supplier,
-        on_delete=models.CASCADE
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
+    counterparty = models.ForeignKey(
+        Counterparty,
+        on_delete=models.PROTECT,
+        related_name="payables",
+        null=True,
+        blank=True,
+    )
+    business_unit = models.CharField(
+        max_length=30,
+        choices=DebtRecord.BUSINESS_UNITS,
+        default="GENERAL",
+        db_index=True,
+    )
+    transaction_date = models.DateField(default=timezone.localdate)
+    notes = models.TextField(blank=True)
 
 
     reference=models.CharField(
-        max_length=100
+        max_length=100,
+        unique=True,
     )
 
 
@@ -1166,6 +1197,7 @@ class Payable(models.Model):
         ('unpaid','Unpaid'),
         ('partial','Partial'),
         ('paid','Paid'),
+        ('overdue','Overdue'),
 
     )
 
@@ -1186,31 +1218,110 @@ class Payable(models.Model):
 
     @property
     def balance(self):
-
-        return self.total_amount-self.amount_paid
-    
-    @property
-    def balance(self):
         return self.total_amount - self.amount_paid
 
-
-    def save(self,*args,**kwargs):
-
-        if self.amount_paid==0:
-            self.status="unpaid"
-
-        elif self.amount_paid < self.total_amount:
-            self.status="partial"
-
+    def save(self, *args, **kwargs):
+        if self.amount_paid >= self.total_amount:
+            self.status = "paid"
+        elif self.amount_paid > 0:
+            self.status = "partial"
+        elif self.due_date and self.due_date < timezone.localdate():
+            self.status = "overdue"
         else:
-            self.status="paid"
+            self.status = "unpaid"
+        super().save(*args, **kwargs)
 
 
-        super().save(*args,**kwargs)
-    
-    @property
-    def balance(self):
-        return self.total_amount - self.amount_paid
+class ObligationLine(models.Model):
+    PRODUCT = "PRODUCT"
+    RAW_MATERIAL = "RAW_MATERIAL"
+    ASSET = "ASSET"
+    WORKER = "WORKER"
+    TAX = "TAX"
+    CASUAL_WORK = "CASUAL_WORK"
+    TRANSPORT = "TRANSPORT"
+    RENT = "RENT"
+    UTILITY = "UTILITY"
+    SERVICE = "SERVICE"
+    OTHER = "OTHER"
+
+    ITEM_TYPES = (
+        (PRODUCT, "Product"),
+        (RAW_MATERIAL, "Raw material"),
+        (ASSET, "Asset"),
+        (WORKER, "Worker"),
+        (TAX, "Tax"),
+        (CASUAL_WORK, "Casual work"),
+        (TRANSPORT, "Transport"),
+        (RENT, "Rent"),
+        (UTILITY, "Utility"),
+        (SERVICE, "Service"),
+        (OTHER, "Other"),
+    )
+
+    receivable = models.ForeignKey(
+        Receivable, on_delete=models.CASCADE, related_name="lines", null=True, blank=True
+    )
+    payable = models.ForeignKey(
+        Payable, on_delete=models.CASCADE, related_name="lines", null=True, blank=True
+    )
+    item_type = models.CharField(max_length=20, choices=ITEM_TYPES, default=OTHER)
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, null=True, blank=True)
+    raw_material = models.ForeignKey(RawMaterial, on_delete=models.PROTECT, null=True, blank=True)
+    asset = models.ForeignKey(Asset, on_delete=models.PROTECT, null=True, blank=True)
+    worker = models.ForeignKey(Employee, on_delete=models.PROTECT, null=True, blank=True)
+    description = models.CharField(max_length=300, blank=True)
+    quantity = models.DecimalField(max_digits=14, decimal_places=3, default=Decimal("1.000"))
+    unit = models.CharField(max_length=30, default="piece")
+    unit_price = models.DecimalField(max_digits=15, decimal_places=2)
+    line_total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal("0.00"), editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(receivable__isnull=False, payable__isnull=True)
+                    | models.Q(receivable__isnull=True, payable__isnull=False)
+                ),
+                name="fin_obligation_line_one_parent",
+            ),
+            models.CheckConstraint(condition=models.Q(quantity__gt=0), name="fin_obligation_line_qty_gt_zero"),
+            models.CheckConstraint(condition=models.Q(unit_price__gte=0), name="fin_obligation_line_price_nonnegative"),
+        ]
+
+    def clean(self):
+        super().clean()
+        has_receivable = bool(self.receivable_id or getattr(self, "receivable", None))
+        has_payable = bool(self.payable_id or getattr(self, "payable", None))
+        if has_receivable == has_payable:
+            raise ValidationError("A line must belong to one receivable or one payable.")
+        sources = [self.product_id, self.raw_material_id, self.asset_id, self.worker_id]
+        expected = {
+            self.PRODUCT: self.product_id,
+            self.RAW_MATERIAL: self.raw_material_id,
+            self.ASSET: self.asset_id,
+            self.WORKER: self.worker_id,
+        }
+        if self.item_type in expected:
+            if not expected[self.item_type] or sum(bool(value) for value in sources) != 1:
+                raise ValidationError("Select the matching item for this line type.")
+        elif any(sources):
+            raise ValidationError("This line type must use a description, not an inventory item.")
+        if self.item_type not in expected and not (self.description or "").strip():
+            raise ValidationError({"description": "Describe this obligation item."})
+        if self.quantity <= 0 or self.unit_price < 0:
+            raise ValidationError("Quantity and unit price are invalid.")
+
+    def save(self, *args, **kwargs):
+        source = self.product or self.raw_material or self.asset or self.worker
+        if source and not (self.description or "").strip():
+            self.description = str(source)
+        self.description = (self.description or "").strip()
+        self.unit = (self.unit or "piece").strip()
+        self.line_total = (Decimal(str(self.quantity)) * Decimal(str(self.unit_price))).quantize(Decimal("0.01"))
+        super().save(*args, **kwargs)
 
 
 

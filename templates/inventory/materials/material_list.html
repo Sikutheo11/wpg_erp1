@@ -1,11 +1,11 @@
-{% extends 'inventory/base_inventory.html' %}
+{% extends 'base_dashboard.html' %}
 {% load permission_tags %}
 
 
 {% block content %}
 
 
-<div class="d-flex justify-content-between">
+<div class="inventory-list-heading d-flex justify-content-between align-items-center">
 
 <h2>
 Raw Materials
@@ -25,7 +25,8 @@ class="btn btn-primary">
 
 
 
-<table class="table table-bordered mt-3">
+<div class="table-responsive compact-table-wrap mt-3">
+<table class="table table-bordered compact-mobile-table">
 
 
 <tr>
@@ -61,4 +62,5 @@ class="btn btn-sm btn-outline-primary">View</a></td>
 </tr>
 {% endfor %}
 </table>
+</div>
 {% endblock %}

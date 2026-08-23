@@ -17,6 +17,7 @@
 body{
     background:#f4f6f9;
     font-family:"Segoe UI",sans-serif;
+    overflow-x:hidden;
 }
 
 .sidebar{
@@ -28,6 +29,8 @@ body{
     background:#111827;
     color:white;
     overflow-y:auto;
+    z-index:1045;
+    transition:transform .25s ease;
 }
 
 .sidebar h4{
@@ -81,6 +84,23 @@ body{
     box-shadow:0 2px 8px rgba(0,0,0,.1);
 }
 
+.sidebar-toggle{
+    display:none;
+    border:0;
+    background:transparent;
+    color:#111827;
+    font-size:1.6rem;
+    padding:.25rem .5rem;
+}
+
+.sidebar-overlay{
+    display:none;
+}
+
+.main-content{
+    min-width:0;
+}
+
 .card{
     border:none;
     border-radius:15px;
@@ -101,12 +121,224 @@ body{
 .dropdown-item:hover{
     background:#f3f4f6;
 }
+
+@media (max-width: 991.98px){
+    .sidebar{
+        width:min(82vw, 300px);
+        transform:translateX(-105%);
+        box-shadow:0 0 30px rgba(0,0,0,.3);
+    }
+
+    body.sidebar-open .sidebar{
+        transform:translateX(0);
+    }
+
+    .sidebar-overlay{
+        position:fixed;
+        inset:0;
+        z-index:1040;
+        background:rgba(15,23,42,.55);
+    }
+
+    body.sidebar-open .sidebar-overlay{
+        display:block;
+    }
+
+    body.sidebar-open{
+        overflow:hidden;
+    }
+
+    .main{
+        margin-left:0;
+        width:100%;
+    }
+
+    .sidebar-toggle{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        flex:0 0 auto;
+    }
+
+    .topbar{
+        height:60px;
+        padding:0 .75rem;
+        gap:.35rem;
+        position:sticky;
+        top:0;
+        z-index:1030;
+    }
+
+    .topbar-title{
+        margin:0;
+        font-size:1rem;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+
+    .topbar-notifications{
+        margin-left:auto;
+        margin-right:0!important;
+    }
+
+    .user-summary{
+        display:none;
+    }
+
+    .topbar .dropdown-menu{
+        max-width:calc(100vw - 1rem);
+    }
+
+    .notification-menu{
+        width:min(350px, calc(100vw - 1rem))!important;
+    }
+
+    .main-content{
+        padding:1rem!important;
+    }
+}
+
+@media (max-width: 575.98px){
+    .topbar-title{
+        max-width:42vw;
+    }
+
+    .card{
+        border-radius:12px;
+    }
+}
+
+@media (max-width: 767.98px){
+    .main-content .compact-table-wrap{
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        border-radius:.5rem;
+    }
+
+    .main-content .compact-mobile-table{
+        display:table!important;
+        width:100%;
+        min-width:570px;
+        margin-bottom:0;
+        font-size:.7rem;
+        line-height:1.25;
+    }
+
+    .main-content .compact-mobile-table thead{display:table-header-group!important}
+    .main-content .compact-mobile-table tbody{display:table-row-group!important;padding:0}
+    .main-content .compact-mobile-table tr{display:table-row!important;border-radius:0;box-shadow:none}
+    .main-content .compact-mobile-table th,
+    .main-content .compact-mobile-table td{
+        display:table-cell!important;
+        width:auto!important;
+        border-bottom:1px solid #dee2e6!important;
+        padding:.38rem .42rem!important;
+        text-align:left!important;
+        white-space:nowrap;
+        vertical-align:middle;
+    }
+    .main-content .compact-mobile-table td::before{display:none!important}
+
+    .main-content .form-control,
+    .main-content .form-select{
+        min-height:46px;
+        font-size:16px;
+    }
+
+    .main-content textarea.form-control{
+        min-height:110px;
+    }
+
+    .main-content .btn{
+        min-height:44px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+    }
+
+    .main-content .btn-group{
+        display:flex;
+        flex-wrap:wrap;
+        gap:.4rem;
+    }
+
+    .main-content .mobile-card-table thead{
+        display:none;
+    }
+
+    .main-content .mobile-card-table,
+    .main-content .mobile-card-table tbody,
+    .main-content .mobile-card-table tr,
+    .main-content .mobile-card-table td{
+        display:block;
+        width:100%;
+    }
+
+    .main-content .mobile-card-table tbody{
+        padding:.75rem;
+    }
+
+    .main-content .mobile-card-table tr{
+        border:1px solid #e5e7eb;
+        border-radius:12px;
+        margin-bottom:1rem;
+        padding:.45rem .75rem;
+        background:#fff;
+        box-shadow:0 2px 8px rgba(15,23,42,.06);
+    }
+
+    .main-content .mobile-card-table td{
+        min-height:40px;
+        border:0;
+        border-bottom:1px solid #eef0f3;
+        padding:.65rem 0;
+        text-align:right!important;
+        overflow-wrap:anywhere;
+    }
+
+    .main-content .mobile-card-table td::before{
+        content:attr(data-mobile-label);
+        float:left;
+        max-width:45%;
+        padding-right:.75rem;
+        color:#6b7280;
+        font-size:.8rem;
+        font-weight:600;
+        text-align:left;
+    }
+
+    .main-content .mobile-card-table td:last-child{
+        border-bottom:0;
+    }
+
+    .main-content .mobile-card-table td[data-mobile-empty="true"]{
+        text-align:center!important;
+        padding:1.5rem .5rem;
+    }
+
+    .main-content .mobile-card-table td[data-mobile-empty="true"]::before{
+        display:none;
+    }
+
+    .main-content .mobile-card-table td .btn,
+    .main-content .mobile-card-table td form{
+        margin:.15rem;
+    }
+
+    .main-content h1,
+    .main-content h2,
+    .main-content h3{
+        overflow-wrap:anywhere;
+    }
+}
 </style>
+{% include "includes/mobile_density.html" %}
 </head>
 
 <body>
 
-<div class="sidebar">
+<div class="sidebar" id="mainSidebar">
 
     <h4>
         <i class="bi bi-building"></i>
@@ -264,15 +496,33 @@ body{
 
 </div>
 
+<button
+    type="button"
+    class="sidebar-overlay border-0"
+    id="sidebarOverlay"
+    aria-label="Close navigation"
+></button>
+
 
 <div class="main">
 
     <div class="topbar">
 
-        <h5>
+        <button
+            type="button"
+            class="sidebar-toggle"
+            id="sidebarToggle"
+            aria-label="Open navigation"
+            aria-controls="mainSidebar"
+            aria-expanded="false"
+        >
+            <i class="bi bi-list"></i>
+        </button>
+
+        <h5 class="topbar-title">
             {% block page_title %}WPG BOS Dashboard{% endblock %}
         </h5>
-        <div class="dropdown me-3">
+        <div class="dropdown me-3 topbar-notifications">
 
             <a href="#"
             class="position-relative text-decoration-none"
@@ -280,24 +530,22 @@ body{
 
                 <i class="bi bi-bell fs-4"></i>
 
-                {% with unread=request.user.notifications.all|dictsortreversed:"created_at" %}
-                    {% if request.user.notifications.all %}
+                    {% if unread_notification_count %}
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            {{ request.user.notifications.all|length }}
+                            {% if unread_notification_count > 99 %}99+{% else %}{{ unread_notification_count }}{% endif %}
                         </span>
                     {% endif %}
-                {% endwith %}
 
             </a>
 
-            <ul class="dropdown-menu dropdown-menu-end shadow"
+            <ul class="dropdown-menu dropdown-menu-end shadow notification-menu"
                 style="width:350px;">
 
                 <li class="dropdown-header fw-bold">
                     Notifications
                 </li>
 
-                {% for note in request.user.notifications.all|slice:":5" %}
+                {% for note in unread_notifications %}
                     <li>
                         <form method="post" action="{% url 'core:notification_mark_read' note.id %}">
                             {% csrf_token %}
@@ -339,7 +587,7 @@ body{
 
                 <i class="bi bi-person-circle fs-3 me-2"></i>
 
-                <div class="text-start">
+                <div class="text-start user-summary">
 
                     <strong>
                         {{ request.user.get_full_name|default:request.user.username }}
@@ -385,7 +633,7 @@ body{
 
     </div>
 
-    <div class="container-fluid p-4">
+    <div class="container-fluid p-4 main-content">
 
         {% if messages %}
             {% for message in messages %}
@@ -408,6 +656,75 @@ body{
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+(() => {
+    const body = document.body;
+    const toggle = document.getElementById("sidebarToggle");
+    const overlay = document.getElementById("sidebarOverlay");
+    const sidebar = document.getElementById("mainSidebar");
+
+    const setSidebar = (open) => {
+        body.classList.toggle("sidebar-open", open);
+        toggle?.setAttribute("aria-expanded", String(open));
+    };
+
+    toggle?.addEventListener("click", () => {
+        setSidebar(!body.classList.contains("sidebar-open"));
+    });
+    overlay?.addEventListener("click", () => setSidebar(false));
+    sidebar?.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", () => {
+            if (window.innerWidth < 992 && !link.hasAttribute("data-bs-toggle")) {
+                setSidebar(false);
+            }
+        });
+    });
+    window.addEventListener("resize", () => {
+        if (window.innerWidth >= 992) {
+            setSidebar(false);
+        }
+    });
+})();
+
+(() => {
+    const prepareResponsiveTables = () => {
+        document.querySelectorAll(".main-content table.table").forEach((table) => {
+            if (table.classList.contains("debt-table") ||
+                table.classList.contains("compact-mobile-table")) {
+                return;
+            }
+
+            const labels = Array.from(table.querySelectorAll("thead th")).map(
+                (heading) => heading.textContent.trim() || "Details"
+            );
+            if (!labels.length) {
+                return;
+            }
+
+            table.classList.add("mobile-card-table");
+            table.querySelectorAll("tbody tr").forEach((row) => {
+                const cells = Array.from(row.children).filter(
+                    (cell) => cell.tagName === "TD"
+                );
+                cells.forEach((cell, index) => {
+                    if (cell.hasAttribute("colspan")) {
+                        cell.dataset.mobileEmpty = "true";
+                        return;
+                    }
+                    cell.dataset.mobileLabel = labels[index] || "Details";
+                });
+            });
+        });
+    };
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", prepareResponsiveTables);
+    } else {
+        prepareResponsiveTables();
+    }
+})();
+</script>
 
 {% block scripts %}
 {% endblock %}

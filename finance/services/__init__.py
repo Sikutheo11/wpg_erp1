@@ -7,6 +7,8 @@ from .payment_service import PaymentService
 from .finance_posting_service import FinancePostingService
 from .general_ledger_service import GeneralLedgerService
 from .customer_advance_service import CustomerAdvanceService
+from .obligation_service import ObligationService
+from .debt_report_service import DebtReportService
 
 __all__ = [
     "AccountService",
@@ -18,4 +20,6 @@ __all__ = [
     "FinancePostingService",
     "GeneralLedgerService",
     "CustomerAdvanceService",
+    "ObligationService",
+    "DebtReportService",
 ]
