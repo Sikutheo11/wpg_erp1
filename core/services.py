@@ -1,4 +1,4 @@
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 
 from .models import (
     BusinessUnit,
@@ -8,6 +8,7 @@ from .models import (
     RoleFeature,
     DashboardCard,
     KPIWidget,
+    GroupAccessProfile,
 )
 
 from .initial_data import (
@@ -21,6 +22,7 @@ from .initial_data import (
     GROUPS,
     ROLE_FEATURES,
     FEATURE_DJANGO_PERMISSIONS,
+    GROUP_LANDING_FEATURES,
 )
 
 
@@ -236,6 +238,12 @@ class CoreSetupService:
 
                 continue
 
+            RoleFeature.objects.filter(
+                role=group,
+            ).exclude(
+                feature__code__in=features,
+            ).delete()
+
             for feature_code, permissions in features.items():
                 try:
                     feature = Feature.objects.get(code=feature_code)
@@ -256,6 +264,82 @@ class CoreSetupService:
                     created_count += 1
                 else:
                     updated_count += 1
+
+        CoreSetupService.sync_native_group_permissions()
+
+        return created_count, updated_count
+
+    @staticmethod
+    def sync_native_group_permissions():
+        action_fields = (
+            ("can_view", "view_permission"),
+            ("can_add", "add_permission"),
+            ("can_edit", "change_permission"),
+            ("can_delete", "delete_permission"),
+            ("can_approve", "approve_permission"),
+        )
+
+        for group_name in ROLE_FEATURES:
+            group = Group.objects.filter(name=group_name).first()
+            if not group:
+                continue
+
+            permission_names = set()
+            role_features = RoleFeature.objects.filter(
+                role=group,
+            ).select_related("feature")
+            for role_feature in role_features:
+                for legacy_field, feature_field in action_fields:
+                    if not getattr(role_feature, legacy_field):
+                        continue
+                    permission_name = getattr(
+                        role_feature.feature,
+                        feature_field,
+                        "",
+                    ).strip()
+                    if permission_name:
+                        permission_names.add(permission_name)
+
+            permission_ids = []
+            for permission_name in permission_names:
+                app_label, codename = permission_name.split(".", 1)
+                permission = Permission.objects.filter(
+                    content_type__app_label__iexact=app_label,
+                    codename=codename,
+                ).first()
+                if permission:
+                    permission_ids.append(permission.pk)
+
+            group.permissions.set(permission_ids)
+
+    @staticmethod
+    def sync_group_access_profiles():
+        created_count = 0
+        updated_count = 0
+
+        for priority, (group_name, feature_code) in enumerate(
+            GROUP_LANDING_FEATURES.items(),
+            start=1,
+        ):
+            group = Group.objects.filter(name=group_name).first()
+            feature = Feature.objects.filter(
+                code=feature_code,
+                is_active=True,
+            ).first()
+            if not group or not feature:
+                continue
+
+            unused_profile, created = GroupAccessProfile.objects.update_or_create(
+                group=group,
+                defaults={
+                    "landing_feature": feature,
+                    "priority": priority,
+                },
+            )
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
 
         return created_count, updated_count
 
@@ -364,6 +448,7 @@ class CoreSetupService:
         engine_features = CoreSetupService.sync_engine_features()
         groups = CoreSetupService.sync_groups()
         role_features = CoreSetupService.sync_role_features()
+        group_access_profiles = CoreSetupService.sync_group_access_profiles()
         cards = CoreSetupService.sync_dashboard_cards()
         kpi_widgets = CoreSetupService.sync_kpi_widgets()
 
@@ -395,6 +480,10 @@ class CoreSetupService:
             "role_features": {
                 "created": role_features[0],
                 "updated": role_features[1],
+            },
+            "group_access_profiles": {
+                "created": group_access_profiles[0],
+                "updated": group_access_profiles[1],
             },
             "dashboard_cards": {
                 "created": cards[0],

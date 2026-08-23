@@ -622,6 +622,27 @@ ROLE_FEATURES = {
 }
 
 
+GROUP_LANDING_FEATURES = {
+    "Finance Manager": "FINANCE_DASHBOARD",
+    "Accountant": "FINANCE_DASHBOARD",
+    "Inventory Manager": "INVENTORY_DASHBOARD",
+    "Store Keeper": "INVENTORY_DASHBOARD",
+    "HR Manager": "PEOPLE_DASHBOARD",
+    "Sales Officer": "SALES_DASHBOARD",
+    "Marketplace Manager": "MARKETPLACE_DASHBOARD",
+    "Construction Manager": "CONSTRUCTION_DASHBOARD",
+    "Construction Supervisor": "CONSTRUCTION_DASHBOARD",
+    "Construction Worker": "CONSTRUCTION_DASHBOARD",
+    "Furniture Manager": "FURNITURE_DASHBOARD",
+    "Production Supervisor": "FURNITURE_DASHBOARD",
+    "Carpentry Supervisor": "FURNITURE_DASHBOARD",
+    "Carpentry Worker": "FURNITURE_DASHBOARD",
+    "Machinist Supervisor": "FURNITURE_DASHBOARD",
+    "Machinist Worker": "FURNITURE_DASHBOARD",
+    "Customer": "MARKETPLACE_SHOP",
+}
+
+
 # Django permissions are the authorization source of truth. Feature records
 # store these names so newly created Groups can gain access from Django Admin
 # without adding their names to application code.
