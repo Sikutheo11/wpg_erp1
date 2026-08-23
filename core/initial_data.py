@@ -203,6 +203,15 @@ BUSINESS_UNIT_FEATURES = {
         ("Quotations", "FURNITURE_QUOTATIONS", "furniture:quotation_list", "bi bi-file-earmark-text", 3),
         ("Materials", "FURNITURE_MATERIALS", "furniture:material_list", "bi bi-tree", 4),
         ("Outputs", "FURNITURE_OUTPUTS", "furniture:output_list", "bi bi-box-arrow-up", 5),
+        ("Legacy Orders", "FURNITURE_ORDERS", "furniture:order_list", "bi bi-cart", 6),
+        ("Production Tasks", "FURNITURE_TASKS", "furniture:production_task_list", "bi bi-check2-square", 7),
+        ("My Tasks", "FURNITURE_MY_TASKS", "furniture:my_production_tasks", "bi bi-person-check", 8),
+        ("Labour", "FURNITURE_LABOUR", "furniture:labour_list", "bi bi-people", 9),
+        ("Machines", "FURNITURE_MACHINES", "furniture:machine_list", "bi bi-gear", 10),
+        ("Quality", "FURNITURE_QUALITY", "furniture:quality_inspection_list", "bi bi-shield-check", 11),
+        ("Rework", "FURNITURE_REWORK", "furniture:rework_order_list", "bi bi-arrow-repeat", 12),
+        ("Reports", "FURNITURE_REPORTS", "furniture:production_reports", "bi bi-bar-chart", 13),
+        ("Settings", "FURNITURE_SETTINGS", "furniture:production_settings", "bi bi-sliders", 14),
     ],
     "CONSTRUCTION": [
         ("Dashboard", "CONSTRUCTION_DASHBOARD", "Construction:construction_dashboard", "bi bi-speedometer2", 1),
@@ -606,6 +615,20 @@ ROLE_FEATURES = {
 # store these names so newly created Groups can gain access from Django Admin
 # without adding their names to application code.
 FEATURE_DJANGO_PERMISSIONS = {
+    "FURNITURE_DASHBOARD": {"view_permission": "furniture.view_productionjob"},
+    "FURNITURE_PRODUCTION_JOBS": {"view_permission": "furniture.view_productionjob", "add_permission": "furniture.add_productionjob", "change_permission": "furniture.change_productionjob", "delete_permission": "furniture.delete_productionjob"},
+    "FURNITURE_QUOTATIONS": {"view_permission": "furniture.view_quotation", "add_permission": "furniture.add_quotation", "change_permission": "furniture.change_quotation", "delete_permission": "furniture.delete_quotation", "approve_permission": "furniture.approve_quotation"},
+    "FURNITURE_MATERIALS": {"view_permission": "furniture.view_productionmaterial", "add_permission": "furniture.add_productionmaterial", "change_permission": "furniture.change_productionmaterial", "delete_permission": "furniture.delete_productionmaterial"},
+    "FURNITURE_OUTPUTS": {"view_permission": "furniture.view_productionoutput", "add_permission": "furniture.add_productionoutput", "change_permission": "furniture.change_productionoutput", "delete_permission": "furniture.delete_productionoutput"},
+    "FURNITURE_ORDERS": {"view_permission": "furniture.view_order", "add_permission": "furniture.add_order", "change_permission": "furniture.change_order", "delete_permission": "furniture.delete_order"},
+    "FURNITURE_TASKS": {"view_permission": "furniture.view_productiontask", "add_permission": "furniture.add_productiontask", "change_permission": "furniture.change_productiontask", "delete_permission": "furniture.delete_productiontask"},
+    "FURNITURE_MY_TASKS": {"view_permission": "furniture.view_productiontask"},
+    "FURNITURE_LABOUR": {"view_permission": "furniture.view_productionlabour", "add_permission": "furniture.add_productionlabour", "change_permission": "furniture.change_productionlabour", "delete_permission": "furniture.delete_productionlabour"},
+    "FURNITURE_MACHINES": {"view_permission": "furniture.view_productionmachine", "add_permission": "furniture.add_productionmachine", "change_permission": "furniture.change_productionmachine", "delete_permission": "furniture.delete_productionmachine"},
+    "FURNITURE_QUALITY": {"view_permission": "furniture.view_qualityinspection", "add_permission": "furniture.add_qualityinspection", "change_permission": "furniture.change_qualityinspection", "delete_permission": "furniture.delete_qualityinspection", "approve_permission": "furniture.approve_qualityinspection"},
+    "FURNITURE_REWORK": {"view_permission": "furniture.view_reworkorder", "add_permission": "furniture.add_reworkorder", "change_permission": "furniture.change_reworkorder", "delete_permission": "furniture.delete_reworkorder", "approve_permission": "furniture.verify_reworkorder"},
+    "FURNITURE_REPORTS": {"view_permission": "furniture.view_productionjob"},
+    "FURNITURE_SETTINGS": {"view_permission": "furniture.view_productionsettings", "change_permission": "furniture.change_productionsettings"},
     "CUSTOMER_LIST": {
         "view_permission": "sales.view_customer",
         "add_permission": "sales.add_customer",

@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from core.workflow import WorkflowRegistry
 from core.workflow_service import WorkflowService
+from core.permissions import wpg_permission_required
 from orders.models import Order as EnterpriseOrder
 from .dashboard import FurnitureDashboard
 from django.shortcuts import redirect, render
@@ -52,7 +53,7 @@ from .models import (
     QualityInspection,
     ProductionDefect,
     ReworkOrder,
-    
+
 )
 from .services import (
     ProductionService,
@@ -93,6 +94,7 @@ def _validation_message(error):
 
 
 @login_required
+@wpg_permission_required("furniture.view_productionjob", feature_code="FURNITURE_DASHBOARD")
 def furniture_dashboard(request):
     return render(
         request,
@@ -108,6 +110,7 @@ def furniture_dashboard(request):
 
 
 @login_required
+@wpg_permission_required("furniture.view_order", feature_code="FURNITURE_ORDERS")
 def order_list(request):
     orders = LegacyOrder.objects.select_related(
         "product",
@@ -123,6 +126,7 @@ def order_list(request):
 
 
 @login_required
+@wpg_permission_required("furniture.add_order", feature_code="FURNITURE_ORDERS", action="add")
 def order_create(request):
     form = OrderForm(request.POST or None)
 
@@ -142,6 +146,7 @@ def order_create(request):
 
 
 @login_required
+@wpg_permission_required("furniture.change_order", feature_code="FURNITURE_ORDERS", action="change")
 def assign_worker(request, pk):
     order = get_object_or_404(LegacyOrder, pk=pk)
     form = AssignWorkerForm(request.POST or None, instance=order)
@@ -167,6 +172,7 @@ def assign_worker(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.add_productionjob", feature_code="FURNITURE_PRODUCTION_JOBS", action="add")
 @require_POST
 def create_production_job(request, order_id):
     order = get_object_or_404(EnterpriseOrder, pk=order_id)
@@ -209,6 +215,7 @@ def create_production_job(request, order_id):
 
 
 @login_required
+@wpg_permission_required("furniture.view_productionjob", feature_code="FURNITURE_PRODUCTION_JOBS")
 def production_job_list(request):
     jobs = ProductionJob.objects.select_related(
         "order",
@@ -233,6 +240,7 @@ def production_job_list(request):
 
 
 @login_required
+@wpg_permission_required("furniture.view_productionjob", feature_code="FURNITURE_PRODUCTION_JOBS")
 def production_job_detail(request, pk):
     job = get_object_or_404(
         ProductionJob.objects.select_related(
@@ -306,6 +314,7 @@ def production_job_detail(request, pk):
     )
 
 @login_required
+@wpg_permission_required("furniture.add_productionjob", feature_code="FURNITURE_PRODUCTION_JOBS", action="add")
 def production_job_create(request):
     selected_order_id = request.GET.get("order")
 
@@ -412,6 +421,7 @@ def production_job_create(request):
 
 
 @login_required
+@wpg_permission_required("furniture.add_quotation", feature_code="FURNITURE_QUOTATIONS", action="add")
 def create_quotation(request, pk):
     production_job = get_object_or_404(ProductionJob, pk=pk)
     quotation, _ = Quotation.objects.get_or_create(
@@ -446,6 +456,7 @@ def create_quotation(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.view_quotation", feature_code="FURNITURE_QUOTATIONS")
 def quotation_list(request):
     quotations = Quotation.objects.select_related(
         "production_job",
@@ -468,6 +479,8 @@ def quotation_list(request):
     )
 
 @login_required
+@wpg_permission_required("furniture.approve_quotation", feature_code="FURNITURE_QUOTATIONS", action="approve")
+@require_POST
 def approve_quotation(request, pk):
     quotation = get_object_or_404(
         Quotation.objects.select_related(
@@ -539,6 +552,7 @@ def approve_quotation(request, pk):
 # PRODUCTION RESOURCES
 # =====================================================
 @login_required
+@wpg_permission_required("furniture.add_productionmaterial", feature_code="FURNITURE_MATERIALS", action="add")
 def add_material(request, pk):
     production_job = get_object_or_404(
         ProductionJob,
@@ -588,6 +602,7 @@ def add_material(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.add_productionlabour", feature_code="FURNITURE_LABOUR", action="add")
 def add_labour(request, pk):
     production_job = get_object_or_404(ProductionJob, pk=pk)
     form = ProductionLabourForm(request.POST or None)
@@ -607,6 +622,7 @@ def add_labour(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.add_productionmachine", feature_code="FURNITURE_MACHINES", action="add")
 def add_machine(request, pk):
     production_job = get_object_or_404(ProductionJob, pk=pk)
     form = ProductionMachineForm(request.POST or None)
@@ -626,6 +642,7 @@ def add_machine(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.add_productionoutput", feature_code="FURNITURE_OUTPUTS", action="add")
 def add_output(request, pk):
     production_job = get_object_or_404(
         ProductionJob,
@@ -687,6 +704,7 @@ def add_output(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.view_productionmaterial", feature_code="FURNITURE_MATERIALS")
 def material_list(request):
     materials = (
         ProductionMaterial.objects
@@ -725,6 +743,7 @@ def material_list(request):
     )
 
 @login_required
+@wpg_permission_required("furniture.view_productionlabour", feature_code="FURNITURE_LABOUR")
 def labour_list(request):
     labours = (
         ProductionLabour.objects
@@ -768,6 +787,7 @@ def labour_list(request):
 
 
 @login_required
+@wpg_permission_required("furniture.view_productionmachine", feature_code="FURNITURE_MACHINES")
 def machine_list(request):
     machines = (
         ProductionMachine.objects
@@ -809,6 +829,7 @@ def machine_list(request):
 
 
 @login_required
+@wpg_permission_required("furniture.view_productionoutput", feature_code="FURNITURE_OUTPUTS")
 def output_list(request):
     outputs = (
         ProductionOutput.objects
@@ -879,6 +900,7 @@ def output_list(request):
 
 
 @login_required
+@wpg_permission_required("furniture.view_productiontask", feature_code="FURNITURE_TASKS")
 def production_task_list(request):
     tasks = ProductionTask.objects.select_related(
         "production_job",
@@ -909,6 +931,7 @@ def production_task_list(request):
 
 
 @login_required
+@wpg_permission_required("furniture.view_productiontask", feature_code="FURNITURE_MY_TASKS")
 def my_production_tasks(request):
     employee = _employee_for_user(request.user)
     tasks = ProductionTask.objects.none()
@@ -930,6 +953,7 @@ def my_production_tasks(request):
 
 
 @login_required
+@wpg_permission_required("furniture.view_productiontask", feature_code="FURNITURE_TASKS")
 def production_task_detail(request, pk):
     task = get_object_or_404(
         ProductionTask.objects.select_related(
@@ -954,6 +978,7 @@ def production_task_detail(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.add_productiontask", feature_code="FURNITURE_TASKS", action="add")
 def production_task_create(request):
     job_id = request.GET.get("job") or request.POST.get("production_job")
     production_job = None
@@ -998,6 +1023,7 @@ def production_task_create(request):
 
 
 @login_required
+@wpg_permission_required("furniture.change_productiontask", feature_code="FURNITURE_TASKS", action="change")
 def production_task_update(request, pk):
     task = get_object_or_404(ProductionTask, pk=pk)
     form = ProductionTaskForm(request.POST or None, instance=task)
@@ -1015,6 +1041,7 @@ def production_task_update(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.delete_productiontask", feature_code="FURNITURE_TASKS", action="delete")
 def production_task_delete(request, pk):
     task = get_object_or_404(ProductionTask, pk=pk)
 
@@ -1039,6 +1066,7 @@ def production_task_delete(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.change_productiontask", feature_code="FURNITURE_TASKS", action="change")
 def production_task_assign(request, pk):
     task = get_object_or_404(ProductionTask, pk=pk)
     form = ProductionTaskAssignmentForm(request.POST or None)
@@ -1065,6 +1093,7 @@ def production_task_assign(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.change_productiontask", feature_code="FURNITURE_TASKS", action="change")
 @require_POST
 def production_task_start(request, pk):
     task = get_object_or_404(ProductionTask, pk=pk)
@@ -1081,12 +1110,15 @@ def production_task_start(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.change_productiontask", feature_code="FURNITURE_TASKS", action="change")
 @require_POST
 def production_task_resume(request, pk):
     return production_task_start(request, pk)
 
 
 @login_required
+@wpg_permission_required("furniture.change_productiontask", feature_code="FURNITURE_TASKS", action="change")
+@require_POST
 def production_task_pause(request, pk):
     task = get_object_or_404(ProductionTask, pk=pk)
     form = ProductionTaskActionForm(request.POST or None)
@@ -1112,6 +1144,8 @@ def production_task_pause(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.change_productiontask", feature_code="FURNITURE_TASKS", action="change")
+@require_POST
 def production_task_block(request, pk):
     task = get_object_or_404(ProductionTask, pk=pk)
     form = ProductionTaskBlockForm(request.POST or None)
@@ -1137,6 +1171,8 @@ def production_task_block(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.change_productiontask", feature_code="FURNITURE_TASKS", action="change")
+@require_POST
 def production_task_cancel(request, pk):
     task = get_object_or_404(ProductionTask, pk=pk)
     form = ProductionTaskActionForm(request.POST or None)
@@ -1162,6 +1198,8 @@ def production_task_cancel(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.change_productiontask", feature_code="FURNITURE_TASKS", action="change")
+@require_POST
 def production_task_complete(request, pk):
     task = get_object_or_404(ProductionTask, pk=pk)
     form = ProductionTaskActionForm(request.POST or None)
@@ -1187,6 +1225,7 @@ def production_task_complete(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.change_productiontask", feature_code="FURNITURE_TASKS", action="change")
 def production_task_progress(request, pk):
     task = get_object_or_404(
         ProductionTask.objects.select_related(
@@ -1228,6 +1267,7 @@ def production_task_progress(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.change_productiontask", feature_code="FURNITURE_TASKS", action="change")
 def production_task_checklist(request, pk):
     task = get_object_or_404(ProductionTask, pk=pk)
     form = ProductionChecklistForm(request.POST or None)
@@ -1247,6 +1287,7 @@ def production_task_checklist(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.change_productionchecklist", feature_code="FURNITURE_TASKS", action="change")
 @require_POST
 def production_checklist_toggle(request, pk):
     item = get_object_or_404(
@@ -1274,6 +1315,7 @@ def production_checklist_toggle(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.change_productionjob", feature_code="FURNITURE_PRODUCTION_JOBS", action="change")
 @require_POST
 @transaction.atomic
 def kanban_move_job(request, pk):
@@ -1401,6 +1443,7 @@ def kanban_move_job(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.view_productionjob", feature_code="FURNITURE_REPORTS")
 def production_reports(request):
     jobs = ProductionJob.objects.select_related("product", "order")
     quotations = Quotation.objects.select_related("production_job")
@@ -1427,6 +1470,7 @@ def production_reports(request):
     )
 
 @login_required
+@wpg_permission_required("furniture.view_productionjob", feature_code="FURNITURE_REPORTS")
 def production_job_cost_report(request, pk):
     job = get_object_or_404(
         ProductionJob,
@@ -1453,6 +1497,7 @@ def production_job_cost_report(request, pk):
         },
     )
 @login_required
+@wpg_permission_required("furniture.change_productionsettings", feature_code="FURNITURE_SETTINGS", action="change")
 def production_settings(request):
     settings_object = ProductionSettings.get_settings()
 
@@ -1493,6 +1538,7 @@ def production_settings(request):
 # =====================================================
 
 @login_required
+@wpg_permission_required("furniture.view_qualityinspection", feature_code="FURNITURE_QUALITY")
 def quality_inspection_list(request):
     inspections = (
         QualityInspection.objects
@@ -1559,6 +1605,7 @@ def quality_inspection_list(request):
     )
 
 @login_required
+@wpg_permission_required("furniture.view_qualityinspection", feature_code="FURNITURE_QUALITY")
 def quality_inspection_detail(request, pk):
     inspection = get_object_or_404(
         QualityInspection.objects.select_related(
@@ -1590,6 +1637,7 @@ def quality_inspection_detail(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.add_qualityinspection", feature_code="FURNITURE_QUALITY", action="add")
 def quality_inspection_create(request, job_pk=None):
     production_job = None
 
@@ -1671,6 +1719,7 @@ def quality_inspection_create(request, job_pk=None):
     )
 
 @login_required
+@wpg_permission_required("furniture.change_qualityinspection", feature_code="FURNITURE_QUALITY", action="change")
 def quality_inspection_result(request, pk):
     inspection = get_object_or_404(
         QualityInspection.objects.select_related(
@@ -1757,6 +1806,7 @@ def quality_inspection_result(request, pk):
     )
 
 @login_required
+@wpg_permission_required("furniture.add_productiondefect", feature_code="FURNITURE_QUALITY", action="add")
 def production_defect_create(request, inspection_pk):
     inspection = get_object_or_404(
         QualityInspection.objects.select_related(
@@ -1846,6 +1896,7 @@ def production_defect_create(request, inspection_pk):
     )
 
 @login_required
+@wpg_permission_required("furniture.view_productiondefect", feature_code="FURNITURE_QUALITY")
 def production_defect_list(request):
     defects = (
         ProductionDefect.objects
@@ -1890,6 +1941,7 @@ def production_defect_list(request):
 
 
 @login_required
+@wpg_permission_required("furniture.view_productiondefect", feature_code="FURNITURE_QUALITY")
 def production_defect_detail(request, pk):
     defect = get_object_or_404(
         ProductionDefect.objects.select_related(
@@ -1916,6 +1968,7 @@ def production_defect_detail(request, pk):
 
 
 @login_required
+@wpg_permission_required("furniture.add_reworkorder", feature_code="FURNITURE_REWORK", action="add")
 def rework_order_create(request, defect_pk):
     defect = get_object_or_404(
         ProductionDefect.objects.select_related(
@@ -1983,6 +2036,7 @@ def rework_order_create(request, defect_pk):
     )
 
 @login_required
+@wpg_permission_required("furniture.view_reworkorder", feature_code="FURNITURE_REWORK")
 def rework_order_list(request):
     reworks = (
         ReworkOrder.objects
@@ -2017,6 +2071,7 @@ def rework_order_list(request):
 
 
 @login_required
+@wpg_permission_required("furniture.view_reworkorder", feature_code="FURNITURE_REWORK")
 def rework_order_detail(request, pk):
     rework = get_object_or_404(
         ReworkOrder.objects.select_related(
@@ -2039,6 +2094,7 @@ def rework_order_detail(request, pk):
     )
 
 @login_required
+@wpg_permission_required("furniture.change_reworkorder", feature_code="FURNITURE_REWORK", action="change")
 @require_POST
 def rework_order_start(request, pk):
     rework = get_object_or_404(
@@ -2079,6 +2135,8 @@ def rework_order_start(request, pk):
     )
 
 @login_required
+@wpg_permission_required("furniture.change_reworkorder", feature_code="FURNITURE_REWORK", action="change")
+@require_POST
 def rework_order_complete(request, pk):
     rework = get_object_or_404(
         ReworkOrder,
@@ -2158,6 +2216,8 @@ def rework_order_complete(request, pk):
     )
 
 @login_required
+@wpg_permission_required("furniture.verify_reworkorder", feature_code="FURNITURE_REWORK", action="approve")
+@require_POST
 def rework_order_verify(request, pk):
     rework = get_object_or_404(
         ReworkOrder,
@@ -2223,6 +2283,7 @@ def rework_order_verify(request, pk):
     )
 
 @login_required
+@wpg_permission_required("furniture.approve_qualityinspection", feature_code="FURNITURE_QUALITY", action="approve")
 @require_POST
 def quality_inspection_approve(request, pk):
     inspection = get_object_or_404(
@@ -2273,6 +2334,7 @@ def quality_inspection_approve(request, pk):
         pk=inspection.pk,
     )
 @login_required
+@wpg_permission_required("furniture.change_productionjob", feature_code="FURNITURE_PRODUCTION_JOBS", action="change")
 @require_POST
 def production_schedule(request, pk):
     job = get_object_or_404(
