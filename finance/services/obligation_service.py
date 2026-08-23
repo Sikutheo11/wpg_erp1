@@ -1,4 +1,6 @@
 from decimal import Decimal
+from datetime import timedelta
+import uuid
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -38,10 +40,20 @@ class ObligationService:
         if kind not in {"payable", "receivable"}:
             raise ValueError("Unknown obligation kind.")
         obligation = form.save(commit=False)
+        today = timezone.localdate()
+        obligation.due_date = obligation.transaction_date + timedelta(days=30)
+        obligation.notes = ""
+        token = uuid.uuid4().hex[:8].upper()
+        if kind == "payable":
+            obligation.reference = f"PAY-{today:%Y%m%d}-{token}"
+        else:
+            obligation.invoice_number = f"REC-{today:%Y%m%d}-{token}"
         obligation.total_amount = Decimal("0.00")
         obligation.amount_paid = Decimal("0.00")
         obligation.status = "unpaid"
         counterparty = obligation.counterparty
+        if counterparty is None:
+            raise ValidationError("Select the person or company linked to this obligation.")
         if kind == "payable":
             counterparty.is_supplier = True
             if hasattr(counterparty, "inventory_supplier"):
@@ -61,6 +73,10 @@ class ObligationService:
             else:
                 line.receivable = obligation
                 line.payable = None
+            if line.catalog_item_id:
+                line.item_type = ObligationLine.OTHER
+                line.description = line.catalog_item.name
+                line.unit = line.catalog_item.default_unit
             line.full_clean()
             line.save()
         return cls.recalculate(obligation)

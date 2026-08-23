@@ -1061,6 +1061,54 @@ class Expense(models.Model):
 # RECEIVABLE (CUSTOMER DEBT)
 # =====================================================
 
+class ObligationItemGroup(models.Model):
+    BUSINESS_UNITS = (
+        ("FURNITURE", "Furniture & Manufacturing"),
+        ("CONSTRUCTION", "Construction & Built Environment"),
+        ("AGRICULTURE", "Agriculture & Poultry"),
+    )
+
+    business_unit = models.CharField(max_length=30, choices=BUSINESS_UNITS, db_index=True)
+    name = models.CharField(max_length=120)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ("business_unit", "order", "name")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("business_unit", "name"),
+                name="fin_item_group_unique_name",
+            )
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class ObligationItemType(models.Model):
+    item_group = models.ForeignKey(
+        ObligationItemGroup,
+        on_delete=models.PROTECT,
+        related_name="item_types",
+    )
+    name = models.CharField(max_length=120)
+    default_unit = models.CharField(max_length=30, default="piece")
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ("item_group__order", "order", "name")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("item_group", "name"),
+                name="fin_item_type_unique_name",
+            )
+        ]
+
+    def __str__(self):
+        return self.name
+
 class Receivable(models.Model):
 
     STATUS = (
@@ -1089,6 +1137,13 @@ class Receivable(models.Model):
         choices=DebtRecord.BUSINESS_UNITS,
         default="GENERAL",
         db_index=True,
+    )
+    item_group = models.ForeignKey(
+        ObligationItemGroup,
+        on_delete=models.PROTECT,
+        related_name="receivables",
+        null=True,
+        blank=True,
     )
     transaction_date = models.DateField(default=timezone.localdate)
     notes = models.TextField(blank=True)
@@ -1165,6 +1220,13 @@ class Payable(models.Model):
         choices=DebtRecord.BUSINESS_UNITS,
         default="GENERAL",
         db_index=True,
+    )
+    item_group = models.ForeignKey(
+        ObligationItemGroup,
+        on_delete=models.PROTECT,
+        related_name="payables",
+        null=True,
+        blank=True,
     )
     transaction_date = models.DateField(default=timezone.localdate)
     notes = models.TextField(blank=True)
@@ -1265,6 +1327,13 @@ class ObligationLine(models.Model):
     payable = models.ForeignKey(
         Payable, on_delete=models.CASCADE, related_name="lines", null=True, blank=True
     )
+    catalog_item = models.ForeignKey(
+        ObligationItemType,
+        on_delete=models.PROTECT,
+        related_name="obligation_lines",
+        null=True,
+        blank=True,
+    )
     item_type = models.CharField(max_length=20, choices=ITEM_TYPES, default=OTHER)
     product = models.ForeignKey(Product, on_delete=models.PROTECT, null=True, blank=True)
     raw_material = models.ForeignKey(RawMaterial, on_delete=models.PROTECT, null=True, blank=True)
@@ -1297,6 +1366,15 @@ class ObligationLine(models.Model):
         has_payable = bool(self.payable_id or getattr(self, "payable", None))
         if has_receivable == has_payable:
             raise ValidationError("A line must belong to one receivable or one payable.")
+        if self.catalog_item_id:
+            parent = self.receivable or self.payable
+            if parent and parent.item_group_id != self.catalog_item.item_group_id:
+                raise ValidationError({"catalog_item": "Select an item from the chosen item group."})
+            if any((self.product_id, self.raw_material_id, self.asset_id, self.worker_id)):
+                raise ValidationError("A catalog item cannot also use a legacy item source.")
+            if self.quantity <= 0 or self.unit_price < 0:
+                raise ValidationError("Quantity and unit price are invalid.")
+            return
         sources = [self.product_id, self.raw_material_id, self.asset_id, self.worker_id]
         expected = {
             self.PRODUCT: self.product_id,
@@ -1310,11 +1388,19 @@ class ObligationLine(models.Model):
         elif any(sources):
             raise ValidationError("This line type must use a description, not an inventory item.")
         if self.item_type not in expected and not (self.description or "").strip():
-            raise ValidationError({"description": "Describe this obligation item."})
+            # New payable/receivable forms intentionally hide the legacy
+            # description field and use catalog_item instead.  A field-bound
+            # error for an excluded field makes ModelForm raise ValueError;
+            # keep this as a non-field validation error instead.
+            raise ValidationError("Select an item type for this obligation line.")
         if self.quantity <= 0 or self.unit_price < 0:
             raise ValidationError("Quantity and unit price are invalid.")
 
     def save(self, *args, **kwargs):
+        if self.catalog_item_id:
+            self.item_type = self.OTHER
+            self.description = self.catalog_item.name
+            self.unit = self.catalog_item.default_unit
         source = self.product or self.raw_material or self.asset or self.worker
         if source and not (self.description or "").strip():
             self.description = str(source)

@@ -15,6 +15,8 @@ from .models import (
     Payment,
     Payroll,
     ObligationLine,
+    ObligationItemGroup,
+    ObligationItemType,
 )
 
 from .identity import normalize_rwanda_phone
@@ -207,18 +209,34 @@ class ExpenseForm(forms.ModelForm):
 
 
 class ObligationFormMixin:
-    common_fields = [
-        "counterparty", "business_unit", "transaction_date",
-        "due_date", "notes",
-    ]
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["counterparty"].queryset = Counterparty.objects.filter(
             is_active=True
         ).order_by("name")
-        for name in ("transaction_date", "due_date"):
-            self.fields[name].input_formats = ["%Y-%m-%d"]
+        self.fields["counterparty"].required = True
+        self.fields["item_group"].required = True
+        self.fields["transaction_date"].input_formats = ["%Y-%m-%d"]
+        self.fields["business_unit"].choices = ObligationItemGroup.BUSINESS_UNITS
+        business_unit = (
+            self.data.get("business_unit")
+            or self.initial.get("business_unit")
+            or getattr(self.instance, "business_unit", None)
+        )
+        groups = ObligationItemGroup.objects.filter(is_active=True)
+        if business_unit:
+            groups = groups.filter(business_unit=business_unit)
+        else:
+            groups = groups.none()
+        self.fields["item_group"].queryset = groups
+
+    def clean(self):
+        cleaned = super().clean()
+        group = cleaned.get("item_group")
+        business_unit = cleaned.get("business_unit")
+        if group and business_unit and group.business_unit != business_unit:
+            self.add_error("item_group", "Select an item group from this business unit.")
+        return cleaned
 
 
 class ReceivableForm(ObligationFormMixin, forms.ModelForm):
@@ -226,38 +244,16 @@ class ReceivableForm(ObligationFormMixin, forms.ModelForm):
         model = Receivable
         fields = [
             "counterparty",
-            "invoice_number",
             "business_unit",
+            "item_group",
             "transaction_date",
-            "due_date",
-            "notes",
         ]
         widgets = {
             "counterparty": forms.Select(attrs={"class": "form-select"}),
-            "invoice_number": forms.TextInput(
-                attrs={
-                    "class": "form-control",
-                    "placeholder": "Invoice number",
-                }
-            ),
             "business_unit": forms.Select(attrs={"class": "form-select"}),
+            "item_group": forms.Select(attrs={"class": "form-select"}),
             "transaction_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
-            "due_date": forms.DateInput(
-                attrs={
-                    "class": "form-control",
-                    "type": "date",
-                },
-                format="%Y-%m-%d",
-            ),
-            "notes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.fields["due_date"].input_formats = [
-            "%Y-%m-%d",
-        ]
 
 
 
@@ -266,66 +262,90 @@ class PayableForm(ObligationFormMixin, forms.ModelForm):
         model = Payable
         fields = [
             "counterparty",
-            "reference",
             "business_unit",
+            "item_group",
             "transaction_date",
-            "due_date",
-            "notes",
         ]
         widgets = {
             "counterparty": forms.Select(attrs={"class": "form-select"}),
-            "reference": forms.TextInput(
-                attrs={
-                    "class": "form-control",
-                    "placeholder": "Payable reference",
-                }
-            ),
             "business_unit": forms.Select(attrs={"class": "form-select"}),
+            "item_group": forms.Select(attrs={"class": "form-select"}),
             "transaction_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
-            "due_date": forms.DateInput(
-                attrs={
-                    "class": "form-control",
-                    "type": "date",
-                },
-                format="%Y-%m-%d",
-            ),
-            "notes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.fields["due_date"].input_formats = [
-            "%Y-%m-%d",
-        ]
 
 
 
 class ObligationLineForm(forms.ModelForm):
     class Meta:
         model = ObligationLine
-        fields = ["item_type", "product", "raw_material", "asset", "worker", "description", "quantity", "unit", "unit_price"]
+        fields = ["catalog_item", "quantity", "unit_price"]
         widgets = {
-            "item_type": forms.Select(attrs={"class": "form-select obligation-type"}),
-            "product": forms.Select(attrs={"class": "form-select"}),
-            "raw_material": forms.Select(attrs={"class": "form-select"}),
-            "asset": forms.Select(attrs={"class": "form-select"}),
-            "worker": forms.Select(attrs={"class": "form-select"}),
-            "description": forms.TextInput(attrs={"class": "form-control"}),
+            "catalog_item": forms.Select(attrs={"class": "form-select catalog-item"}),
             "quantity": forms.NumberInput(attrs={"class": "form-control", "min": "0.001", "step": "0.001"}),
-            "unit": forms.TextInput(attrs={"class": "form-control"}),
             "unit_price": forms.NumberInput(attrs={"class": "form-control", "min": "0", "step": "0.01"}),
         }
 
+    def __init__(self, *args, item_group=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["catalog_item"].required = True
+        items = ObligationItemType.objects.filter(is_active=True)
+        if item_group:
+            items = items.filter(item_group=item_group)
+        else:
+            items = items.none()
+        self.fields["catalog_item"].queryset = items
+        self.fields["catalog_item"].label = "Item type"
 
-ReceivableLineFormSet = inlineformset_factory(
+
+class ObligationItemGroupForm(forms.ModelForm):
+    class Meta:
+        model = ObligationItemGroup
+        fields = ["business_unit", "name"]
+        widgets = {
+            "business_unit": forms.Select(attrs={"class": "form-select"}),
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Item group name"}),
+        }
+
+
+class ObligationItemTypeForm(forms.ModelForm):
+    class Meta:
+        model = ObligationItemType
+        fields = ["item_group", "name", "default_unit"]
+        widgets = {
+            "item_group": forms.Select(attrs={"class": "form-select"}),
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Item name"}),
+            "default_unit": forms.TextInput(attrs={"class": "form-control", "placeholder": "piece, kg, service..."}),
+        }
+
+
+class GroupAwareInlineFormSetMixin:
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        group = None
+        group_id = self.data.get("item_group") if self.is_bound else getattr(self.instance, "item_group_id", None)
+        if group_id:
+            group = ObligationItemGroup.objects.filter(pk=group_id).first()
+        for form in self.forms:
+            items = ObligationItemType.objects.filter(is_active=True, item_group=group) if group else ObligationItemType.objects.none()
+            form.fields["catalog_item"].queryset = items
+
+
+_ReceivableLineFormSet = inlineformset_factory(
     Receivable, ObligationLine, form=ObligationLineForm, fk_name="receivable",
     extra=1, can_delete=True, min_num=1, validate_min=True,
 )
-PayableLineFormSet = inlineformset_factory(
+_PayableLineFormSet = inlineformset_factory(
     Payable, ObligationLine, form=ObligationLineForm, fk_name="payable",
     extra=1, can_delete=True, min_num=1, validate_min=True,
 )
+
+
+class ReceivableLineFormSet(GroupAwareInlineFormSetMixin, _ReceivableLineFormSet):
+    pass
+
+
+class PayableLineFormSet(GroupAwareInlineFormSetMixin, _PayableLineFormSet):
+    pass
 
 
 class PaymentForm(forms.ModelForm):

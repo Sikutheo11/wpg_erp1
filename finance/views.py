@@ -6,7 +6,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.db.models import F, Q, Sum
 from django.shortcuts import (
     get_object_or_404,
@@ -27,6 +27,8 @@ from .forms import (
     ReceivableForm,
     ReceivableLineFormSet,
     ReceivablePaymentForm,
+    ObligationItemGroupForm,
+    ObligationItemTypeForm,
 )
 
 from .models import (
@@ -40,6 +42,8 @@ from .models import (
     Payment,
     Payroll,
     calculate_financial_summary,
+    ObligationItemGroup,
+    ObligationItemType,
 )
 from .services import (
     PayableService,
@@ -588,6 +592,13 @@ def receivable_list(request):
             status=status
         )
 
+    totals = base_queryset.aggregate(
+        total=Sum("total_amount"),
+        paid=Sum("amount_paid"),
+    )
+    total_amount = totals["total"] or 0
+    paid_amount = totals["paid"] or 0
+
     return render(
         request,
         "finance/receivables/receivable_list.html",
@@ -597,6 +608,9 @@ def receivable_list(request):
             "selected_status": status,
             "status_choices": Receivable.STATUS,
             "total_count": base_queryset.count(),
+            "total_amount": total_amount,
+            "paid_amount": paid_amount,
+            "outstanding_amount": total_amount - paid_amount,
             "unpaid_count": base_queryset.filter(
                 status="unpaid"
             ).count(),
@@ -616,7 +630,13 @@ def receivable_list(request):
 )
 def receivable_create(request):
     instance = Receivable()
-    form = ReceivableForm(request.POST or None, instance=instance, initial={"counterparty": request.GET.get("counterparty")})
+    if request.GET.get("item_group"):
+        instance.item_group_id = request.GET["item_group"]
+    form = ReceivableForm(request.POST or None, instance=instance, initial={
+        "counterparty": request.GET.get("counterparty"),
+        "business_unit": request.GET.get("business_unit"),
+        "item_group": request.GET.get("item_group"),
+    })
     formset = ReceivableLineFormSet(request.POST or None, instance=instance, prefix="lines")
     if request.method == "POST" and form.is_valid() and formset.is_valid():
         try:
@@ -625,10 +645,12 @@ def receivable_create(request):
             form.add_error(None, _validation_message(error))
         else:
             messages.success(request, f"Receivable {receivable.invoice_number} created successfully.")
-            return redirect("finance:receivable_detail", pk=receivable.pk)
+            return redirect("finance:receivable_list")
     return render(request, "finance/receivables/receivable_form.html", {
         "form": form, "formset": formset, "page_title": "Create Receivable",
         "counterparty_create_url": "finance:counterparty_phone_lookup", "obligation_kind": "receivable",
+        "group_create_url": "finance:obligation_item_group_create",
+        "item_create_url": "finance:obligation_item_type_create",
     })
 
 
@@ -854,7 +876,13 @@ def payable_list(request):
 )
 def payable_create(request):
     instance = Payable()
-    form = PayableForm(request.POST or None, instance=instance, initial={"counterparty": request.GET.get("counterparty")})
+    if request.GET.get("item_group"):
+        instance.item_group_id = request.GET["item_group"]
+    form = PayableForm(request.POST or None, instance=instance, initial={
+        "counterparty": request.GET.get("counterparty"),
+        "business_unit": request.GET.get("business_unit"),
+        "item_group": request.GET.get("item_group"),
+    })
     formset = PayableLineFormSet(request.POST or None, instance=instance, prefix="lines")
     if request.method == "POST" and form.is_valid() and formset.is_valid():
         try:
@@ -863,7 +891,7 @@ def payable_create(request):
             form.add_error(None, _validation_message(error))
         else:
             messages.success(request, f"Payable {payable.reference} created successfully.")
-            return redirect("finance:payable_detail", pk=payable.pk)
+            return redirect("finance:payable_list")
 
     return render(
         request,
@@ -874,8 +902,59 @@ def payable_create(request):
             "page_title": "Create Payable",
             "counterparty_create_url": "finance:counterparty_phone_lookup",
             "obligation_kind": "payable",
+            "group_create_url": "finance:obligation_item_group_create",
+            "item_create_url": "finance:obligation_item_type_create",
         },
     )
+
+
+def _catalog_return_url(kind):
+    return "finance:payable_create" if kind == "payable" else "finance:receivable_create"
+
+
+@login_required
+@wpg_permission_required("finance.add_payable", feature_code="FINANCE_PAYABLES", action="add")
+def obligation_item_group_create(request):
+    kind = request.GET.get("next") or request.POST.get("next") or "receivable"
+    form = ObligationItemGroupForm(request.POST or None, initial={"business_unit": request.GET.get("business_unit")})
+    if request.method == "POST" and form.is_valid():
+        group = form.save()
+        messages.success(request, f"Item group {group.name} added successfully.")
+        return redirect(f"{redirect(_catalog_return_url(kind)).url}?business_unit={group.business_unit}&item_group={group.pk}")
+    return render(request, "finance/catalog/item_group_form.html", {"form": form, "kind": kind})
+
+
+@login_required
+@wpg_permission_required("finance.add_payable", feature_code="FINANCE_PAYABLES", action="add")
+def obligation_item_type_create(request):
+    kind = request.GET.get("next") or request.POST.get("next") or "receivable"
+    form = ObligationItemTypeForm(request.POST or None, initial={"item_group": request.GET.get("item_group")})
+    if request.method == "POST" and form.is_valid():
+        item = form.save()
+        messages.success(request, f"Item {item.name} added successfully.")
+        return redirect(f"{redirect(_catalog_return_url(kind)).url}?business_unit={item.item_group.business_unit}&item_group={item.item_group_id}")
+    return render(request, "finance/catalog/item_type_form.html", {"form": form, "kind": kind})
+
+
+@login_required
+def obligation_item_groups_json(request):
+    groups = ObligationItemGroup.objects.filter(
+        is_active=True,
+        business_unit=request.GET.get("business_unit", ""),
+    ).values("id", "name")
+    return JsonResponse({"results": list(groups)})
+
+
+@login_required
+def obligation_item_types_json(request):
+    item_group_id = request.GET.get("item_group")
+    if not item_group_id:
+        return JsonResponse({"results": []})
+    items = ObligationItemType.objects.filter(
+        is_active=True,
+        item_group_id=item_group_id,
+    ).values("id", "name", "default_unit")
+    return JsonResponse({"results": list(items)})
 
 
 # =====================================================

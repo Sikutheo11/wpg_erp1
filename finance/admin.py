@@ -11,7 +11,29 @@ from .models import (
     Payroll,
     Counterparty,
     ObligationLine,
+    ObligationItemGroup,
+    ObligationItemType,
 )
+
+
+class ObligationItemTypeInline(admin.TabularInline):
+    model = ObligationItemType
+    extra = 0
+
+
+@admin.register(ObligationItemGroup)
+class ObligationItemGroupAdmin(admin.ModelAdmin):
+    list_display = ("name", "business_unit", "order", "is_active")
+    list_filter = ("business_unit", "is_active")
+    search_fields = ("name",)
+    inlines = (ObligationItemTypeInline,)
+
+
+@admin.register(ObligationItemType)
+class ObligationItemTypeAdmin(admin.ModelAdmin):
+    list_display = ("name", "item_group", "default_unit", "order", "is_active")
+    list_filter = ("item_group__business_unit", "item_group", "is_active")
+    search_fields = ("name",)
 
 
 class ReceivableLineInline(admin.TabularInline):
