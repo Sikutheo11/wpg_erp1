@@ -5,9 +5,112 @@
 Debts
 {% endblock %}
 
+{% block page_title %}
+Debts
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+<style>
+.debt-money{
+    white-space:nowrap;
+}
+
+@media (max-width: 767.98px){
+    .debt-page{
+        padding-top:.5rem!important;
+    }
+
+    .debt-page-header{
+        display:block!important;
+    }
+
+    .debt-actions{
+        display:grid!important;
+        grid-template-columns:1fr;
+        width:100%;
+        margin-top:1rem;
+    }
+
+    .debt-actions .btn{
+        min-height:46px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+    }
+
+    .debt-table thead{
+        display:none;
+    }
+
+    .debt-table,
+    .debt-table tbody,
+    .debt-table tr,
+    .debt-table td{
+        display:block;
+        width:100%;
+    }
+
+    .debt-table tbody{
+        padding:.75rem;
+    }
+
+    .debt-table tr{
+        border:1px solid #e5e7eb;
+        border-radius:12px;
+        margin-bottom:1rem;
+        padding:.5rem .75rem;
+        background:#fff;
+        box-shadow:0 2px 8px rgba(15,23,42,.06);
+    }
+
+    .debt-table td{
+        border:0;
+        border-bottom:1px solid #eef0f3;
+        padding:.65rem 0;
+        text-align:right!important;
+        overflow-wrap:anywhere;
+    }
+
+    .debt-table td::before{
+        content:attr(data-label);
+        float:left;
+        max-width:45%;
+        padding-right:.75rem;
+        color:#6b7280;
+        font-size:.8rem;
+        font-weight:600;
+        text-align:left;
+    }
+
+    .debt-table td:last-child{
+        border-bottom:0;
+    }
+
+    .debt-table .debt-record-actions{
+        clear:both;
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:.5rem;
+        padding-top:.35rem;
+    }
+
+    .debt-table .debt-record-actions .btn{
+        min-height:42px;
+        border-radius:8px!important;
+    }
+
+    .debt-empty::before{
+        display:none;
+    }
+
+    .debt-empty{
+        text-align:center!important;
+    }
+}
+</style>
+
+<div class="container-fluid py-4 debt-page">
+    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4 debt-page-header">
         <div>
             <h1 class="h3 fw-bold mb-1">
                 Debts
@@ -17,7 +120,7 @@ Debts
             </p>
         </div>
 
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap gap-2 debt-actions">
             <a
                 href="{% url 'finance:counterparty_phone_lookup' %}"
                 class="btn btn-outline-primary"
@@ -171,7 +274,7 @@ Debts
         </div>
 
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 debt-table">
                 <thead class="table-light">
                     <tr>
                         <th>Reference</th>
@@ -190,13 +293,13 @@ Debts
                 <tbody>
                     {% for debt in debts %}
                         <tr>
-                            <td>
+                            <td data-label="Reference">
                                 <span class="font-monospace fw-semibold">
                                     {{ debt.reference }}
                                 </span>
                             </td>
 
-                            <td>
+                            <td data-label="Person / Company">
                                 <div class="fw-semibold">
                                     {{ debt.counterparty.name }}
                                 </div>
@@ -205,7 +308,7 @@ Debts
                                 </div>
                             </td>
 
-                            <td>
+                            <td data-label="Direction">
                                 {% if debt.direction == "THEY_OWE_US" %}
                                     <span class="badge text-bg-success">
                                         They owe WPG
@@ -217,11 +320,11 @@ Debts
                                 {% endif %}
                             </td>
 
-                            <td>
+                            <td data-label="Date">
                                 {{ debt.transaction_date|date:"d M Y" }}
                             </td>
 
-                            <td>
+                            <td data-label="Due date">
                                 {% if debt.due_date %}
                                     {{ debt.due_date|date:"d M Y" }}
                                 {% else %}
@@ -229,19 +332,19 @@ Debts
                                 {% endif %}
                             </td>
 
-                            <td class="text-end">
+                            <td class="text-end debt-money" data-label="Total">
                                 RWF {{ debt.total_amount|floatformat:2|intcomma }}
                             </td>
 
-                            <td class="text-end text-success">
+                            <td class="text-end text-success debt-money" data-label="Paid">
                                 RWF {{ debt.amount_paid|floatformat:2|intcomma }}
                             </td>
 
-                            <td class="text-end fw-bold">
+                            <td class="text-end fw-bold debt-money" data-label="Balance">
                                 RWF {{ debt.balance|floatformat:2|intcomma }}
                             </td>
 
-                            <td>
+                            <td data-label="Status">
                                 {% if debt.status == "PAID" %}
                                     <span class="badge text-bg-success">
                                         {{ debt.get_status_display }}
@@ -265,8 +368,8 @@ Debts
                                 {% endif %}
                             </td>
 
-                            <td class="text-end">
-                                <div class="btn-group btn-group-sm">
+                            <td class="text-end" data-label="Actions">
+                                <div class="btn-group btn-group-sm debt-record-actions">
                                     <a
                                         href="{% url 'finance:counterparty_detail' debt.counterparty.pk %}"
                                         class="btn btn-outline-dark"
@@ -303,7 +406,7 @@ Debts
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="10" class="text-center py-5">
+                            <td colspan="10" class="text-center py-5 debt-empty">
                                 <div class="text-muted mb-3">
                                     No debt records were found.
                                 </div>
