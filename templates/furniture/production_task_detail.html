@@ -1,4 +1,5 @@
 {% extends "base_dashboard.html" %}
+{% load permission_tags %}
 {% block title %}{{ task.name }}{% endblock %}
 {% block page_title %}Production Task Detail{% endblock %}
 {% block content %}
@@ -49,16 +50,22 @@
       </div>
     </div>
     <div class="col-xl-4">
+      {% if request.user|can_edit:"FURNITURE_TASKS" or request.user|can_delete:"FURNITURE_TASKS" %}
       <div class="card border-0 shadow-sm"><div class="card-header bg-white"><strong>Actions</strong></div><div class="card-body d-grid gap-2">
+        {% if request.user|can_edit:"FURNITURE_TASKS" %}
         {% if task.status == "PENDING" or task.status == "READY" %}<form method="post" action="{% url 'furniture:production_task_start' task.pk %}">{% csrf_token %}<button class="btn btn-success w-100">Start</button></form>{% endif %}
         {% if task.status == "IN_PROGRESS" %}<form method="post" action="{% url 'furniture:production_task_pause' task.pk %}">{% csrf_token %}<button class="btn btn-warning w-100">Pause</button></form>{% endif %}
         {% if task.status == "PAUSED" %}<form method="post" action="{% url 'furniture:production_task_resume' task.pk %}">{% csrf_token %}<button class="btn btn-success w-100">Resume</button></form>{% endif %}
         {% if task.status != "COMPLETED" and task.status != "CANCELLED" %}
-          <a href="{% url 'furniture:production_task_block' task.pk %}" class="btn btn-outline-danger">Block</a>
-          <a href="{% url 'furniture:production_task_complete' task.pk %}" class="btn btn-outline-success">Complete</a>
+          <form method="post" action="{% url 'furniture:production_task_block' task.pk %}">{% csrf_token %}<button class="btn btn-outline-danger w-100">Block</button></form>
+          <form method="post" action="{% url 'furniture:production_task_complete' task.pk %}">{% csrf_token %}<button class="btn btn-outline-success w-100">Complete</button></form>
+        {% endif %}
+        {% endif %}
+        {% if request.user|can_delete:"FURNITURE_TASKS" and task.status != "COMPLETED" and task.status != "CANCELLED" %}
           <a href="{% url 'furniture:production_task_delete' task.pk %}" class="btn btn-outline-dark">Cancel Task</a>
         {% endif %}
       </div></div>
+      {% endif %}
     </div>
   </div>
 </div>

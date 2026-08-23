@@ -1,4 +1,5 @@
 {% extends "base_dashboard.html" %}
+{% load permission_tags %}
 
 {% block title %}
 Quotations
@@ -141,14 +142,17 @@ Pending Quotations
 
                         <td class="text-end">
 
-                            <a href="{% url 'furniture:approve_quotation' q.pk %}"
-                               class="btn btn-sm btn-primary">
-
-                                <i class="bi bi-eye me-1"></i>
-
-                                Review
-
-                            </a>
+                            {% if request.user|can_approve:"FURNITURE_QUOTATIONS" %}
+                                <form method="post" action="{% url 'furniture:approve_quotation' q.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="approve">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-check-circle me-1"></i> Approve
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="text-muted small">View only</span>
+                            {% endif %}
 
                         </td>
 

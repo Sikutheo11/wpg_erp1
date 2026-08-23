@@ -3,6 +3,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.http import HttpResponse
+from django.template.loader import get_template
 from django.test import TestCase
 from django.urls import reverse
 
@@ -78,3 +79,12 @@ class FurnitureGroupPermissionTests(TestCase):
             reverse("furniture:approve_quotation", kwargs={"pk": 999999})
         )
         self.assertEqual(response.status_code, 405)
+
+    def test_permission_aware_action_templates_compile(self):
+        for template_name in (
+            "furniture/quotation_list.html",
+            "furniture/production_task_detail.html",
+            "furniture/quality/rework_detail.html",
+        ):
+            with self.subTest(template_name=template_name):
+                self.assertIsNotNone(get_template(template_name))

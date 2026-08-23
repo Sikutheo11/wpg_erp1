@@ -1,12 +1,15 @@
 {% extends "base_dashboard.html" %}
+{% load permission_tags %}
 
 {% block title %}{{ rework.rework_code }}{% endblock %}
 {% block page_title %}Rework Order Detail{% endblock %}
 {% block content %}
 <div class="container-fluid"><div class="d-flex justify-content-between mb-4"><div><h3 class="fw-bold">{{ rework.rework_code }}</h3><p class="text-muted">{{ rework.production_job }}</p></div><div class="d-flex gap-2">
+{% if request.user|can_edit:"FURNITURE_REWORK" %}
 {% if rework.status == "PENDING" or rework.status == "ASSIGNED" %}<form method="post" action="{% url 'furniture:rework_order_start' rework.pk %}">{% csrf_token %}<button class="btn btn-success">Start</button></form>{% endif %}
-{% if rework.status == "IN_PROGRESS" %}<a href="{% url 'furniture:rework_order_complete' rework.pk %}" class="btn btn-primary">Complete</a>{% endif %}
-{% if rework.status == "COMPLETED" %}<a href="{% url 'furniture:rework_order_verify' rework.pk %}" class="btn btn-warning">Verify</a>{% endif %}
+{% if rework.status == "IN_PROGRESS" %}<form method="post" action="{% url 'furniture:rework_order_complete' rework.pk %}">{% csrf_token %}<button class="btn btn-primary">Complete</button></form>{% endif %}
+{% endif %}
+{% if request.user|can_approve:"FURNITURE_REWORK" and rework.status == "COMPLETED" %}<a href="{% url 'furniture:rework_order_verify' rework.pk %}" class="btn btn-warning">Verify</a>{% endif %}
 </div></div>
 <div class="row g-4"><div class="col-xl-8"><div class="card border-0 shadow-sm"><div class="card-body">
 <p><strong>Status:</strong> {{ rework.get_status_display }}</p><p><strong>Assigned to:</strong> {{ rework.assigned_to|default:"Unassigned" }}</p><p><strong>Estimated hours:</strong> {{ rework.estimated_hours }}</p><p><strong>Actual hours:</strong> {{ rework.actual_hours }}</p><p><strong>Cost:</strong> {{ rework.rework_cost|floatformat:0 }} RWF</p><hr><h6>Instructions</h6><p>{{ rework.instructions|linebreaksbr }}</p>
