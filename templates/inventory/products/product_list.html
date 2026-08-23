@@ -1,10 +1,10 @@
-{% extends "inventory/base_inventory.html" %}
+{% extends "base_dashboard.html" %}
 {% load permission_tags %}
 
 {% block title %}Products - Inventory{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center">
+<div class="inventory-list-heading d-flex justify-content-between align-items-center">
     <h2>Products</h2>
     {% if request.user|can_add:"INVENTORY_PRODUCTS" %}
         <a href="{% url 'inventory:product_create' %}" class="btn btn-primary">
@@ -15,8 +15,8 @@
 
 <div class="card shadow mt-3">
     <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
+        <div class="table-responsive compact-table-wrap">
+            <table class="table table-hover align-middle compact-mobile-table">
                 <thead>
                     <tr>
                         <th>Code</th>

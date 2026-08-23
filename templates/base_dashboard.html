@@ -210,6 +210,36 @@ body{
 }
 
 @media (max-width: 767.98px){
+    .main-content .compact-table-wrap{
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        border-radius:.5rem;
+    }
+
+    .main-content .compact-mobile-table{
+        display:table!important;
+        width:100%;
+        min-width:570px;
+        margin-bottom:0;
+        font-size:.7rem;
+        line-height:1.25;
+    }
+
+    .main-content .compact-mobile-table thead{display:table-header-group!important}
+    .main-content .compact-mobile-table tbody{display:table-row-group!important;padding:0}
+    .main-content .compact-mobile-table tr{display:table-row!important;border-radius:0;box-shadow:none}
+    .main-content .compact-mobile-table th,
+    .main-content .compact-mobile-table td{
+        display:table-cell!important;
+        width:auto!important;
+        border-bottom:1px solid #dee2e6!important;
+        padding:.38rem .42rem!important;
+        text-align:left!important;
+        white-space:nowrap;
+        vertical-align:middle;
+    }
+    .main-content .compact-mobile-table td::before{display:none!important}
+
     .main-content .form-control,
     .main-content .form-select{
         min-height:46px;
@@ -303,6 +333,7 @@ body{
     }
 }
 </style>
+{% include "includes/mobile_density.html" %}
 </head>
 
 <body>
@@ -659,7 +690,8 @@ body{
 (() => {
     const prepareResponsiveTables = () => {
         document.querySelectorAll(".main-content table.table").forEach((table) => {
-            if (table.classList.contains("debt-table")) {
+            if (table.classList.contains("debt-table") ||
+                table.classList.contains("compact-mobile-table")) {
                 return;
             }
 

@@ -1,4 +1,4 @@
-{% extends 'inventory/base_inventory.html' %}
+{% extends 'base_dashboard.html' %}
 {% load permission_tags %}
 
 
@@ -7,7 +7,7 @@
 
 
 
-<div class="d-flex justify-content-between">
+<div class="inventory-list-heading d-flex justify-content-between align-items-center">
 
 
 <h2>
@@ -33,8 +33,8 @@ class="btn btn-primary">
 
 <div class="card shadow mt-3">
 
-
-<table class="table table-striped">
+<div class="table-responsive compact-table-wrap">
+<table class="table table-striped compact-mobile-table">
 
 
 <thead>
@@ -81,5 +81,6 @@ No assets
 {% endfor %}
 </tbody>
 </table>
+</div>
 </div>
 {% endblock %}
