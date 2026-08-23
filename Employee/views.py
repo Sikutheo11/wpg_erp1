@@ -10,6 +10,9 @@ from django.shortcuts import (
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
+from django.views.decorators.http import require_POST
+
+from core.permissions import wpg_permission_required
 
 from .models import (
     Employee,
@@ -38,6 +41,10 @@ from .dashboard import get_employee_dashboard
 # ==================================================
 
 @login_required
+@wpg_permission_required(
+    "Employee.view_employee",
+    feature_code="PEOPLE_DASHBOARD",
+)
 def employee_dashboard(request):
 
     context = get_employee_dashboard(
@@ -57,6 +64,10 @@ def employee_dashboard(request):
 # ==================================================
 
 @login_required
+@wpg_permission_required(
+    "Employee.view_employee",
+    feature_code="PEOPLE_EMPLOYEES",
+)
 def employee_list(request):
 
     employees = Employee.objects.select_related(
@@ -76,6 +87,10 @@ def employee_list(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.view_employee",
+    feature_code="PEOPLE_EMPLOYEES",
+)
 def employee_detail(request, pk):
 
     employee = get_object_or_404(
@@ -94,6 +109,11 @@ def employee_detail(request, pk):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.add_employee",
+    feature_code="PEOPLE_EMPLOYEES",
+    action="add",
+)
 def employee_create(request):
 
     form = EmployeeForm(
@@ -126,6 +146,11 @@ def employee_create(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.change_employee",
+    feature_code="PEOPLE_EMPLOYEES",
+    action="change",
+)
 def employee_update(request, pk):
 
     employee = get_object_or_404(
@@ -166,6 +191,11 @@ def employee_update(request, pk):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.delete_employee",
+    feature_code="PEOPLE_EMPLOYEES",
+    action="delete",
+)
 def employee_delete(request, pk):
 
     employee = get_object_or_404(
@@ -203,6 +233,10 @@ def employee_delete(request, pk):
 # ==================================================
 
 @login_required
+@wpg_permission_required(
+    "Employee.view_department",
+    feature_code="PEOPLE_DEPARTMENTS",
+)
 def department_list(request):
 
     departments = Department.objects.all()
@@ -218,6 +252,11 @@ def department_list(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.add_department",
+    feature_code="PEOPLE_DEPARTMENTS",
+    action="add",
+)
 def department_create(request):
 
     form = DepartmentForm(
@@ -245,6 +284,11 @@ def department_create(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.change_department",
+    feature_code="PEOPLE_DEPARTMENTS",
+    action="change",
+)
 def department_update(request, pk):
 
     department = get_object_or_404(
@@ -279,6 +323,11 @@ def department_update(request, pk):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.delete_department",
+    feature_code="PEOPLE_DEPARTMENTS",
+    action="delete",
+)
 def department_delete(request, pk):
 
     department = get_object_or_404(
@@ -311,6 +360,10 @@ def department_delete(request, pk):
 # ==================================================
 
 @login_required
+@wpg_permission_required(
+    "Employee.view_position",
+    feature_code="PEOPLE_POSITIONS",
+)
 def position_list(request):
 
     positions = Position.objects.all()
@@ -326,6 +379,11 @@ def position_list(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.add_position",
+    feature_code="PEOPLE_POSITIONS",
+    action="add",
+)
 def position_create(request):
 
     form = PositionForm(
@@ -353,6 +411,11 @@ def position_create(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.change_position",
+    feature_code="PEOPLE_POSITIONS",
+    action="change",
+)
 def position_update(request, pk):
 
     position = get_object_or_404(
@@ -387,6 +450,11 @@ def position_update(request, pk):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.delete_position",
+    feature_code="PEOPLE_POSITIONS",
+    action="delete",
+)
 def position_delete(request, pk):
 
     position = get_object_or_404(
@@ -419,6 +487,10 @@ def position_delete(request, pk):
 # ==================================================
 
 @login_required
+@wpg_permission_required(
+    "Employee.view_attendance",
+    feature_code="PEOPLE_ATTENDANCE",
+)
 def attendance_list(request):
 
     attendance = Attendance.objects.select_related(
@@ -437,6 +509,11 @@ def attendance_list(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.add_attendance",
+    feature_code="PEOPLE_ATTENDANCE",
+    action="add",
+)
 def attendance_create(request):
 
     form = AttendanceForm(
@@ -464,6 +541,10 @@ def attendance_create(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.view_attendance",
+    feature_code="PEOPLE_ATTENDANCE",
+)
 def attendance_report(request):
 
     report = (
@@ -492,6 +573,10 @@ def attendance_report(request):
 # ==================================================
 
 @login_required
+@wpg_permission_required(
+    "Employee.view_leave",
+    feature_code="PEOPLE_LEAVE",
+)
 def leave_list(request):
 
     leaves = Leave.objects.select_related(
@@ -510,6 +595,11 @@ def leave_list(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.add_leave",
+    feature_code="PEOPLE_LEAVE",
+    action="add",
+)
 def leave_create(request):
 
     form = LeaveForm(
@@ -537,6 +627,12 @@ def leave_create(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.approve_leave",
+    feature_code="PEOPLE_LEAVE",
+    action="approve",
+)
+@require_POST
 def approve_leave(request, pk):
 
     leave = get_object_or_404(
@@ -544,8 +640,8 @@ def approve_leave(request, pk):
         pk=pk
     )
 
-    leave.approved = True
-    leave.save()
+    leave.status = "approved"
+    leave.save(update_fields=["status", "updated_at"])
 
 
     return redirect(
@@ -555,6 +651,12 @@ def approve_leave(request, pk):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.approve_leave",
+    feature_code="PEOPLE_LEAVE",
+    action="approve",
+)
+@require_POST
 def reject_leave(request, pk):
 
     leave = get_object_or_404(
@@ -562,8 +664,8 @@ def reject_leave(request, pk):
         pk=pk
     )
 
-    leave.approved = False
-    leave.save()
+    leave.status = "rejected"
+    leave.save(update_fields=["status", "updated_at"])
 
 
     return redirect(
@@ -577,6 +679,10 @@ def reject_leave(request, pk):
 # ==================================================
 
 @login_required
+@wpg_permission_required(
+    "Employee.view_contact",
+    feature_code="PEOPLE_CONTACTS",
+)
 def contact_list(request):
 
     contacts = Contact.objects.all()
@@ -592,6 +698,11 @@ def contact_list(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.add_contact",
+    feature_code="PEOPLE_CONTACTS",
+    action="add",
+)
 def contact_create(request):
 
     form = ContactForm(
@@ -619,6 +730,11 @@ def contact_create(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.change_contact",
+    feature_code="PEOPLE_CONTACTS",
+    action="change",
+)
 def contact_update(request, pk):
 
     contact = get_object_or_404(
@@ -653,6 +769,11 @@ def contact_update(request, pk):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.delete_contact",
+    feature_code="PEOPLE_CONTACTS",
+    action="delete",
+)
 def contact_delete(request, pk):
 
     contact = get_object_or_404(
@@ -685,6 +806,10 @@ def contact_delete(request, pk):
 # ==================================================
 
 @login_required
+@wpg_permission_required(
+    "Employee.view_employee",
+    feature_code="PEOPLE_REPORTS",
+)
 def employee_report(request):
 
     employees = Employee.objects.all()
@@ -700,6 +825,10 @@ def employee_report(request):
 
 
 @login_required
+@wpg_permission_required(
+    "Employee.view_leave",
+    feature_code="PEOPLE_REPORTS",
+)
 def leave_report(request):
 
     leaves = Leave.objects.all()

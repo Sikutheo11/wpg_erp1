@@ -12,6 +12,8 @@ from django.shortcuts import (
 )
 from django.utils import timezone
 
+from core.permissions import wpg_permission_required
+
 from .dashboard import get_finance_dashboard
 
 from .forms import (
@@ -52,6 +54,10 @@ from .services.debt_service import DebtService
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.view_counterparty",
+    feature_code="FINANCE_COUNTERPARTIES",
+)
 def counterparty_phone_lookup(request):
     """
     Require a telephone lookup before an existing
@@ -117,6 +123,11 @@ def counterparty_phone_lookup(request):
 
 
 @login_required
+@wpg_permission_required(
+    "finance.add_counterparty",
+    feature_code="FINANCE_COUNTERPARTIES",
+    action="add",
+)
 def counterparty_create(request):
     pending_phone = request.session.get(
         "counterparty_pending_phone"
@@ -264,6 +275,10 @@ def counterparty_create(request):
 
 
 @login_required
+@wpg_permission_required(
+    "finance.view_counterparty",
+    feature_code="FINANCE_COUNTERPARTIES",
+)
 def counterparty_detail(request, pk):
     counterparty = get_object_or_404(
         Counterparty.objects.select_related(
@@ -284,6 +299,11 @@ def counterparty_detail(request, pk):
 
 
 @login_required
+@wpg_permission_required(
+    "finance.add_debtrecord",
+    feature_code="FINANCE_DEBTS",
+    action="add",
+)
 def counterparty_debt_create(
     request,
     counterparty_pk,
@@ -547,6 +567,10 @@ def _parse_date(value, default):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.view_account",
+    feature_code="FINANCE_DASHBOARD",
+)
 def finance_dashboard(request):
     context = get_finance_dashboard(
         request.user
@@ -564,6 +588,10 @@ def finance_dashboard(request):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.view_account",
+    feature_code="FINANCE_ACCOUNTS",
+)
 def account_list(request):
     accounts = Account.objects.all().order_by(
         "account_number",
@@ -584,6 +612,10 @@ def account_list(request):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.view_income",
+    feature_code="FINANCE_INCOME",
+)
 def income_list(request):
     incomes = (
         Income.objects
@@ -611,6 +643,10 @@ def income_list(request):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.view_expense",
+    feature_code="FINANCE_EXPENSES",
+)
 def expense_list(request):
     expenses = (
         Expense.objects
@@ -638,6 +674,10 @@ def expense_list(request):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.view_receivable",
+    feature_code="FINANCE_RECEIVABLES",
+)
 def receivable_list(request):
     base_queryset = (
         Receivable.objects
@@ -716,6 +756,10 @@ def receivable_list(request):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.view_receivable",
+    feature_code="FINANCE_RECEIVABLES",
+)
 def receivable_detail(request, pk):
     receivable = get_object_or_404(
         Receivable.objects.select_related(
@@ -760,6 +804,11 @@ def receivable_detail(request, pk):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.add_payment",
+    feature_code="FINANCE_PAYMENTS",
+    action="add",
+)
 def record_receivable_payment(request, pk):
     receivable = get_object_or_404(
         Receivable.objects.select_related(
@@ -846,6 +895,10 @@ def record_receivable_payment(request, pk):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.view_payable",
+    feature_code="FINANCE_PAYABLES",
+)
 def payable_list(request):
     base_queryset = (
         Payable.objects
@@ -911,6 +964,11 @@ def payable_list(request):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.add_payable",
+    feature_code="FINANCE_PAYABLES",
+    action="add",
+)
 def payable_create(request):
     if request.method == "POST":
         form = PayableForm(
@@ -971,6 +1029,10 @@ def payable_create(request):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.view_payable",
+    feature_code="FINANCE_PAYABLES",
+)
 def payable_detail(request, pk):
     payable = get_object_or_404(
         Payable.objects.select_related(
@@ -1005,6 +1067,11 @@ def payable_detail(request, pk):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.add_payment",
+    feature_code="FINANCE_PAYMENTS",
+    action="add",
+)
 def payable_payment(request, pk):
     payable = get_object_or_404(
         Payable.objects.select_related(
@@ -1090,6 +1157,10 @@ def payable_payment(request, pk):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.view_payment",
+    feature_code="FINANCE_PAYMENTS",
+)
 def payment_list(request):
     payments = (
         Payment.objects
@@ -1152,6 +1223,10 @@ def payment_list(request):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.view_payroll",
+    feature_code="FINANCE_PAYROLL",
+)
 def payroll_list(request):
     payrolls = (
         Payroll.objects
@@ -1178,6 +1253,10 @@ def payroll_list(request):
 # =====================================================
 
 @login_required
+@wpg_permission_required(
+    "finance.view_transaction",
+    feature_code="FINANCE_REPORTS",
+)
 def financial_report(request):
     today = timezone.localdate()
 
@@ -1223,6 +1302,10 @@ def financial_report(request):
     )
 
 @login_required
+@wpg_permission_required(
+    "finance.view_debtrecord",
+    feature_code="FINANCE_DEBTS",
+)
 def debt_list(request):
     debts = (
         DebtRecord.objects

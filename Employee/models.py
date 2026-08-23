@@ -216,6 +216,14 @@ class Leave(models.Model):
         auto_now=True
     )
 
+    class Meta:
+        permissions = [
+            (
+                "approve_leave",
+                "Can approve or reject leave requests",
+            ),
+        ]
+
 
 
     def __str__(self):

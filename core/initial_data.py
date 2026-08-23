@@ -253,6 +253,10 @@ ENGINE_FEATURES = {
         ("Payments", "FINANCE_PAYMENTS", "finance:payment_list", "bi bi-cash", 5),
         ("Receivables", "FINANCE_RECEIVABLES", "finance:receivable_list", "bi bi-wallet2", 6),
         ("Payables", "FINANCE_PAYABLES", "finance:payable_list", "bi bi-receipt", 7),
+        ("People & Companies", "FINANCE_COUNTERPARTIES", "finance:counterparty_phone_lookup", "bi bi-person-vcard", 8),
+        ("Debts", "FINANCE_DEBTS", "finance:debt_list", "bi bi-journal-text", 9),
+        ("Payroll", "FINANCE_PAYROLL", "finance:payroll_list", "bi bi-people", 10),
+        ("Financial Reports", "FINANCE_REPORTS", "finance:financial_report", "bi bi-bar-chart", 11),
     ],
     "PEOPLE": [
         ("Dashboard", "PEOPLE_DASHBOARD", "employee:employee_dashboard", "bi bi-speedometer2", 1),
@@ -260,6 +264,9 @@ ENGINE_FEATURES = {
         ("Departments", "PEOPLE_DEPARTMENTS", "employee:department_list", "bi bi-diagram-3", 3),
         ("Attendance", "PEOPLE_ATTENDANCE", "employee:attendance_list", "bi bi-calendar-check", 4),
         ("Leave", "PEOPLE_LEAVE", "employee:leave_list", "bi bi-calendar-x", 5),
+        ("Positions", "PEOPLE_POSITIONS", "employee:position_list", "bi bi-person-workspace", 6),
+        ("Contacts", "PEOPLE_CONTACTS", "employee:contact_list", "bi bi-person-lines-fill", 7),
+        ("People Reports", "PEOPLE_REPORTS", "employee:employee_report", "bi bi-file-bar-graph", 8),
     ],
     "ASSET": [
         ("Assets", "ASSET_LIST", "", "bi bi-tools", 1),
@@ -593,6 +600,108 @@ ROLE_FEATURES = {
 # store these names so newly created Groups can gain access from Django Admin
 # without adding their names to application code.
 FEATURE_DJANGO_PERMISSIONS = {
+    "FINANCE_DASHBOARD": {
+        "view_permission": "finance.view_account",
+    },
+    "FINANCE_ACCOUNTS": {
+        "view_permission": "finance.view_account",
+        "add_permission": "finance.add_account",
+        "change_permission": "finance.change_account",
+        "delete_permission": "finance.delete_account",
+    },
+    "FINANCE_INCOME": {
+        "view_permission": "finance.view_income",
+        "add_permission": "finance.add_income",
+        "change_permission": "finance.change_income",
+        "delete_permission": "finance.delete_income",
+    },
+    "FINANCE_EXPENSES": {
+        "view_permission": "finance.view_expense",
+        "add_permission": "finance.add_expense",
+        "change_permission": "finance.change_expense",
+        "delete_permission": "finance.delete_expense",
+    },
+    "FINANCE_PAYMENTS": {
+        "view_permission": "finance.view_payment",
+        "add_permission": "finance.add_payment",
+        "change_permission": "finance.change_payment",
+        "delete_permission": "finance.delete_payment",
+    },
+    "FINANCE_RECEIVABLES": {
+        "view_permission": "finance.view_receivable",
+        "add_permission": "finance.add_receivable",
+        "change_permission": "finance.change_receivable",
+        "delete_permission": "finance.delete_receivable",
+    },
+    "FINANCE_PAYABLES": {
+        "view_permission": "finance.view_payable",
+        "add_permission": "finance.add_payable",
+        "change_permission": "finance.change_payable",
+        "delete_permission": "finance.delete_payable",
+    },
+    "FINANCE_COUNTERPARTIES": {
+        "view_permission": "finance.view_counterparty",
+        "add_permission": "finance.add_counterparty",
+        "change_permission": "finance.change_counterparty",
+        "delete_permission": "finance.delete_counterparty",
+    },
+    "FINANCE_DEBTS": {
+        "view_permission": "finance.view_debtrecord",
+        "add_permission": "finance.add_debtrecord",
+        "change_permission": "finance.change_debtrecord",
+        "delete_permission": "finance.delete_debtrecord",
+    },
+    "FINANCE_PAYROLL": {
+        "view_permission": "finance.view_payroll",
+        "add_permission": "finance.add_payroll",
+        "change_permission": "finance.change_payroll",
+        "delete_permission": "finance.delete_payroll",
+    },
+    "FINANCE_REPORTS": {
+        "view_permission": "finance.view_transaction",
+    },
+    "PEOPLE_DASHBOARD": {
+        "view_permission": "Employee.view_employee",
+    },
+    "PEOPLE_EMPLOYEES": {
+        "view_permission": "Employee.view_employee",
+        "add_permission": "Employee.add_employee",
+        "change_permission": "Employee.change_employee",
+        "delete_permission": "Employee.delete_employee",
+    },
+    "PEOPLE_DEPARTMENTS": {
+        "view_permission": "Employee.view_department",
+        "add_permission": "Employee.add_department",
+        "change_permission": "Employee.change_department",
+        "delete_permission": "Employee.delete_department",
+    },
+    "PEOPLE_ATTENDANCE": {
+        "view_permission": "Employee.view_attendance",
+        "add_permission": "Employee.add_attendance",
+        "change_permission": "Employee.change_attendance",
+        "delete_permission": "Employee.delete_attendance",
+    },
+    "PEOPLE_LEAVE": {
+        "view_permission": "Employee.view_leave",
+        "add_permission": "Employee.add_leave",
+        "change_permission": "Employee.change_leave",
+        "delete_permission": "Employee.delete_leave",
+    },
+    "PEOPLE_POSITIONS": {
+        "view_permission": "Employee.view_position",
+        "add_permission": "Employee.add_position",
+        "change_permission": "Employee.change_position",
+        "delete_permission": "Employee.delete_position",
+    },
+    "PEOPLE_CONTACTS": {
+        "view_permission": "Employee.view_contact",
+        "add_permission": "Employee.add_contact",
+        "change_permission": "Employee.change_contact",
+        "delete_permission": "Employee.delete_contact",
+    },
+    "PEOPLE_REPORTS": {
+        "view_permission": "Employee.view_employee",
+    },
     "CONSTRUCTION_DASHBOARD": {
         "view_permission": "Construction.view_project",
     },
