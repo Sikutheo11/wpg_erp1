@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group, Permission
 from django.test import TestCase
 from django.urls import reverse
 
@@ -16,6 +17,21 @@ class CounterpartyViewTests(TestCase):
             last_name="Tester",
             password="Strong-Test-Password-2026",
         )
+
+        finance_group = Group.objects.create(
+            name="Counterparty Test Users",
+        )
+        finance_group.permissions.add(
+            Permission.objects.get(
+                content_type__app_label="finance",
+                codename="view_counterparty",
+            ),
+            Permission.objects.get(
+                content_type__app_label="finance",
+                codename="add_counterparty",
+            ),
+        )
+        self.user.groups.add(finance_group)
 
         self.client.force_login(self.user)
 
