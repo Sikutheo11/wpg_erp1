@@ -5,10 +5,11 @@ from .models import Notification, AuditLog
 from .report_engine import ReportEngine
 from .executive_dashboard import ExecutiveDashboard
 from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from django.db import connection
 from django.db.utils import DatabaseError
 from ecommerce.models import OnlineProduct
-from .permissions import wpg_permission_required
+from .permissions import PermissionService, wpg_permission_required
 
 
 # =====================================================
@@ -129,6 +130,7 @@ def notification_list(request):
 
 
 @login_required
+@require_POST
 def notification_mark_read(request, pk):
     notification = get_object_or_404(
         Notification,
@@ -146,6 +148,7 @@ def notification_mark_read(request, pk):
 
 
 @login_required
+@require_POST
 def notification_mark_all_read(request):
     Notification.objects.filter(
         user=request.user,
@@ -184,7 +187,24 @@ def audit_log_list(request):
 
 @login_required
 def reports_home(request):
-    reports = ReportEngine.all_reports()
+    feature_by_report = {
+        "EXECUTIVE": "REPORTING_EXECUTIVE_DASHBOARD",
+        "FINANCE": "FINANCE_REPORTS",
+        "INVENTORY": "INVENTORY_REPORTS",
+        "FURNITURE": "FURNITURE_REPORTS",
+        "CONSTRUCTION": "CONSTRUCTION_REPORTS",
+        "AGRICULTURE": "AGRICULTURE_REPORTS",
+        "MARKETPLACE": "MARKETPLACE_REPORTS",
+    }
+    reports = [
+        report
+        for report in ReportEngine.all_reports()
+        if PermissionService.user_can_access_feature(
+            request.user,
+            feature_by_report.get(report.code, "REPORTING_REPORTS"),
+            action="view",
+        )
+    ]
 
     return render(
         request,
@@ -196,42 +216,70 @@ def reports_home(request):
 
 
 @login_required
+@wpg_permission_required(
+    "core.view_executivereport",
+    feature_code="REPORTING_EXECUTIVE_DASHBOARD",
+)
 def executive_report(request):
     report = ReportEngine.generate("EXECUTIVE", user=request.user)
     return render(request, "core/report_detail.html", {"report": report})
 
 
 @login_required
+@wpg_permission_required(
+    "finance.view_transaction",
+    feature_code="FINANCE_REPORTS",
+)
 def finance_report(request):
     report = ReportEngine.generate("FINANCE", user=request.user)
     return render(request, "core/report_detail.html", {"report": report})
 
 
 @login_required
+@wpg_permission_required(
+    "inventory.view_product",
+    feature_code="INVENTORY_REPORTS",
+)
 def inventory_report(request):
     report = ReportEngine.generate("INVENTORY", user=request.user)
     return render(request, "core/report_detail.html", {"report": report})
 
 
 @login_required
+@wpg_permission_required(
+    "furniture.view_productionjob",
+    feature_code="FURNITURE_REPORTS",
+)
 def furniture_report(request):
     report = ReportEngine.generate("FURNITURE", user=request.user)
     return render(request, "core/report_detail.html", {"report": report})
 
 
 @login_required
+@wpg_permission_required(
+    "Construction.view_project",
+    feature_code="CONSTRUCTION_REPORTS",
+)
 def construction_report(request):
     report = ReportEngine.generate("CONSTRUCTION", user=request.user)
     return render(request, "core/report_detail.html", {"report": report})
 
 
 @login_required
+@wpg_permission_required(
+    "agriculture.view_agricultureoperation",
+    feature_code="AGRICULTURE_REPORTS",
+)
 def agriculture_report(request):
     report = ReportEngine.generate("AGRICULTURE", user=request.user)
     return render(request, "core/report_detail.html", {"report": report})
 
 
 @login_required
+@wpg_permission_required(
+    "ecommerce.view_marketplaceorderline",
+    feature_code="MARKETPLACE_REPORTS",
+)
 def marketplace_report(request):
     report = ReportEngine.generate("MARKETPLACE", user=request.user)
     return render(request, "core/report_detail.html", {"report": report})

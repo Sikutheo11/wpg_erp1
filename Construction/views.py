@@ -6,10 +6,7 @@ from django.shortcuts import (
 
 from django.contrib import messages
 
-from django.contrib.auth.decorators import (
-    login_required,
-    permission_required
-)
+from django.contrib.auth.decorators import login_required
 
 from core.permissions import wpg_permission_required
 
@@ -61,9 +58,9 @@ def construction_dashboard(request):
 # ======================================================
 
 @login_required
-@permission_required(
+@wpg_permission_required(
     "Construction.view_project",
-    raise_exception=True
+    feature_code="CONSTRUCTION_PROJECTS",
 )
 def project_list(request):
 
@@ -82,9 +79,10 @@ def project_list(request):
 
 
 @login_required
-@permission_required(
+@wpg_permission_required(
     "Construction.add_project",
-    raise_exception=True
+    feature_code="CONSTRUCTION_PROJECTS",
+    action="add",
 )
 def project_create(request):
 
@@ -126,9 +124,9 @@ def project_create(request):
 
 
 @login_required
-@permission_required(
+@wpg_permission_required(
     "Construction.view_project",
-    raise_exception=True
+    feature_code="CONSTRUCTION_PROJECTS",
 )
 def project_detail(request, pk):
 
@@ -149,9 +147,10 @@ def project_detail(request, pk):
 
 
 @login_required
-@permission_required(
+@wpg_permission_required(
     "Construction.change_project",
-    raise_exception=True
+    feature_code="CONSTRUCTION_PROJECTS",
+    action="edit",
 )
 def project_update(request, pk):
 
@@ -208,9 +207,10 @@ def project_update(request, pk):
 # ======================================================
 
 @login_required
-@permission_required(
+@wpg_permission_required(
     "Construction.add_site",
-    raise_exception=True
+    feature_code="CONSTRUCTION_SITES",
+    action="add",
 )
 def site_create(request, project_id):
 
@@ -271,9 +271,10 @@ def site_create(request, project_id):
 # ======================================================
 
 @login_required
-@permission_required(
+@wpg_permission_required(
     "Construction.add_task",
-    raise_exception=True
+    feature_code="CONSTRUCTION_TASKS",
+    action="add",
 )
 def task_create(request, project_id):
 
@@ -334,9 +335,10 @@ def task_create(request, project_id):
 # ======================================================
 
 @login_required
-@permission_required(
+@wpg_permission_required(
     "Construction.add_constructionmaterial",
-    raise_exception=True
+    feature_code="CONSTRUCTION_MATERIALS",
+    action="add",
 )
 def material_create(request, project_id):
 
@@ -397,9 +399,10 @@ def material_create(request, project_id):
 # ======================================================
 
 @login_required
-@permission_required(
+@wpg_permission_required(
     "Construction.add_constructionlabour",
-    raise_exception=True
+    feature_code="CONSTRUCTION_LABOUR",
+    action="add",
 )
 def labour_create(request, project_id):
 
@@ -460,9 +463,10 @@ def labour_create(request, project_id):
 # ======================================================
 
 @login_required
-@permission_required(
+@wpg_permission_required(
     "Construction.add_constructionassetusage",
-    raise_exception=True
+    feature_code="CONSTRUCTION_ASSET_USAGE",
+    action="add",
 )
 def asset_usage_create(request, project_id):
 
@@ -523,9 +527,10 @@ def asset_usage_create(request, project_id):
 # ======================================================
 
 @login_required
-@permission_required(
+@wpg_permission_required(
     "Construction.add_constructionexpense",
-    raise_exception=True
+    feature_code="CONSTRUCTION_EXPENSES",
+    action="add",
 )
 def expense_create(request, project_id):
 

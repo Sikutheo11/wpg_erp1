@@ -299,13 +299,15 @@ body{
 
                 {% for note in request.user.notifications.all|slice:":5" %}
                     <li>
-                        <a class="dropdown-item"
-                        href="{% url 'core:notification_mark_read' note.id %}">
-                            <strong>{{ note.title }}</strong><br>
-                            <small class="text-muted">
-                                {{ note.message }}
-                            </small>
-                        </a>
+                        <form method="post" action="{% url 'core:notification_mark_read' note.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item text-start">
+                                <strong>{{ note.title }}</strong><br>
+                                <small class="text-muted">
+                                    {{ note.message }}
+                                </small>
+                            </button>
+                        </form>
                     </li>
                 {% empty %}
                     <li>

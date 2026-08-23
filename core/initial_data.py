@@ -216,8 +216,13 @@ BUSINESS_UNIT_FEATURES = {
     "CONSTRUCTION": [
         ("Dashboard", "CONSTRUCTION_DASHBOARD", "Construction:construction_dashboard", "bi bi-speedometer2", 1),
         ("Projects", "CONSTRUCTION_PROJECTS", "Construction:project_list", "bi bi-kanban", 2),
-        ("Sites", "CONSTRUCTION_SITES", "Construction:site_list", "bi bi-geo-alt", 3),
-        ("Tasks", "CONSTRUCTION_TASKS", "Construction:task_list", "bi bi-check2-square", 4),
+        ("Sites", "CONSTRUCTION_SITES", "Construction:project_list", "bi bi-geo-alt", 3),
+        ("Tasks", "CONSTRUCTION_TASKS", "Construction:project_list", "bi bi-check2-square", 4),
+        ("Materials", "CONSTRUCTION_MATERIALS", "Construction:project_list", "bi bi-boxes", 5),
+        ("Labour", "CONSTRUCTION_LABOUR", "Construction:project_list", "bi bi-people", 6),
+        ("Asset Usage", "CONSTRUCTION_ASSET_USAGE", "Construction:project_list", "bi bi-tools", 7),
+        ("Expenses", "CONSTRUCTION_EXPENSES", "Construction:project_list", "bi bi-cash-stack", 8),
+        ("Reports", "CONSTRUCTION_REPORTS", "core:construction_report", "bi bi-bar-chart", 9),
     ],
     "AGRICULTURE": [
         ("Dashboard", "AGRICULTURE_DASHBOARD", "", "bi bi-speedometer2", 1),
@@ -264,6 +269,7 @@ ENGINE_FEATURES = {
         ("Products", "INVENTORY_PRODUCTS", "inventory:product_list", "bi bi-box", 2),
         ("Raw Materials", "INVENTORY_RAW_MATERIALS", "inventory:rawmaterial_list", "bi bi-boxes", 3),
         ("Stock Movements", "INVENTORY_STOCK_MOVEMENTS", "inventory:movement_list", "bi bi-arrow-left-right", 4),
+        ("Reports", "INVENTORY_REPORTS", "core:inventory_report", "bi bi-bar-chart", 5),
     ],
     "FINANCE": [
         ("Dashboard", "FINANCE_DASHBOARD", "finance:finance_dashboard", "bi bi-speedometer2", 1),
@@ -829,6 +835,33 @@ FEATURE_DJANGO_PERMISSIONS = {
         "change_permission": "Construction.change_task",
         "delete_permission": "Construction.delete_task",
     },
+    "CONSTRUCTION_MATERIALS": {
+        "view_permission": "Construction.view_constructionmaterial",
+        "add_permission": "Construction.add_constructionmaterial",
+        "change_permission": "Construction.change_constructionmaterial",
+        "delete_permission": "Construction.delete_constructionmaterial",
+    },
+    "CONSTRUCTION_LABOUR": {
+        "view_permission": "Construction.view_constructionlabour",
+        "add_permission": "Construction.add_constructionlabour",
+        "change_permission": "Construction.change_constructionlabour",
+        "delete_permission": "Construction.delete_constructionlabour",
+    },
+    "CONSTRUCTION_ASSET_USAGE": {
+        "view_permission": "Construction.view_constructionassetusage",
+        "add_permission": "Construction.add_constructionassetusage",
+        "change_permission": "Construction.change_constructionassetusage",
+        "delete_permission": "Construction.delete_constructionassetusage",
+    },
+    "CONSTRUCTION_EXPENSES": {
+        "view_permission": "Construction.view_constructionexpense",
+        "add_permission": "Construction.add_constructionexpense",
+        "change_permission": "Construction.change_constructionexpense",
+        "delete_permission": "Construction.delete_constructionexpense",
+    },
+    "CONSTRUCTION_REPORTS": {
+        "view_permission": "Construction.view_project",
+    },
     "INVENTORY_DASHBOARD": {
         "view_permission": "inventory.view_product",
     },
@@ -849,6 +882,15 @@ FEATURE_DJANGO_PERMISSIONS = {
         "add_permission": "inventory.add_stockmovement",
         "change_permission": "inventory.change_stockmovement",
         "delete_permission": "inventory.delete_stockmovement",
+    },
+    "INVENTORY_REPORTS": {
+        "view_permission": "inventory.view_product",
+    },
+    "REPORTING_EXECUTIVE_DASHBOARD": {
+        "view_permission": "core.view_executivereport",
+    },
+    "REPORTING_REPORTS": {
+        "view_permission": "core.view_reports",
     },
     "ASSET_LIST": {
         "view_permission": "inventory.view_asset",
