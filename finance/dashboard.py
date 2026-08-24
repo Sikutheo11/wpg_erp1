@@ -14,7 +14,9 @@ from django.utils import timezone
 from .models import (
     Account,
     Expense,
+    ExpenseRequest,
     Income,
+    IncomeDeclaration,
     Payable,
     Payment,
     Receivable,
@@ -418,6 +420,21 @@ def get_finance_dashboard(user=None):
     # CONTEXT
     # =====================================================
 
+    unit_labels = dict(ExpenseRequest.BUSINESS_UNITS)
+    business_unit_summary = []
+    for code, label in unit_labels.items():
+        unit_income = _money_sum(Income.objects.filter(business_unit=code, date__range=[year_start, today]), "amount")
+        unit_expense = _money_sum(Expense.objects.filter(business_unit=code, date__range=[year_start, today]), "amount")
+        business_unit_summary.append({
+            "code": code,
+            "label": label,
+            "income": unit_income,
+            "expense": unit_expense,
+            "net": unit_income - unit_expense,
+            "pending_requests": ExpenseRequest.objects.filter(business_unit=code).exclude(status__in=("DRAFT", "COMPLETED", "REJECTED", "CANCELLED")).count(),
+            "pending_income": IncomeDeclaration.objects.filter(business_unit=code, status__in=("SUBMITTED", "UNIT_APPROVED")).count(),
+        })
+
     return {
         "today": today,
         "month_start": month_start,
@@ -435,6 +452,22 @@ def get_finance_dashboard(user=None):
         "year_income": year_income,
         "year_expenses": year_expenses,
         "year_net_profit": year_net_profit,
+
+        "pending_expense_request_count": ExpenseRequest.objects.exclude(
+            status__in=("DRAFT", "COMPLETED", "REJECTED", "CANCELLED")
+        ).count(),
+        "pending_expense_request_total": _money_sum(
+            ExpenseRequest.objects.exclude(status__in=("DRAFT", "COMPLETED", "REJECTED", "CANCELLED")),
+            "amount_requested",
+        ),
+        "pending_income_declaration_count": IncomeDeclaration.objects.filter(
+            status__in=("SUBMITTED", "UNIT_APPROVED")
+        ).count(),
+        "pending_income_declaration_total": _money_sum(
+            IncomeDeclaration.objects.filter(status__in=("SUBMITTED", "UNIT_APPROVED")),
+            "amount",
+        ),
+        "business_unit_summary": business_unit_summary,
 
         "receivable_count": receivables.count(),
         "outstanding_receivables": outstanding_receivables,

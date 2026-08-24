@@ -1,9 +1,11 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.test import TestCase
+from unittest.mock import patch
 
 from .models import Feature, RoleFeature
 from .permissions import PermissionService
+from .services import CoreSetupService
 
 
 class GroupPermissionServiceTests(TestCase):
@@ -77,3 +79,23 @@ class GroupPermissionServiceTests(TestCase):
             )
         )
 
+    def test_all_defaults_allow_explicit_feature_override(self):
+        manager = Group.objects.create(name="Override Manager")
+        feature = Feature.objects.create(
+            name="Expense Requests",
+            code="TEST_EXPENSE_REQUEST_OVERRIDE",
+            view_permission="finance.view_expenserequest",
+            change_permission="finance.change_expenserequest",
+        )
+        config = {
+            "Override Manager": {
+                "ALL": {"view": True, "add": False, "edit": False, "delete": False, "approve": False},
+                feature.code: {"view": True, "edit": True},
+            }
+        }
+        with patch.dict("core.services.ROLE_FEATURES", config, clear=True):
+            CoreSetupService.sync_role_features()
+        role_feature = RoleFeature.objects.get(role=manager, feature=feature)
+        self.assertTrue(role_feature.can_view)
+        self.assertTrue(role_feature.can_edit)
+        self.assertTrue(manager.permissions.filter(codename="change_expenserequest").exists())

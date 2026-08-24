@@ -15,10 +15,20 @@ from accounts.models import User
 # =========================
 class Department(models.Model):
 
+    BUSINESS_UNIT_CHOICES = (
+        ('FURNITURE', 'Furniture & Manufacturing'),
+        ('CONSTRUCTION', 'Construction & Built Environment'),
+        ('AGRICULTURE', 'Agriculture & Poultry'),
+        ('MARKETPLACE', 'Marketplace'),
+        ('SHARED', 'Shared Services'),
+    )
+
     DEPARTMENT_CHOICES = (
         ('furniture', 'Furniture'),
         ('machinist', 'Machinist'),
         ('construction', 'Construction'),
+        ('agriculture', 'Agriculture & Poultry'),
+        ('marketplace', 'Marketplace'),
         ('finance', 'Finance'),
         ('operations', 'Operations'),
         ('sales', 'Sales'),
@@ -36,6 +46,13 @@ class Department(models.Model):
     )
 
     description = models.TextField(blank=True, null=True)
+
+    business_unit = models.CharField(
+        max_length=30,
+        choices=BUSINESS_UNIT_CHOICES,
+        default='SHARED',
+        db_index=True,
+    )
 
     manager = models.ForeignKey(User,
         on_delete=models.SET_NULL,

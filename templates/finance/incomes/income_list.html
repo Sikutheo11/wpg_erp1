@@ -17,12 +17,12 @@ Income
 </h2>
 
 
-<a href="{% url 'finance:income_create' %}"
+{% if perms.finance.add_income %}<a href="{% url 'finance:income_create' %}"
 class="btn btn-success">
 
 + Add Income
 
-</a>
+</a>{% endif %}
 
 
 </div>
@@ -47,6 +47,10 @@ class="btn btn-success">
 <th>Title</th>
 
 <th>Type</th>
+
+<th>Business unit</th>
+
+<th>Received from</th>
 
 <th>Account</th>
 
@@ -83,6 +87,10 @@ class="btn btn-success">
 {{income.get_income_type_display}}
 </td>
 
+<td>{{ income.get_business_unit_display }}</td>
+
+<td>{{ income.received_from|default:"—" }}{% if income.sale %}<small class="d-block text-muted">Sale: {{ income.sale }}</small>{% endif %}</td>
+
 
 
 <td>
@@ -101,20 +109,7 @@ class="btn btn-success">
 
 <td>
 
-<a href="#"
-class="btn btn-sm btn-warning">
-
-Edit
-
-</a>
-
-
-<a href="#"
-class="btn btn-sm btn-danger">
-
-Delete
-
-</a>
+<span class="text-muted">Posted record</span>
 
 
 </td>
@@ -128,7 +123,7 @@ Delete
 
 <tr>
 
-<td colspan="6"
+<td colspan="8"
 class="text-center">
 
 No income records

@@ -117,7 +117,9 @@ class ExpenseService:
         )
 
         expense = Expense.objects.create(
-            account=account,
+            # AccountService owns automated balance posting. Creating with a
+            # null relation prevents Expense.save() from posting a second time.
+            account=None,
             title=final_title,
             expense_type=expense_type,
             amount=amount,
@@ -140,6 +142,9 @@ class ExpenseService:
                 allow_negative=allow_negative,
                 create_transaction=True,
             )
+
+        Expense.objects.filter(pk=expense.pk).update(account=account)
+        expense.account = account
 
         EventEngine.dispatch(
             event_code="FINANCE_EXPENSE_CREATED",

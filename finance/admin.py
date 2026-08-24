@@ -4,7 +4,9 @@ from .models import (
     Account,
     Transaction,
     Income,
+    IncomeDeclaration,
     Expense,
+    ExpenseRequest,
     Receivable,
     Payable,
     Payment,
@@ -164,6 +166,27 @@ class ExpenseAdmin(admin.ModelAdmin):
 
     search_fields = (
         'title',
+    )
+
+
+@admin.register(IncomeDeclaration)
+class IncomeDeclarationAdmin(admin.ModelAdmin):
+    list_display = ("declaration_number", "business_unit", "recorded_by", "title", "amount", "status")
+    list_filter = ("business_unit", "source_type", "receipt_method", "status")
+    search_fields = ("declaration_number", "title", "reference", "recorded_by__first_name", "recorded_by__last_name")
+    readonly_fields = ("declaration_number", "unit_approved_by", "unit_approved_at", "finance_confirmed_by", "finance_confirmed_at", "posted_income")
+
+
+@admin.register(ExpenseRequest)
+class ExpenseRequestAdmin(admin.ModelAdmin):
+    list_display = ("request_number", "requested_by", "title", "amount_requested", "status", "needed_by")
+    list_filter = ("status", "request_type", "urgency", "business_unit")
+    search_fields = ("request_number", "title", "purpose", "requested_by__first_name", "requested_by__last_name")
+    readonly_fields = (
+        "request_number", "manager_approved_by", "manager_approved_at",
+        "accountant_verified_by", "accountant_verified_at",
+        "finance_approved_by", "finance_approved_at",
+        "director_approved_by", "director_approved_at", "paid_by", "paid_at",
     )
 
 

@@ -1,0 +1,24 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Attendance{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div><h2 class="h3 fw-bold mb-1">Attendance</h2><p class="text-muted mb-0">Daily attendance visible within your authorized scope.</p></div>
+    <div class="d-flex gap-2">
+      {% if perms.Employee.add_attendance %}<a class="btn btn-primary" href="{% url 'employee:attendance_create' %}">Record Attendance</a>{% endif %}
+      <a class="btn btn-outline-primary" href="{% url 'employee:attendance_report' %}">Summary</a>
+    </div>
+  </div>
+  <form method="get" class="card card-body border-0 shadow-sm mb-3">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-4"><label class="form-label">Date</label><input class="form-control" type="date" name="date" value="{{ selected_date }}"></div>
+      <div class="col-md-4"><label class="form-label">Status</label><select class="form-select" name="status"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-auto"><button class="btn btn-outline-primary">Filter</button></div>
+    </div>
+  </form>
+  <div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+    <thead class="table-dark"><tr><th>Date</th><th>Employee</th><th>Department</th><th>Business unit</th><th>Check in</th><th>Check out</th><th>Hours</th><th>Status</th></tr></thead>
+    <tbody>{% for item in attendance %}<tr><td>{{ item.date|date:"d M Y" }}</td><td class="fw-semibold">{{ item.employee }}</td><td>{{ item.employee.department|default:"—" }}</td><td>{% if item.employee.department %}{{ item.employee.department.get_business_unit_display }}{% else %}—{% endif %}</td><td>{{ item.check_in|default:"—" }}</td><td>{{ item.check_out|default:"—" }}</td><td>{{ item.hours_worked|floatformat:2 }}</td><td><span class="badge bg-secondary">{{ item.get_status_display }}</span></td></tr>{% empty %}<tr><td colspan="8" class="text-center text-muted py-5">No attendance records found.</td></tr>{% endfor %}</tbody>
+  </table></div></div>
+</div>
+{% endblock %}

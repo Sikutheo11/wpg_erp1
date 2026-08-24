@@ -9,7 +9,9 @@ from .models import (
     DebtLine,
     DebtRecord,
     Income,
+    IncomeDeclaration,
     Expense,
+    ExpenseRequest,
     Receivable,
     Payable,
     Payment,
@@ -97,11 +99,15 @@ class IncomeForm(forms.ModelForm):
         model = Income
         fields = [
             "account",
+            "business_unit",
             "title",
             "income_type",
             "amount",
             "date",
+            "received_from",
             "sale",
+            "reference",
+            "notes",
         ]
         widgets = {
             "account": forms.Select(
@@ -109,6 +115,7 @@ class IncomeForm(forms.ModelForm):
                     "class": "form-select",
                 }
             ),
+            "business_unit": forms.Select(attrs={"class": "form-select"}),
             "title": forms.TextInput(
                 attrs={
                     "class": "form-control",
@@ -139,16 +146,28 @@ class IncomeForm(forms.ModelForm):
                     "class": "form-select",
                 }
             ),
+            "received_from": forms.Select(attrs={"class": "form-select"}),
+            "reference": forms.TextInput(attrs={"class": "form-control", "placeholder": "Receipt, bank or transaction reference"}),
+            "notes": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Backward compatibility for existing integrations and records that
+        # predate enterprise business-unit reporting.
+        self.fields["business_unit"].required = False
+        self.fields["business_unit"].initial = "SHARED"
 
         self.fields["date"].input_formats = [
             "%Y-%m-%d",
         ]
 
         self.fields["sale"].required = False
+        self.fields["sale"].label = "Related sale (optional)"
+        self.fields["received_from"].required = False
+        self.fields["received_from"].queryset = Counterparty.objects.filter(is_active=True).order_by("name")
+        self.fields["received_from"].label = "Received from (optional)"
 
     def clean_amount(self):
         amount = self.cleaned_data.get(
@@ -162,17 +181,83 @@ class IncomeForm(forms.ModelForm):
 
         return amount
 
+    def clean_business_unit(self):
+        return self.cleaned_data.get("business_unit") or "SHARED"
+
+
+def _lock_business_unit_to_employee(form, user):
+    if not user or user.is_superuser:
+        return
+    employee = getattr(user, "employee", None)
+    department = getattr(employee, "department", None)
+    if not department:
+        form.fields["business_unit"].disabled = True
+        form.fields["business_unit"].help_text = (
+            "Ask HR to assign your employee profile to a department before saving."
+        )
+        return
+    form.fields["business_unit"].initial = department.business_unit
+    form.fields["business_unit"].disabled = True
+    form.fields["business_unit"].help_text = (
+        f"Assigned automatically from {department.get_name_display()}."
+    )
+
+
+class IncomeDeclarationForm(forms.ModelForm):
+    class Meta:
+        model = IncomeDeclaration
+        fields = (
+            "business_unit", "title", "source_type", "amount", "received_from",
+            "related_sale", "receipt_method", "receipt_date", "reference",
+            "proof_document", "notes",
+        )
+        widgets = {
+            "business_unit": forms.Select(attrs={"class": "form-select"}),
+            "title": forms.TextInput(attrs={"class": "form-control"}),
+            "source_type": forms.Select(attrs={"class": "form-select"}),
+            "amount": forms.NumberInput(attrs={"class": "form-control", "min": "0.01", "step": "0.01"}),
+            "received_from": forms.Select(attrs={"class": "form-select"}),
+            "related_sale": forms.Select(attrs={"class": "form-select"}),
+            "receipt_method": forms.Select(attrs={"class": "form-select"}),
+            "receipt_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
+            "reference": forms.TextInput(attrs={"class": "form-control"}),
+            "proof_document": forms.ClearableFileInput(attrs={"class": "form-control"}),
+            "notes": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        self.fields["receipt_date"].input_formats = ["%Y-%m-%d"]
+        self.fields["received_from"].queryset = Counterparty.objects.filter(is_active=True).order_by("name")
+        self.fields["received_from"].required = False
+        self.fields["related_sale"].required = False
+        self.fields["proof_document"].help_text = "Attach receipt, bank slip or Mobile Money confirmation."
+        _lock_business_unit_to_employee(self, user)
+
+
+class IncomeConfirmationForm(forms.Form):
+    account = forms.ModelChoiceField(queryset=Account.objects.none(), widget=forms.Select(attrs={"class": "form-select"}), label="Account where funds arrived")
+    comment = forms.CharField(required=False, widget=forms.Textarea(attrs={"class": "form-control", "rows": 3}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["account"].queryset = Account.objects.order_by("name")
+
 
 class ExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense
         fields = [
             "account",
+            "business_unit",
             "title",
             "expense_type",
             "amount",
             "date",
-            "supplier",
+            "paid_to",
+            "reference",
+            "notes",
         ]
         widgets = {
             "account": forms.Select(
@@ -180,6 +265,7 @@ class ExpenseForm(forms.ModelForm):
                     "class": "form-select",
                 }
             ),
+            "business_unit": forms.Select(attrs={"class": "form-select"}),
             "title": forms.TextInput(
                 attrs={
                     "class": "form-control",
@@ -205,21 +291,26 @@ class ExpenseForm(forms.ModelForm):
                 },
                 format="%Y-%m-%d",
             ),
-            "supplier": forms.Select(
-                attrs={
-                    "class": "form-select",
-                }
-            ),
+            "paid_to": forms.Select(attrs={"class": "form-select"}),
+            "reference": forms.TextInput(attrs={"class": "form-control", "placeholder": "Receipt, invoice or transaction reference"}),
+            "notes": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Backward compatibility for existing integrations and records that
+        # predate enterprise business-unit reporting.
+        self.fields["business_unit"].required = False
+        self.fields["business_unit"].initial = "SHARED"
+
         self.fields["date"].input_formats = [
             "%Y-%m-%d",
         ]
 
-        self.fields["supplier"].required = False
+        self.fields["paid_to"].required = False
+        self.fields["paid_to"].queryset = Counterparty.objects.filter(is_active=True).order_by("name")
+        self.fields["paid_to"].label = "Paid to (optional)"
 
     def clean_amount(self):
         amount = self.cleaned_data.get(
@@ -232,6 +323,90 @@ class ExpenseForm(forms.ModelForm):
             )
 
         return amount
+
+    def clean_business_unit(self):
+        return self.cleaned_data.get("business_unit") or "SHARED"
+
+
+class ExpenseRequestForm(forms.ModelForm):
+    class Meta:
+        model = ExpenseRequest
+        fields = (
+            "business_unit", "request_type", "title", "expense_type",
+            "purpose", "payee", "amount_requested", "needed_by",
+            "urgency", "supporting_document",
+        )
+        widgets = {
+            "business_unit": forms.Select(attrs={"class": "form-select"}),
+            "request_type": forms.Select(attrs={"class": "form-select"}),
+            "title": forms.TextInput(attrs={"class": "form-control"}),
+            "expense_type": forms.Select(attrs={"class": "form-select"}),
+            "purpose": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+            "payee": forms.Select(attrs={"class": "form-select"}),
+            "amount_requested": forms.NumberInput(attrs={"class": "form-control", "min": "0.01", "step": "0.01"}),
+            "needed_by": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
+            "urgency": forms.Select(attrs={"class": "form-select"}),
+            "supporting_document": forms.ClearableFileInput(attrs={"class": "form-control"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        self.fields["needed_by"].input_formats = ["%Y-%m-%d"]
+        self.fields["payee"].queryset = Counterparty.objects.filter(is_active=True).order_by("name")
+        self.fields["payee"].label = "Paid to (person or company)"
+        _lock_business_unit_to_employee(self, user)
+
+    def clean_amount_requested(self):
+        amount = self.cleaned_data.get("amount_requested")
+        if amount is None or amount <= 0:
+            raise forms.ValidationError("Requested amount must be greater than zero.")
+        return amount
+
+
+class ExpenseRequestDecisionForm(forms.Form):
+    comment = forms.CharField(required=False, widget=forms.Textarea(attrs={"class": "form-control", "rows": 3}))
+
+
+class ExpenseRequestVerificationForm(ExpenseRequestDecisionForm):
+    proposed_account = forms.ModelChoiceField(queryset=Account.objects.none(), widget=forms.Select(attrs={"class": "form-select"}))
+    funds_available = forms.BooleanField(required=False, label="Funds are available")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["proposed_account"].queryset = Account.objects.order_by("name")
+
+    def clean(self):
+        cleaned = super().clean()
+        account = cleaned.get("proposed_account")
+        if account and cleaned.get("funds_available") and account.balance <= 0:
+            self.add_error("funds_available", "The selected account has no available balance.")
+        return cleaned
+
+
+class ExpenseRequestPaymentForm(forms.Form):
+    account = forms.ModelChoiceField(queryset=Account.objects.none(), widget=forms.Select(attrs={"class": "form-select"}))
+    amount = forms.DecimalField(min_value=Decimal("0.01"), decimal_places=2, max_digits=15, widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}))
+    method = forms.ChoiceField(choices=ExpenseRequest.PAYMENT_METHODS, widget=forms.Select(attrs={"class": "form-select"}))
+    reference = forms.CharField(max_length=100, widget=forms.TextInput(attrs={"class": "form-control"}))
+    notes = forms.CharField(required=False, widget=forms.Textarea(attrs={"class": "form-control", "rows": 3}))
+
+    def __init__(self, *args, expense_request=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.expense_request = expense_request
+        self.fields["account"].queryset = Account.objects.order_by("name")
+        if expense_request:
+            self.fields["amount"].initial = expense_request.amount_requested
+            self.fields["account"].initial = expense_request.proposed_account_id
+
+    def clean(self):
+        cleaned = super().clean()
+        account, amount = cleaned.get("account"), cleaned.get("amount")
+        if self.expense_request and amount and amount > self.expense_request.amount_requested:
+            self.add_error("amount", "Payment cannot exceed the approved amount.")
+        if account and amount and account.balance < amount:
+            self.add_error("account", "The selected account does not have enough funds.")
+        return cleaned
 
 
 class ObligationFormMixin:

@@ -69,6 +69,14 @@ urlpatterns = [
         views.income_create,
         name='income_create'
     ),
+    path('income-declarations/', views.income_declaration_list, name='income_declaration_list'),
+    path('income-declarations/create/', views.income_declaration_create, name='income_declaration_create'),
+    path('income-declarations/<int:pk>/edit/', views.income_declaration_update, name='income_declaration_update'),
+    path('income-declarations/<int:pk>/', views.income_declaration_detail, name='income_declaration_detail'),
+    path('income-declarations/<int:pk>/submit/', views.income_declaration_submit, name='income_declaration_submit'),
+    path('income-declarations/<int:pk>/unit-approve/', views.income_declaration_unit_approve, name='income_declaration_unit_approve'),
+    path('income-declarations/<int:pk>/confirm/', views.income_declaration_confirm, name='income_declaration_confirm'),
+    path('income-declarations/<int:pk>/<str:decision>/', views.income_declaration_decide, name='income_declaration_decide'),
 
 
 
@@ -87,6 +95,18 @@ urlpatterns = [
         views.expense_create,
         name='expense_create'
     ),
+
+    path('expense-requests/', views.expense_request_list, name='expense_request_list'),
+    path('expense-requests/create/', views.expense_request_create, name='expense_request_create'),
+    path('expense-requests/<int:pk>/edit/', views.expense_request_update, name='expense_request_update'),
+    path('expense-requests/<int:pk>/', views.expense_request_detail, name='expense_request_detail'),
+    path('expense-requests/<int:pk>/submit/', views.expense_request_submit, name='expense_request_submit'),
+    path('expense-requests/<int:pk>/manager-approve/', views.expense_request_manager_approve, name='expense_request_manager_approve'),
+    path('expense-requests/<int:pk>/verify/', views.expense_request_verify, name='expense_request_verify'),
+    path('expense-requests/<int:pk>/finance-approve/', views.expense_request_finance_approve, name='expense_request_finance_approve'),
+    path('expense-requests/<int:pk>/director-approve/', views.expense_request_director_approve, name='expense_request_director_approve'),
+    path('expense-requests/<int:pk>/pay/', views.expense_request_pay, name='expense_request_pay'),
+    path('expense-requests/<int:pk>/<str:decision>/', views.expense_request_decide, name='expense_request_decide'),
 
 
 

@@ -25,9 +25,9 @@ class LeaveInline(admin.TabularInline):
 # =========================
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
-    list_display = ('code', 'name', 'manager', 'created_at')
+    list_display = ('code', 'name', 'business_unit', 'manager', 'created_at')
     search_fields = ('code', 'name')
-    list_filter = ('name',)
+    list_filter = ('business_unit', 'name')
     ordering = ('name',)
 
 
