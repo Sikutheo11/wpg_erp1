@@ -5,7 +5,7 @@ from io import BytesIO
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models.deletion import ProtectedError
 from django.http import HttpResponse, JsonResponse
 from django.db.models import F, Q, Sum
@@ -23,7 +23,13 @@ from .dashboard import get_finance_dashboard
 from .forms import (
     AccountForm,
     ExpenseForm,
+    ExpenseRequestForm,
+    ExpenseRequestDecisionForm,
+    ExpenseRequestVerificationForm,
+    ExpenseRequestPaymentForm,
     IncomeForm,
+    IncomeDeclarationForm,
+    IncomeConfirmationForm,
     CounterpartyCreateForm,
     CounterpartyPhoneLookupForm,
     PayableForm,
@@ -40,7 +46,9 @@ from .models import (
     Counterparty,
     DebtRecord,
     Income,
+    IncomeDeclaration,
     Expense,
+    ExpenseRequest,
     Receivable,
     Payable,
     Payment,
@@ -59,6 +67,8 @@ from .services import (
 from .services.counterparty_service import (
     CounterpartyService,
 )
+from .services.expense_request_service import ExpenseRequestService
+from .services.income_declaration_service import IncomeDeclarationService
 
 
 
@@ -575,6 +585,147 @@ def account_delete(request, pk):
 # INCOME
 # =====================================================
 
+CENTRAL_FINANCE_GROUPS = {"Accountant", "Finance Manager", "CEO"}
+
+
+def _finance_groups(user):
+    return set(user.groups.values_list("name", flat=True))
+
+
+def _has_central_finance_scope(user):
+    return user.is_superuser or bool(_finance_groups(user) & CENTRAL_FINANCE_GROUPS)
+
+
+def _employee_department(user):
+    employee = getattr(user, "employee", None)
+    return getattr(employee, "department", None)
+
+
+def _can_access_unit_record(user, owner_id, department):
+    return (
+        _has_central_finance_scope(user)
+        or owner_id == user.id
+        or bool(department and department.manager_id == user.id)
+    )
+
+@login_required
+@wpg_permission_required("finance.view_incomedeclaration", feature_code="FINANCE_INCOME_DECLARATIONS")
+def income_declaration_list(request):
+    declarations = IncomeDeclaration.objects.select_related(
+        "recorded_by", "department", "received_from", "related_sale",
+        "confirmed_account", "unit_approved_by", "finance_confirmed_by",
+    )
+    if not _has_central_finance_scope(request.user):
+        declarations = declarations.filter(
+            Q(recorded_by=request.user) | Q(department__manager=request.user)
+        ).distinct()
+    business_unit = request.GET.get("business_unit", "").strip()
+    if business_unit:
+        declarations = declarations.filter(business_unit=business_unit)
+    return render(request, "finance/income_declarations/declaration_list.html", {
+        "declarations": declarations,
+        "business_units": IncomeDeclaration.BUSINESS_UNITS,
+        "selected_business_unit": business_unit,
+    })
+
+
+@login_required
+@wpg_permission_required("finance.add_incomedeclaration", feature_code="FINANCE_INCOME_DECLARATIONS", action="add")
+def income_declaration_create(request):
+    department = _employee_department(request.user)
+    form = IncomeDeclarationForm(request.POST or None, request.FILES or None, user=request.user)
+    if request.method == "POST" and form.is_valid():
+        if not department and not request.user.is_superuser:
+            form.add_error(None, "Your employee profile must belong to a department before recording unit income.")
+            return render(request, "finance/income_declarations/declaration_form.html", {"form": form})
+        declaration = form.save(commit=False)
+        declaration.recorded_by = request.user
+        declaration.department = department
+        if department and not request.user.is_superuser:
+            declaration.business_unit = department.business_unit
+        declaration.save()
+        messages.success(request, "Income declaration saved as a draft.")
+        return redirect("finance:income_declaration_detail", pk=declaration.pk)
+    return render(request, "finance/income_declarations/declaration_form.html", {"form": form})
+
+
+@login_required
+@wpg_permission_required("finance.add_incomedeclaration", feature_code="FINANCE_INCOME_DECLARATIONS", action="add")
+def income_declaration_update(request, pk):
+    declaration = get_object_or_404(IncomeDeclaration, pk=pk, recorded_by=request.user)
+    if declaration.status not in {"DRAFT", "RETURNED"}:
+        messages.error(request, "Only a draft or returned declaration can be edited.")
+        return redirect("finance:income_declaration_detail", pk=pk)
+    form = IncomeDeclarationForm(request.POST or None, request.FILES or None, instance=declaration, user=request.user)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Income declaration updated.")
+        return redirect("finance:income_declaration_detail", pk=pk)
+    return render(request, "finance/income_declarations/declaration_form.html", {"form": form, "declaration": declaration})
+
+
+@login_required
+@wpg_permission_required("finance.view_incomedeclaration", feature_code="FINANCE_INCOME_DECLARATIONS")
+def income_declaration_detail(request, pk):
+    declaration = get_object_or_404(IncomeDeclaration.objects.select_related(
+        "recorded_by", "department", "department__manager", "received_from",
+        "related_sale", "unit_approved_by", "finance_confirmed_by",
+        "confirmed_account", "posted_income",
+    ), pk=pk)
+    if not _can_access_unit_record(request.user, declaration.recorded_by_id, declaration.department):
+        raise PermissionDenied
+    groups = _finance_groups(request.user)
+    is_recorder = declaration.recorded_by_id == request.user.id
+    assigned_manager = bool(
+        declaration.department_id
+        and declaration.department.manager_id == request.user.id
+    )
+    return render(request, "finance/income_declarations/declaration_detail.html", {
+        "declaration": declaration,
+        "decision_form": ExpenseRequestDecisionForm(),
+        "confirmation_form": IncomeConfirmationForm(),
+        "can_unit_approve": request.user.is_superuser or (
+            not is_recorder
+            and assigned_manager
+            and bool(groups & {"Manager", "Construction Manager", "Furniture Manager", "Marketplace Manager", "Finance Manager"})
+        ),
+        "can_finance_confirm": request.user.is_superuser or (
+            not is_recorder and bool(groups & {"Accountant", "Finance Manager"})
+        ),
+    })
+
+
+@login_required
+@wpg_permission_required("finance.add_incomedeclaration", feature_code="FINANCE_INCOME_DECLARATIONS", action="add")
+def income_declaration_submit(request, pk):
+    obj = get_object_or_404(IncomeDeclaration, pk=pk)
+    return _run_workflow_action(request, obj, lambda: IncomeDeclarationService.submit(obj, request.user), "Income declaration submitted to the unit manager.", "finance:income_declaration_detail")
+
+
+@login_required
+@wpg_permission_required("finance.change_incomedeclaration", feature_code="FINANCE_INCOME_CONFIRMATIONS", action="approve")
+def income_declaration_unit_approve(request, pk):
+    obj = get_object_or_404(IncomeDeclaration, pk=pk)
+    return _run_workflow_action(request, obj, lambda: IncomeDeclarationService.unit_approve(obj, request.user, request.POST.get("comment")), "Unit manager approved the income source.", "finance:income_declaration_detail")
+
+
+@login_required
+@wpg_permission_required("finance.change_incomedeclaration", feature_code="FINANCE_INCOME_CONFIRMATIONS", action="approve")
+def income_declaration_confirm(request, pk):
+    obj = get_object_or_404(IncomeDeclaration, pk=pk)
+    form = IncomeConfirmationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        return _run_workflow_action(request, obj, lambda: IncomeDeclarationService.finance_confirm(obj, request.user, form.cleaned_data["account"], form.cleaned_data["comment"]), "Finance confirmed receipt and posted the income.", "finance:income_declaration_detail")
+    messages.error(request, "; ".join(str(error) for errors in form.errors.values() for error in errors))
+    return redirect("finance:income_declaration_detail", pk=obj.pk)
+
+
+@login_required
+@wpg_permission_required("finance.change_incomedeclaration", feature_code="FINANCE_INCOME_CONFIRMATIONS", action="approve")
+def income_declaration_decide(request, pk, decision):
+    obj = get_object_or_404(IncomeDeclaration, pk=pk)
+    return _run_workflow_action(request, obj, lambda: IncomeDeclarationService.return_or_reject(obj, request.user, decision.upper(), request.POST.get("comment")), f"Income declaration {decision.lower()}.", "finance:income_declaration_detail")
+
 @login_required
 @wpg_permission_required(
     "finance.view_income",
@@ -586,6 +737,7 @@ def income_list(request):
         .select_related(
             "account",
             "sale",
+            "received_from",
         )
         .order_by(
             "-date",
@@ -636,6 +788,7 @@ def expense_list(request):
         .select_related(
             "account",
             "supplier",
+            "paid_to",
         )
         .order_by(
             "-date",
@@ -669,6 +822,195 @@ def expense_create(request):
         "finance/expenses/expense_form.html",
         {"form": form, "page_title": "Add Expense"},
     )
+
+
+# =====================================================
+# EXPENSE REQUEST APPROVAL WORKFLOW
+# =====================================================
+
+@login_required
+@wpg_permission_required("finance.view_expenserequest", feature_code="FINANCE_EXPENSE_REQUESTS")
+def expense_request_list(request):
+    requests = ExpenseRequest.objects.select_related(
+        "requested_by", "department", "payee", "proposed_account"
+    )
+    status = request.GET.get("status", "").strip()
+    if status:
+        requests = requests.filter(status=status)
+    business_unit = request.GET.get("business_unit", "").strip()
+    if business_unit:
+        requests = requests.filter(business_unit=business_unit)
+    if not _has_central_finance_scope(request.user):
+        requests = requests.filter(
+            Q(requested_by=request.user) | Q(department__manager=request.user)
+        ).distinct()
+    return render(request, "finance/expense_requests/request_list.html", {
+        "expense_requests": requests,
+        "status_choices": ExpenseRequest.STATUS_CHOICES,
+        "selected_status": status,
+        "business_units": ExpenseRequest.BUSINESS_UNITS,
+        "selected_business_unit": business_unit,
+    })
+
+
+@login_required
+@wpg_permission_required("finance.add_expenserequest", feature_code="FINANCE_EXPENSE_REQUESTS", action="add")
+def expense_request_create(request):
+    department = _employee_department(request.user)
+    form = ExpenseRequestForm(request.POST or None, request.FILES or None, user=request.user)
+    if request.method == "POST" and form.is_valid():
+        if not department and not request.user.is_superuser:
+            form.add_error(None, "Your employee profile must belong to a department before requesting money.")
+            return render(request, "finance/expense_requests/request_form.html", {"form": form})
+        expense_request = form.save(commit=False)
+        expense_request.requested_by = request.user
+        expense_request.department = department
+        if department and not request.user.is_superuser:
+            expense_request.business_unit = department.business_unit
+        expense_request.save()
+        messages.success(request, "Expense request saved as a draft.")
+        return redirect("finance:expense_request_detail", pk=expense_request.pk)
+    return render(request, "finance/expense_requests/request_form.html", {"form": form})
+
+
+@login_required
+@wpg_permission_required("finance.add_expenserequest", feature_code="FINANCE_EXPENSE_REQUESTS", action="add")
+def expense_request_update(request, pk):
+    expense_request = get_object_or_404(ExpenseRequest, pk=pk, requested_by=request.user)
+    if expense_request.status not in {"DRAFT", "RETURNED"}:
+        messages.error(request, "Only a draft or returned request can be edited.")
+        return redirect("finance:expense_request_detail", pk=pk)
+    form = ExpenseRequestForm(request.POST or None, request.FILES or None, instance=expense_request, user=request.user)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Expense request updated.")
+        return redirect("finance:expense_request_detail", pk=pk)
+    return render(request, "finance/expense_requests/request_form.html", {"form": form, "expense_request": expense_request})
+
+
+@login_required
+@wpg_permission_required("finance.view_expenserequest", feature_code="FINANCE_EXPENSE_REQUESTS")
+def expense_request_detail(request, pk):
+    expense_request = get_object_or_404(
+        ExpenseRequest.objects.select_related(
+            "requested_by", "department", "department__manager", "payee",
+            "proposed_account", "manager_approved_by", "accountant_verified_by",
+            "finance_approved_by", "director_approved_by", "paid_by", "expense",
+        ), pk=pk,
+    )
+    if not _can_access_unit_record(request.user, expense_request.requested_by_id, expense_request.department):
+        raise PermissionDenied
+    groups = set(request.user.groups.values_list("name", flat=True))
+    is_superuser = request.user.is_superuser
+    is_requester = expense_request.requested_by_id == request.user.id
+    has_manager_role = bool(
+        groups & {"Manager", "Construction Manager", "Furniture Manager", "Finance Manager"}
+    )
+    is_assigned_line_manager = (
+        not expense_request.department_id
+        or not expense_request.department.manager_id
+        or expense_request.department.manager_id == request.user.id
+    )
+    can_manager_approve = is_superuser or (
+        not is_requester and has_manager_role and is_assigned_line_manager
+    )
+    can_verify = is_superuser or (not is_requester and "Accountant" in groups)
+    can_finance_approve = is_superuser or (not is_requester and "Finance Manager" in groups)
+    can_director_approve = is_superuser or (not is_requester and "CEO" in groups)
+    can_pay = is_superuser or (not is_requester and "Accountant" in groups)
+    return render(request, "finance/expense_requests/request_detail.html", {
+        "expense_request": expense_request,
+        "decision_form": ExpenseRequestDecisionForm(),
+        "verification_form": ExpenseRequestVerificationForm(initial={"proposed_account": expense_request.proposed_account_id}),
+        "payment_form": ExpenseRequestPaymentForm(expense_request=expense_request),
+        "can_manager_approve": can_manager_approve,
+        "can_verify": can_verify,
+        "can_finance_approve": can_finance_approve,
+        "can_director_approve": can_director_approve,
+        "can_pay": can_pay,
+        "can_decide": (
+            (expense_request.status == "SUBMITTED" and can_manager_approve)
+            or (expense_request.status == "MANAGER_APPROVED" and can_verify)
+            or (expense_request.status == "FINANCE_VERIFIED" and can_finance_approve)
+            or (expense_request.status == "FINANCE_APPROVED" and can_director_approve)
+            or (expense_request.status == "FINAL_APPROVED" and can_pay)
+        ),
+    })
+
+
+def _run_workflow_action(
+    request,
+    workflow_record,
+    action,
+    success_message,
+    detail_url_name="finance:expense_request_detail",
+):
+    if request.method != "POST":
+        return redirect(detail_url_name, pk=workflow_record.pk)
+    try:
+        action()
+    except (ValidationError, PermissionDenied) as exc:
+        messages.error(request, "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc))
+    else:
+        messages.success(request, success_message)
+    return redirect(detail_url_name, pk=workflow_record.pk)
+
+
+@login_required
+@wpg_permission_required("finance.add_expenserequest", feature_code="FINANCE_EXPENSE_REQUESTS", action="add")
+def expense_request_submit(request, pk):
+    obj = get_object_or_404(ExpenseRequest, pk=pk)
+    return _run_workflow_action(request, obj, lambda: ExpenseRequestService.submit(obj, request.user), "Request submitted to the line manager.")
+
+
+@login_required
+@wpg_permission_required("finance.change_expenserequest", feature_code="FINANCE_EXPENSE_APPROVALS", action="approve")
+def expense_request_manager_approve(request, pk):
+    obj = get_object_or_404(ExpenseRequest, pk=pk)
+    return _run_workflow_action(request, obj, lambda: ExpenseRequestService.manager_approve(obj, request.user, request.POST.get("comment")), "Line manager approved the request.")
+
+
+@login_required
+@wpg_permission_required("finance.change_expenserequest", feature_code="FINANCE_EXPENSE_APPROVALS", action="approve")
+def expense_request_verify(request, pk):
+    obj = get_object_or_404(ExpenseRequest, pk=pk)
+    form = ExpenseRequestVerificationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        return _run_workflow_action(request, obj, lambda: ExpenseRequestService.accountant_verify(obj, request.user, form.cleaned_data["proposed_account"], form.cleaned_data["funds_available"], form.cleaned_data["comment"]), "Accountant verified funds and documents.")
+    messages.error(request, "; ".join(str(error) for errors in form.errors.values() for error in errors))
+    return redirect("finance:expense_request_detail", pk=obj.pk)
+
+
+@login_required
+@wpg_permission_required("finance.change_expenserequest", feature_code="FINANCE_EXPENSE_APPROVALS", action="approve")
+def expense_request_finance_approve(request, pk):
+    obj = get_object_or_404(ExpenseRequest, pk=pk)
+    return _run_workflow_action(request, obj, lambda: ExpenseRequestService.finance_approve(obj, request.user, request.POST.get("comment")), "Finance manager approved the request.")
+
+
+@login_required
+@wpg_permission_required("finance.change_expenserequest", feature_code="FINANCE_EXPENSE_APPROVALS", action="approve")
+def expense_request_director_approve(request, pk):
+    obj = get_object_or_404(ExpenseRequest, pk=pk)
+    return _run_workflow_action(request, obj, lambda: ExpenseRequestService.director_approve(obj, request.user, request.POST.get("comment")), "Company director gave final approval.")
+
+
+@login_required
+@wpg_permission_required("finance.change_expenserequest", feature_code="FINANCE_EXPENSE_APPROVALS", action="approve")
+def expense_request_pay(request, pk):
+    obj = get_object_or_404(ExpenseRequest, pk=pk)
+    form = ExpenseRequestPaymentForm(request.POST or None, expense_request=obj)
+    if request.method == "POST" and form.is_valid():
+        return _run_workflow_action(request, obj, lambda: ExpenseRequestService.pay(obj, request.user, form.cleaned_data["account"], form.cleaned_data["amount"], form.cleaned_data["method"], form.cleaned_data["reference"], form.cleaned_data["notes"]), "Payment posted and expense recorded.")
+    messages.error(request, "; ".join(str(error) for errors in form.errors.values() for error in errors))
+    return redirect("finance:expense_request_detail", pk=obj.pk)
+
+
+@login_required
+@wpg_permission_required("finance.change_expenserequest", feature_code="FINANCE_EXPENSE_APPROVALS", action="approve")
+def expense_request_decide(request, pk, decision):
+    obj = get_object_or_404(ExpenseRequest, pk=pk)
+    return _run_workflow_action(request, obj, lambda: ExpenseRequestService.return_or_reject(obj, request.user, decision.upper(), request.POST.get("comment")), f"Request {decision.lower()}.")
 
 
 # =====================================================

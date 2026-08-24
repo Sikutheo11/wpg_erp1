@@ -202,7 +202,9 @@ class IncomeService:
             )
 
         income = Income.objects.create(
-            account=account,
+            # AccountService owns automated balance posting. Creating with a
+            # null relation prevents Income.save() from posting a second time.
+            account=None,
             title=posting_title,
             income_type=resolved_income_type,
             amount=amount,
@@ -231,6 +233,9 @@ class IncomeService:
                     create_transaction=True,
                 )
             )
+
+        Income.objects.filter(pk=income.pk).update(account=account)
+        income.account = account
 
         EventEngine.dispatch(
             event_code="FINANCE_INCOME_CREATED",

@@ -887,6 +887,12 @@ class Income(models.Model):
 
     )
 
+    business_unit = models.CharField(
+        max_length=30,
+        choices=(("FURNITURE", "Furniture & Manufacturing"), ("CONSTRUCTION", "Construction & Built Environment"), ("AGRICULTURE", "Agriculture & Poultry"), ("MARKETPLACE", "Marketplace"), ("SHARED", "Shared services")),
+        default="SHARED",
+    )
+
 
     account=models.ForeignKey(
         Account,
@@ -922,6 +928,18 @@ class Income(models.Model):
         null=True,
         blank=True
     )
+
+    received_from = models.ForeignKey(
+        Counterparty,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="income_records",
+        help_text="Person, company or institution that paid WPG.",
+    )
+
+    reference = models.CharField(max_length=100, blank=True)
+    notes = models.TextField(blank=True)
 
 
     date=models.DateField(
@@ -960,6 +978,86 @@ class Income(models.Model):
         return self.title or "Income"
 
 
+class IncomeDeclaration(models.Model):
+    """Income reported by a business unit before Finance confirms receipt."""
+
+    BUSINESS_UNITS = (
+        ("FURNITURE", "Furniture & Manufacturing"),
+        ("CONSTRUCTION", "Construction & Built Environment"),
+        ("AGRICULTURE", "Agriculture & Poultry"),
+        ("MARKETPLACE", "Marketplace"),
+        ("SHARED", "Shared services"),
+    )
+    SOURCE_TYPES = (
+        ("SALE", "Sale"),
+        ("SERVICE", "Service"),
+        ("INVESTMENT", "Owner investment"),
+        ("LOAN", "Loan received"),
+        ("GRANT", "Grant"),
+        ("RENT", "Rental income"),
+        ("INTEREST", "Interest income"),
+        ("OTHER", "Other"),
+    )
+    RECEIPT_METHODS = (
+        ("cash", "Cash"),
+        ("bank", "Bank"),
+        ("mobile_money", "Mobile Money"),
+    )
+    STATUS_CHOICES = (
+        ("DRAFT", "Draft"),
+        ("SUBMITTED", "Awaiting unit manager"),
+        ("UNIT_APPROVED", "Awaiting Finance confirmation"),
+        ("FINANCE_CONFIRMED", "Confirmed and posted"),
+        ("RETURNED", "Returned for correction"),
+        ("REJECTED", "Rejected"),
+        ("CANCELLED", "Cancelled"),
+    )
+
+    declaration_number = models.CharField(max_length=32, unique=True, editable=False)
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="income_declarations")
+    department = models.ForeignKey("Employee.Department", on_delete=models.SET_NULL, null=True, blank=True, related_name="income_declarations")
+    business_unit = models.CharField(max_length=30, choices=BUSINESS_UNITS)
+    title = models.CharField(max_length=200)
+    source_type = models.CharField(max_length=30, choices=SOURCE_TYPES)
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    received_from = models.ForeignKey(Counterparty, on_delete=models.SET_NULL, null=True, blank=True, related_name="income_declarations")
+    related_sale = models.ForeignKey(Sale, on_delete=models.SET_NULL, null=True, blank=True, related_name="finance_income_declarations")
+    receipt_method = models.CharField(max_length=30, choices=RECEIPT_METHODS)
+    receipt_date = models.DateField()
+    reference = models.CharField(max_length=100)
+    proof_document = models.FileField(upload_to="finance/income_declarations/%Y/%m/", blank=True)
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="DRAFT", db_index=True)
+
+    unit_approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="unit_approved_income_declarations")
+    unit_approved_at = models.DateTimeField(null=True, blank=True)
+    unit_comment = models.TextField(blank=True)
+    confirmed_account = models.ForeignKey(Account, on_delete=models.PROTECT, null=True, blank=True, related_name="confirmed_income_declarations")
+    finance_confirmed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="finance_confirmed_income_declarations")
+    finance_confirmed_at = models.DateTimeField(null=True, blank=True)
+    finance_comment = models.TextField(blank=True)
+    posted_income = models.OneToOneField(Income, on_delete=models.SET_NULL, null=True, blank=True, related_name="source_declaration")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    def save(self, *args, **kwargs):
+        if not self.declaration_number:
+            self.declaration_number = f"IR-{timezone.localdate():%Y%m%d}-{uuid.uuid4().hex[:8].upper()}"
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        if self.amount is not None and self.amount <= 0:
+            raise ValidationError("Declared income must be greater than zero.")
+        if self.source_type == "SALE" and not self.related_sale_id:
+            raise ValidationError({"related_sale": "Select the related sale for sales income."})
+
+    def __str__(self):
+        return f"{self.declaration_number} - {self.title}"
+
+
 
 
 
@@ -979,6 +1077,12 @@ class Expense(models.Model):
         ('maintenance','Maintenance'),
         ('other','Other'),
 
+    )
+
+    business_unit = models.CharField(
+        max_length=30,
+        choices=(("FURNITURE", "Furniture & Manufacturing"), ("CONSTRUCTION", "Construction & Built Environment"), ("AGRICULTURE", "Agriculture & Poultry"), ("MARKETPLACE", "Marketplace"), ("SHARED", "Shared services")),
+        default="SHARED",
     )
 
 
@@ -1016,6 +1120,18 @@ class Expense(models.Model):
         blank=True
     )
 
+    paid_to = models.ForeignKey(
+        Counterparty,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="expense_records",
+        help_text="Person, company, employee or institution paid by WPG.",
+    )
+
+    reference = models.CharField(max_length=100, blank=True)
+    notes = models.TextField(blank=True)
+
 
     date=models.DateField(
         default=timezone.now
@@ -1052,6 +1168,137 @@ class Expense(models.Model):
 
     def __str__(self):
         return self.title or "Expense"
+
+
+class ExpenseRequest(models.Model):
+    """A controlled request for money before payment and expense posting."""
+
+    REQUEST_TYPES = (
+        ("DIRECT_PAYMENT", "Direct payment"),
+        ("CASH_ADVANCE", "Cash advance"),
+        ("REIMBURSEMENT", "Employee reimbursement"),
+    )
+    URGENCY_CHOICES = (
+        ("NORMAL", "Normal"),
+        ("URGENT", "Urgent"),
+        ("CRITICAL", "Critical"),
+    )
+    BUSINESS_UNITS = (
+        ("FURNITURE", "Furniture & Manufacturing"),
+        ("CONSTRUCTION", "Construction & Built Environment"),
+        ("AGRICULTURE", "Agriculture & Poultry"),
+        ("MARKETPLACE", "Marketplace"),
+        ("SHARED", "Shared services"),
+    )
+    STATUS_CHOICES = (
+        ("DRAFT", "Draft"),
+        ("SUBMITTED", "Awaiting line manager"),
+        ("MANAGER_APPROVED", "Awaiting accountant"),
+        ("FINANCE_VERIFIED", "Awaiting finance manager"),
+        ("FINANCE_APPROVED", "Awaiting company director"),
+        ("FINAL_APPROVED", "Ready for payment"),
+        ("PAID", "Paid"),
+        ("ACCOUNTABILITY_PENDING", "Awaiting accountability"),
+        ("COMPLETED", "Completed"),
+        ("RETURNED", "Returned for correction"),
+        ("REJECTED", "Rejected"),
+        ("CANCELLED", "Cancelled"),
+    )
+    PAYMENT_METHODS = (
+        ("cash", "Cash"),
+        ("bank", "Bank"),
+        ("mobile_money", "Mobile Money"),
+    )
+
+    request_number = models.CharField(max_length=32, unique=True, editable=False)
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="expense_requests",
+    )
+    department = models.ForeignKey(
+        "Employee.Department",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="expense_requests",
+    )
+    business_unit = models.CharField(max_length=30, choices=BUSINESS_UNITS, default="SHARED")
+    request_type = models.CharField(max_length=30, choices=REQUEST_TYPES, default="DIRECT_PAYMENT")
+    title = models.CharField(max_length=200)
+    expense_type = models.CharField(max_length=50, choices=Expense.EXPENSE_TYPES)
+    purpose = models.TextField()
+    payee = models.ForeignKey(
+        Counterparty,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="expense_requests",
+    )
+    amount_requested = models.DecimalField(max_digits=15, decimal_places=2)
+    needed_by = models.DateField()
+    urgency = models.CharField(max_length=20, choices=URGENCY_CHOICES, default="NORMAL")
+    supporting_document = models.FileField(upload_to="finance/expense_requests/%Y/%m/", blank=True)
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="DRAFT", db_index=True)
+
+    proposed_account = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="proposed_expense_requests",
+    )
+    funds_available = models.BooleanField(null=True, blank=True)
+    balance_checked = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+
+    manager_approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="manager_approved_expense_requests")
+    manager_approved_at = models.DateTimeField(null=True, blank=True)
+    manager_comment = models.TextField(blank=True)
+    accountant_verified_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="accountant_verified_expense_requests")
+    accountant_verified_at = models.DateTimeField(null=True, blank=True)
+    accountant_comment = models.TextField(blank=True)
+    finance_approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="finance_approved_expense_requests")
+    finance_approved_at = models.DateTimeField(null=True, blank=True)
+    finance_comment = models.TextField(blank=True)
+    director_approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="director_approved_expense_requests")
+    director_approved_at = models.DateTimeField(null=True, blank=True)
+    director_comment = models.TextField(blank=True)
+
+    paid_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="paid_expense_requests")
+    paid_at = models.DateTimeField(null=True, blank=True)
+    amount_paid = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    payment_method = models.CharField(max_length=30, choices=PAYMENT_METHODS, blank=True)
+    payment_reference = models.CharField(max_length=100, blank=True)
+    expense = models.OneToOneField(Expense, on_delete=models.SET_NULL, null=True, blank=True, related_name="source_request")
+    accountability_notes = models.TextField(blank=True)
+    accountability_document = models.FileField(upload_to="finance/accountability/%Y/%m/", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        permissions = (
+            ("submit_expenserequest", "Can submit expense request"),
+            ("manager_approve_expenserequest", "Can approve expense request as line manager"),
+            ("verify_expenserequest", "Can verify expense request as accountant"),
+            ("finance_approve_expenserequest", "Can approve expense request as finance manager"),
+            ("director_approve_expenserequest", "Can give final approval to expense request"),
+            ("pay_expenserequest", "Can pay an approved expense request"),
+        )
+
+    def save(self, *args, **kwargs):
+        if not self.request_number:
+            self.request_number = f"ER-{timezone.localdate():%Y%m%d}-{uuid.uuid4().hex[:8].upper()}"
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        if self.amount_requested is not None and self.amount_requested <= 0:
+            raise ValidationError("Requested amount must be greater than zero.")
+        if self.request_type == "DIRECT_PAYMENT" and not self.payee_id:
+            raise ValidationError({"payee": "Paid to is required for a direct payment."})
+
+    def __str__(self):
+        return f"{self.request_number} - {self.title}"
 
 
 

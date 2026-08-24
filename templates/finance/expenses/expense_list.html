@@ -24,12 +24,12 @@ Expenses
 </h2>
 
 
-<a href="{% url 'finance:expense_create' %}"
+{% if perms.finance.add_expense %}<a href="{% url 'finance:expense_create' %}"
 class="btn btn-danger">
 
 + Add Expense
 
-</a>
+</a>{% endif %}
 
 
 </div>
@@ -57,7 +57,9 @@ class="btn btn-danger">
 
 <th>Type</th>
 
-<th>Supplier</th>
+<th>Business unit</th>
+
+<th>Paid to</th>
 
 <th>Amount</th>
 
@@ -102,11 +104,13 @@ class="btn btn-danger">
 
 </td>
 
+<td>{{ expense.get_business_unit_display }}</td>
+
 
 
 <td>
 
-{{expense.supplier|default:"-" }}
+{{ expense.paid_to|default:expense.supplier|default:"—" }}
 
 </td>
 
@@ -123,19 +127,7 @@ class="btn btn-danger">
 <td>
 
 
-<button class="btn btn-warning btn-sm">
-
-Edit
-
-</button>
-
-
-
-<button class="btn btn-danger btn-sm">
-
-Delete
-
-</button>
+<span class="text-muted">Posted record</span>
 
 
 </td>
@@ -150,7 +142,7 @@ Delete
 
 <tr>
 
-<td colspan="6"
+<td colspan="7"
 class="text-center">
 
 No expenses found

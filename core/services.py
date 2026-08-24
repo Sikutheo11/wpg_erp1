@@ -217,7 +217,8 @@ class CoreSetupService:
             except Group.DoesNotExist:
                 continue
 
-            if "ALL" in features:
+            has_all_defaults = "ALL" in features
+            if has_all_defaults:
                 permissions = features["ALL"]
 
                 for feature in Feature.objects.filter(is_active=True):
@@ -236,15 +237,24 @@ class CoreSetupService:
                     else:
                         updated_count += 1
 
-                continue
+                # A role may have safe defaults for every feature and stronger
+                # permissions for a small explicit subset. Apply those
+                # overrides below instead of discarding them.
 
-            RoleFeature.objects.filter(
-                role=group,
-            ).exclude(
-                feature__code__in=features,
-            ).delete()
+            configured_features = {
+                code: permissions
+                for code, permissions in features.items()
+                if code != "ALL"
+            }
 
-            for feature_code, permissions in features.items():
+            if not has_all_defaults:
+                RoleFeature.objects.filter(
+                    role=group,
+                ).exclude(
+                    feature__code__in=configured_features,
+                ).delete()
+
+            for feature_code, permissions in configured_features.items():
                 try:
                     feature = Feature.objects.get(code=feature_code)
                 except Feature.DoesNotExist:

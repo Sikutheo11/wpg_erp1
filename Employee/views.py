@@ -486,23 +486,43 @@ def position_delete(request, pk):
 # ATTENDANCE MANAGEMENT
 # ==================================================
 
+def _attendance_queryset_for(user):
+    attendance = Attendance.objects.select_related(
+        "employee", "employee__user", "employee__department"
+    )
+    if user.is_superuser:
+        return attendance
+    groups = set(user.groups.values_list("name", flat=True))
+    if groups.intersection({"HR Manager", "CEO", "Administrator"}):
+        return attendance
+    managed_department_ids = user.managed_departments.values_list("id", flat=True)
+    if managed_department_ids:
+        return attendance.filter(employee__department_id__in=managed_department_ids)
+    return attendance.filter(employee__user=user)
+
 @login_required
 @wpg_permission_required(
     "Employee.view_attendance",
     feature_code="PEOPLE_ATTENDANCE",
 )
 def attendance_list(request):
-
-    attendance = Attendance.objects.select_related(
-        "employee"
-    ).all()
+    attendance = _attendance_queryset_for(request.user).order_by("-date", "employee__user__first_name")
+    status = request.GET.get("status", "").strip()
+    date = request.GET.get("date", "").strip()
+    if status:
+        attendance = attendance.filter(status=status)
+    if date:
+        attendance = attendance.filter(date=date)
 
 
     return render(
         request,
         "Employee/attendance/list.html",
         {
-            "attendance":attendance
+            "attendance": attendance,
+            "status_choices": Attendance.STATUS_CHOICES,
+            "selected_status": status,
+            "selected_date": date,
         }
     )
 
@@ -516,14 +536,13 @@ def attendance_list(request):
 )
 def attendance_create(request):
 
-    form = AttendanceForm(
-        request.POST or None
-    )
+    form = AttendanceForm(request.POST or None, user=request.user)
 
 
     if form.is_valid():
 
         form.save()
+        messages.success(request, "Attendance recorded successfully.")
 
         return redirect(
             "employee:attendance_list"
@@ -548,13 +567,15 @@ def attendance_create(request):
 def attendance_report(request):
 
     report = (
-        Attendance.objects
+        _attendance_queryset_for(request.user)
         .values(
-            "employee__user__first_name"
+            "employee__user__first_name",
+            "employee__user__last_name",
+            "employee__department__business_unit",
         )
         .annotate(
             total=Count("id")
-        )
+        ).order_by("employee__user__first_name", "employee__user__last_name")
     )
 
 

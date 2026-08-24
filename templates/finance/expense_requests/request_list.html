@@ -1,0 +1,16 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Expense Requests{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+    <div><h2 class="h3 fw-bold mb-1">Expense Requests</h2><p class="text-muted mb-0">Requests, approvals, payments and accountability in one register.</p></div>
+    {% if perms.finance.add_expenserequest %}<a href="{% url 'finance:expense_request_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i> New Request</a>{% endif %}
+  </div>
+  <form method="get" class="card card-body border-0 shadow-sm mb-3">
+    <div class="row g-2 align-items-end"><div class="col-md-4"><label class="form-label">Business unit</label><select name="business_unit" class="form-select"><option value="">All business units</option>{% for value,label in business_units %}<option value="{{ value }}" {% if selected_business_unit == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div class="col-md-4"><label class="form-label">Status</label><select name="status" class="form-select"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div class="col-auto"><button class="btn btn-outline-primary">Filter</button></div></div>
+  </form>
+  <div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-dark"><tr><th>Request</th><th>Business unit</th><th>Requester</th><th>Purpose</th><th>Needed</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
+  {% for item in expense_requests %}<tr><td><strong>{{ item.request_number }}</strong><small class="d-block text-muted">{{ item.get_request_type_display }}</small></td><td>{{ item.get_business_unit_display }}</td><td>{{ item.requested_by.full_name }}<small class="d-block text-muted">{{ item.department|default:"—" }}</small></td><td>{{ item.title }}<small class="d-block text-muted">{{ item.get_urgency_display }}</small></td><td>{{ item.needed_by|date:"d M Y" }}</td><td class="fw-bold">{{ item.amount_requested|floatformat:0 }} RWF</td><td><span class="badge {% if item.status == 'COMPLETED' %}bg-success{% elif item.status == 'REJECTED' %}bg-danger{% elif item.status == 'RETURNED' %}bg-warning text-dark{% else %}bg-primary{% endif %}">{{ item.get_status_display }}</span></td><td><a class="btn btn-sm btn-outline-primary" href="{% url 'finance:expense_request_detail' item.pk %}">Open</a></td></tr>{% empty %}<tr><td colspan="8" class="text-center text-muted py-5">No expense requests found.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+</div>
+{% endblock %}

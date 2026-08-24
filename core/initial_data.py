@@ -275,14 +275,18 @@ ENGINE_FEATURES = {
         ("Dashboard", "FINANCE_DASHBOARD", "finance:finance_dashboard", "bi bi-speedometer2", 1),
         ("Accounts", "FINANCE_ACCOUNTS", "finance:account_list", "bi bi-bank", 2),
         ("Income", "FINANCE_INCOME", "finance:income_list", "bi bi-arrow-down-circle", 3),
-        ("Expenses", "FINANCE_EXPENSES", "finance:expense_list", "bi bi-arrow-up-circle", 4),
-        ("Payments", "FINANCE_PAYMENTS", "finance:payment_list", "bi bi-cash", 5),
-        ("Receivables", "FINANCE_RECEIVABLES", "finance:receivable_list", "bi bi-wallet2", 6),
-        ("Payables", "FINANCE_PAYABLES", "finance:payable_list", "bi bi-receipt", 7),
-        ("People & Companies", "FINANCE_COUNTERPARTIES", "finance:counterparty_phone_lookup", "bi bi-person-vcard", 8),
-        ("Debts", "FINANCE_DEBTS", "finance:debt_list", "bi bi-journal-text", 9),
-        ("Payroll", "FINANCE_PAYROLL", "finance:payroll_list", "bi bi-people", 10),
-        ("Financial Reports", "FINANCE_REPORTS", "finance:financial_report", "bi bi-bar-chart", 11),
+        ("Business Unit Income", "FINANCE_INCOME_DECLARATIONS", "finance:income_declaration_list", "bi bi-cash-stack", 4),
+        ("Income Confirmations", "FINANCE_INCOME_CONFIRMATIONS", "finance:income_declaration_list", "bi bi-patch-check", 5),
+        ("Expenses", "FINANCE_EXPENSES", "finance:expense_list", "bi bi-arrow-up-circle", 6),
+        ("Expense Requests", "FINANCE_EXPENSE_REQUESTS", "finance:expense_request_list", "bi bi-send-check", 7),
+        ("Approval Queue", "FINANCE_EXPENSE_APPROVALS", "finance:expense_request_list", "bi bi-check2-square", 8),
+        ("Payments", "FINANCE_PAYMENTS", "finance:payment_list", "bi bi-cash", 9),
+        ("Receivables", "FINANCE_RECEIVABLES", "finance:receivable_list", "bi bi-wallet2", 8),
+        ("Payables", "FINANCE_PAYABLES", "finance:payable_list", "bi bi-receipt", 9),
+        ("People & Companies", "FINANCE_COUNTERPARTIES", "finance:counterparty_phone_lookup", "bi bi-person-vcard", 10),
+        ("Debts", "FINANCE_DEBTS", "finance:debt_list", "bi bi-journal-text", 11),
+        ("Payroll", "FINANCE_PAYROLL", "finance:payroll_list", "bi bi-people", 12),
+        ("Financial Reports", "FINANCE_REPORTS", "finance:financial_report", "bi bi-bar-chart", 13),
     ],
     "PEOPLE": [
         ("Dashboard", "PEOPLE_DASHBOARD", "employee:employee_dashboard", "bi bi-speedometer2", 1),
@@ -458,6 +462,10 @@ ROLE_FEATURES = {
 
     "Manager": {
         "ALL": {"view": True, "add": False, "edit": False, "delete": False, "approve": False}
+        ,"FINANCE_EXPENSE_REQUESTS": {"view": True, "add": True, "edit": True}
+        ,"FINANCE_EXPENSE_APPROVALS": {"view": True, "edit": True, "approve": True}
+        ,"FINANCE_INCOME_DECLARATIONS": {"view": True, "add": True, "edit": True}
+        ,"FINANCE_INCOME_CONFIRMATIONS": {"view": True, "edit": True, "approve": True}
     },
 
     "Construction Manager": {
@@ -468,7 +476,11 @@ ROLE_FEATURES = {
         "INVENTORY_DASHBOARD": {"view": True},
         "INVENTORY_RAW_MATERIALS": {"view": True},
         "FINANCE_DASHBOARD": {"view": True},
-        "FINANCE_EXPENSES": {"view": True, "add": True},
+        "FINANCE_EXPENSES": {"view": True},
+        "FINANCE_EXPENSE_REQUESTS": {"view": True, "add": True, "edit": True},
+        "FINANCE_EXPENSE_APPROVALS": {"view": True, "edit": True, "approve": True},
+        "FINANCE_INCOME_DECLARATIONS": {"view": True, "add": True, "edit": True},
+        "FINANCE_INCOME_CONFIRMATIONS": {"view": True, "edit": True, "approve": True},
         "CUSTOMER_LIST": {"view": True},
     },
 
@@ -493,6 +505,10 @@ ROLE_FEATURES = {
         "FURNITURE_QUOTATIONS": {"view": True, "add": True, "edit": True, "approve": True},
         "FURNITURE_MATERIALS": {"view": True, "add": True, "edit": True},
         "FURNITURE_OUTPUTS": {"view": True, "add": True, "edit": True},
+        "FINANCE_EXPENSE_REQUESTS": {"view": True, "add": True, "edit": True},
+        "FINANCE_EXPENSE_APPROVALS": {"view": True, "edit": True, "approve": True},
+        "FINANCE_INCOME_DECLARATIONS": {"view": True, "add": True, "edit": True},
+        "FINANCE_INCOME_CONFIRMATIONS": {"view": True, "edit": True, "approve": True},
         "INVENTORY_DASHBOARD": {"view": True},
         "INVENTORY_PRODUCTS": {"view": True},
         "INVENTORY_RAW_MATERIALS": {"view": True},
@@ -549,9 +565,15 @@ ROLE_FEATURES = {
         "FINANCE_ACCOUNTS": {"view": True, "add": True, "edit": True},
         "FINANCE_INCOME": {"view": True, "add": True, "edit": True, "approve": True},
         "FINANCE_EXPENSES": {"view": True, "add": True, "edit": True, "approve": True},
+        "FINANCE_EXPENSE_REQUESTS": {"view": True, "add": True, "edit": True},
+        "FINANCE_EXPENSE_APPROVALS": {"view": True, "edit": True, "approve": True},
+        "FINANCE_INCOME_DECLARATIONS": {"view": True, "add": True, "edit": True},
+        "FINANCE_INCOME_CONFIRMATIONS": {"view": True, "edit": True, "approve": True},
         "FINANCE_PAYMENTS": {"view": True, "add": True, "edit": True, "approve": True},
         "FINANCE_RECEIVABLES": {"view": True, "add": True, "edit": True},
         "FINANCE_PAYABLES": {"view": True, "add": True, "edit": True},
+        "FINANCE_COUNTERPARTIES": {"view": True, "add": True, "edit": True, "delete": True},
+        "FINANCE_DEBTS": {"view": True, "add": True, "edit": True, "delete": True},
         "REPORTING_EXECUTIVE_DASHBOARD": {"view": True},
         "ORDER_LIST": {"view": True},
         "CUSTOMER_LIST": {"view": True},
@@ -562,6 +584,10 @@ ROLE_FEATURES = {
         "FINANCE_ACCOUNTS": {"view": True, "add": True, "edit": True},
         "FINANCE_INCOME": {"view": True, "add": True, "edit": True},
         "FINANCE_EXPENSES": {"view": True, "add": True, "edit": True},
+        "FINANCE_EXPENSE_REQUESTS": {"view": True, "add": True, "edit": True},
+        "FINANCE_EXPENSE_APPROVALS": {"view": True, "edit": True, "approve": True},
+        "FINANCE_INCOME_DECLARATIONS": {"view": True, "add": True, "edit": True},
+        "FINANCE_INCOME_CONFIRMATIONS": {"view": True, "edit": True, "approve": True},
         "FINANCE_PAYMENTS": {"view": True, "add": True, "edit": True},
         "FINANCE_RECEIVABLES": {"view": True, "add": True, "edit": True},
         "FINANCE_PAYABLES": {"view": True, "add": True, "edit": True},
@@ -607,11 +633,17 @@ ROLE_FEATURES = {
         "MARKETPLACE_PRODUCTS": {"view": True, "add": True, "edit": True},
         "MARKETPLACE_ORDERS": {"view": True, "edit": True},
         "ORDER_LIST": {"view": True},
+        "FINANCE_EXPENSE_REQUESTS": {"view": True, "add": True, "edit": True},
+        "FINANCE_EXPENSE_APPROVALS": {"view": True, "edit": True, "approve": True},
+        "FINANCE_INCOME_DECLARATIONS": {"view": True, "add": True, "edit": True},
+        "FINANCE_INCOME_CONFIRMATIONS": {"view": True, "edit": True, "approve": True},
         "CUSTOMER_LIST": {"view": True},
     },
 
     "Worker": {
         "PEOPLE_ATTENDANCE": {"view": True, "add": True},
+        "FINANCE_EXPENSE_REQUESTS": {"view": True, "add": True},
+        "FINANCE_INCOME_DECLARATIONS": {"view": True, "add": True},
     },
 
     "Customer": {
@@ -748,11 +780,33 @@ FEATURE_DJANGO_PERMISSIONS = {
         "change_permission": "finance.change_income",
         "delete_permission": "finance.delete_income",
     },
+    "FINANCE_INCOME_DECLARATIONS": {
+        "view_permission": "finance.view_incomedeclaration",
+        "add_permission": "finance.add_incomedeclaration",
+        "change_permission": "finance.change_incomedeclaration",
+        "delete_permission": "finance.delete_incomedeclaration",
+    },
+    "FINANCE_INCOME_CONFIRMATIONS": {
+        "view_permission": "finance.view_incomedeclaration",
+        "change_permission": "finance.change_incomedeclaration",
+        "approve_permission": "finance.change_incomedeclaration",
+    },
     "FINANCE_EXPENSES": {
         "view_permission": "finance.view_expense",
         "add_permission": "finance.add_expense",
         "change_permission": "finance.change_expense",
         "delete_permission": "finance.delete_expense",
+    },
+    "FINANCE_EXPENSE_REQUESTS": {
+        "view_permission": "finance.view_expenserequest",
+        "add_permission": "finance.add_expenserequest",
+        "change_permission": "finance.change_expenserequest",
+        "delete_permission": "finance.delete_expenserequest",
+    },
+    "FINANCE_EXPENSE_APPROVALS": {
+        "view_permission": "finance.view_expenserequest",
+        "change_permission": "finance.change_expenserequest",
+        "approve_permission": "finance.change_expenserequest",
     },
     "FINANCE_PAYMENTS": {
         "view_permission": "finance.view_payment",

@@ -96,6 +96,7 @@ class DepartmentForm(forms.ModelForm):
         fields = [
             "code",
             "name",
+            "business_unit",
             "description",
             "manager",
         ]
@@ -110,11 +111,15 @@ class DepartmentForm(forms.ModelForm):
             ),
 
 
-            "name": forms.TextInput(
+            "name": forms.Select(
                 attrs={
-                    "class":"form-control"
+                    "class":"form-select"
                 }
             ),
+
+            "business_unit": forms.Select(attrs={"class": "form-select"}),
+
+            "manager": forms.Select(attrs={"class": "form-select"}),
 
 
             "description": forms.Textarea(
@@ -172,7 +177,6 @@ class AttendanceForm(forms.ModelForm):
             "date",
             "check_in",
             "check_out",
-            "hours_worked",
             "status",
         ]
 
@@ -203,20 +207,33 @@ class AttendanceForm(forms.ModelForm):
             ),
 
 
-            "hours_worked": forms.NumberInput(
-                attrs={
-                    "class":"form-control"
-                }
-            ),
-
-
-            "status": forms.TextInput(
+            "status": forms.Select(
                 attrs={
                     "class":"form-control"
                 }
             ),
 
         }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        employees = Employee.objects.select_related("user", "department").filter(
+            is_active=True
+        ).order_by("user__first_name", "user__last_name")
+        if user and not user.is_superuser:
+            groups = set(user.groups.values_list("name", flat=True))
+            if not groups.intersection({"HR Manager", "CEO", "Administrator"}):
+                managed_department_ids = user.managed_departments.values_list("id", flat=True)
+                if managed_department_ids:
+                    employees = employees.filter(department_id__in=managed_department_ids)
+                else:
+                    employees = employees.filter(user=user)
+                    self.fields["employee"].disabled = True
+                    employee = employees.first()
+                    if employee:
+                        self.fields["employee"].initial = employee.pk
+        self.fields["employee"].queryset = employees
 
 
 
