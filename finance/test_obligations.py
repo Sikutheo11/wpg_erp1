@@ -2,12 +2,17 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from .models import Counterparty, ObligationItemGroup, ObligationItemType, Payable, Receivable
 from .services import DebtReportService
 
 
 class ObligationWorkflowTests(TestCase):
+    @staticmethod
+    def _reference_prefix(direction):
+        return f"{direction}-{timezone.localdate():%Y%m%d}-"
+
     def setUp(self):
         self.user = get_user_model().objects.create_user(
             username="obligation-user",
@@ -42,7 +47,7 @@ class ObligationWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("finance:payable_list"))
         payable = Payable.objects.get()
-        self.assertTrue(payable.reference.startswith("PAY-20260823-"))
+        self.assertTrue(payable.reference.startswith(self._reference_prefix("PAY")))
         self.assertEqual(str(payable.due_date), "2026-09-22")
         self.assertEqual(payable.total_amount, 30000)
         self.assertEqual(payable.lines.count(), 1)
@@ -54,7 +59,7 @@ class ObligationWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("finance:receivable_list"))
         receivable = Receivable.objects.get()
-        self.assertTrue(receivable.invoice_number.startswith("REC-20260823-"))
+        self.assertTrue(receivable.invoice_number.startswith(self._reference_prefix("REC")))
         self.assertEqual(receivable.total_amount, 30000)
         self.party.refresh_from_db()
         self.assertTrue(self.party.is_customer)
@@ -69,7 +74,7 @@ class ObligationWorkflowTests(TestCase):
         self._post("finance:payable_create", "PAY-CSV")
         response = self.client.get(reverse("finance:debt_report_csv"))
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"PAY-20260823-", response.content)
+        self.assertIn(self._reference_prefix("PAY").encode(), response.content)
 
     def test_form_only_exposes_approved_header_and_line_fields(self):
         from .forms import PayableForm, ObligationLineForm

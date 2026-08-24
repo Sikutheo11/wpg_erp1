@@ -6,6 +6,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db.models.deletion import ProtectedError
 from django.http import HttpResponse, JsonResponse
 from django.db.models import F, Q, Sum
 from django.shortcuts import (
@@ -20,6 +21,9 @@ from core.permissions import wpg_permission_required
 from .dashboard import get_finance_dashboard
 
 from .forms import (
+    AccountForm,
+    ExpenseForm,
+    IncomeForm,
     CounterpartyCreateForm,
     CounterpartyPhoneLookupForm,
     PayableForm,
@@ -480,7 +484,6 @@ def account_list(request):
         "account_number",
         "name",
     )
-
     return render(
         request,
         "finance/accounts/account_list.html",
@@ -489,6 +492,84 @@ def account_list(request):
         },
     )
 
+
+@login_required
+@wpg_permission_required(
+    "finance.add_account",
+    feature_code="FINANCE_ACCOUNTS",
+    action="add",
+)
+def account_create(request):
+    form = AccountForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        account = form.save()
+        messages.success(
+            request,
+            f"Account {account.name} was created successfully.",
+        )
+        return redirect("finance:account_list")
+    return render(
+        request,
+        "finance/accounts/account_form.html",
+        {"form": form, "page_title": "Add Account"},
+    )
+
+
+@login_required
+@wpg_permission_required(
+    "finance.change_account",
+    feature_code="FINANCE_ACCOUNTS",
+    action="change",
+)
+def account_update(request, pk):
+    account = get_object_or_404(Account, pk=pk)
+    form = AccountForm(request.POST or None, instance=account)
+    if request.method == "POST" and form.is_valid():
+        account = form.save()
+        messages.success(
+            request,
+            f"Account {account.name} was updated successfully.",
+        )
+        return redirect("finance:account_list")
+    return render(
+        request,
+        "finance/accounts/account_form.html",
+        {
+            "form": form,
+            "account": account,
+            "page_title": "Edit Account",
+        },
+    )
+
+
+@login_required
+@wpg_permission_required(
+    "finance.delete_account",
+    feature_code="FINANCE_ACCOUNTS",
+    action="delete",
+)
+def account_delete(request, pk):
+    account = get_object_or_404(Account, pk=pk)
+    if request.method == "POST":
+        name = account.name
+        try:
+            account.delete()
+        except ProtectedError:
+            messages.error(
+                request,
+                "This account has financial records and cannot be deleted.",
+            )
+        else:
+            messages.success(
+                request,
+                f"Account {name} was deleted successfully.",
+            )
+        return redirect("finance:account_list")
+    return render(
+        request,
+        "finance/accounts/account_confirm_delete.html",
+        {"account": account, "page_title": "Delete Account"},
+    )
 
 # =====================================================
 # INCOME
@@ -514,10 +595,29 @@ def income_list(request):
 
     return render(
         request,
-        "finance/income/income_list.html",
+        "finance/incomes/income_list.html",
         {
             "incomes": incomes,
         },
+    )
+
+
+@login_required
+@wpg_permission_required(
+    "finance.add_income",
+    feature_code="FINANCE_INCOME",
+    action="add",
+)
+def income_create(request):
+    form = IncomeForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        income = form.save()
+        messages.success(request, f"Income {income} was recorded successfully.")
+        return redirect("finance:income_list")
+    return render(
+        request,
+        "finance/incomes/income_form.html",
+        {"form": form, "page_title": "Add Income"},
     )
 
 
@@ -545,10 +645,29 @@ def expense_list(request):
 
     return render(
         request,
-        "finance/expense/expense_list.html",
+        "finance/expenses/expense_list.html",
         {
             "expenses": expenses,
         },
+    )
+
+
+@login_required
+@wpg_permission_required(
+    "finance.add_expense",
+    feature_code="FINANCE_EXPENSES",
+    action="add",
+)
+def expense_create(request):
+    form = ExpenseForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        expense = form.save()
+        messages.success(request, f"Expense {expense} was recorded successfully.")
+        return redirect("finance:expense_list")
+    return render(
+        request,
+        "finance/expenses/expense_form.html",
+        {"form": form, "page_title": "Add Expense"},
     )
 
 
