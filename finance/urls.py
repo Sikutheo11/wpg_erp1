@@ -37,6 +37,21 @@ urlpatterns = [
         views.account_list,
         name='account_list'
     ),
+    path(
+        'accounts/create/',
+        views.account_create,
+        name='account_create'
+    ),
+    path(
+        'accounts/<int:pk>/edit/',
+        views.account_update,
+        name='account_update'
+    ),
+    path(
+        'accounts/<int:pk>/delete/',
+        views.account_delete,
+        name='account_delete'
+    ),
 
 
 
@@ -48,6 +63,11 @@ urlpatterns = [
         'income/',
         views.income_list,
         name='income_list'
+    ),
+    path(
+        'income/create/',
+        views.income_create,
+        name='income_create'
     ),
 
 
@@ -61,6 +81,11 @@ urlpatterns = [
         'expenses/',
         views.expense_list,
         name='expense_list'
+    ),
+    path(
+        'expenses/create/',
+        views.expense_create,
+        name='expense_create'
     ),
 
 

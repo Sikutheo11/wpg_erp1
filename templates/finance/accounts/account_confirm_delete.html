@@ -1,0 +1,17 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Delete Account{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="card border-danger shadow-sm mx-auto" style="max-width: 620px;">
+    <div class="card-body p-4">
+      <h2 class="h4">Delete account?</h2>
+      <p class="text-muted mb-4">You are about to delete <strong>{{ account.name }}</strong>. Accounts linked to financial records cannot be deleted.</p>
+      <form method="post" class="d-flex flex-column flex-sm-row justify-content-end gap-2">
+        {% csrf_token %}
+        <a class="btn btn-outline-secondary" href="{% url 'finance:account_list' %}">Cancel</a>
+        <button class="btn btn-danger" type="submit">Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

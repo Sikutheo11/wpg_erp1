@@ -65,6 +65,32 @@ class AccountForm(forms.ModelForm):
             ),
         }
 
+    def clean_account_number(self):
+        account_number = (
+            self.cleaned_data.get("account_number") or ""
+        ).strip()
+        if not account_number:
+            return None
+
+        duplicate = Account.objects.filter(
+            account_number__iexact=account_number
+        )
+        if self.instance.pk:
+            duplicate = duplicate.exclude(pk=self.instance.pk)
+        if duplicate.exists():
+            raise forms.ValidationError(
+                "An account with this number already exists."
+            )
+        return account_number
+
+    def clean_balance(self):
+        balance = self.cleaned_data.get("balance")
+        if balance is not None and balance < 0:
+            raise forms.ValidationError(
+                "Account balance cannot be negative."
+            )
+        return balance
+
 
 class IncomeForm(forms.ModelForm):
     class Meta:
