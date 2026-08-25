@@ -2,6 +2,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 from core.permissions import PermissionService, wpg_permission_required
@@ -392,31 +393,55 @@ def order_create(request):
             order_type=order_type,
             business_unit=business_unit,
         )
+        item_form = OrderItemForm(
+            request.POST,
+            request.FILES,
+            order_type=order_type,
+            business_unit=business_unit,
+        )
 
-        if form.is_valid():
+        if form.is_valid() and item_form.is_valid():
             data = form.cleaned_data
+            item_data = item_form.cleaned_data
 
             try:
-                order = OrderService.create_order(
-                    user=request.user,
-                    business_unit=business_unit,
-                    order_type=order_type,
-                    customer_name=data.get("customer_name", ""),
-                    customer_phone=data.get("customer_phone", ""),
-                    customer_email=data.get("customer_email", ""),
-                    province=data.get("province", ""),
-                    district=data.get("district", ""),
-                    sector=data.get("sector", ""),
-                    cell=data.get("cell", ""),
-                    village=data.get("village", ""),
-                    delivery_address=data.get("delivery_address", ""),
-                    notes=data.get("notes", ""),
-                    discount=data.get("discount", 0),
-                    tax=data.get("tax", 0),
-                    expected_delivery_date=data.get(
-                        "expected_delivery_date"
-                    ),
-                )
+                with transaction.atomic():
+                    order = OrderService.create_order(
+                        user=request.user,
+                        business_unit=business_unit,
+                        order_type=order_type,
+                        customer_name=data.get("customer_name", ""),
+                        customer_phone=data.get("customer_phone", ""),
+                        customer_email=data.get("customer_email", ""),
+                        province=data.get("province", ""),
+                        district=data.get("district", ""),
+                        sector=data.get("sector", ""),
+                        cell=data.get("cell", ""),
+                        village=data.get("village", ""),
+                        delivery_address=data.get("delivery_address", ""),
+                        notes=data.get("notes", ""),
+                        discount=data.get("discount", 0),
+                        tax=data.get("tax", 0),
+                        expected_delivery_date=data.get("expected_delivery_date"),
+                    )
+                    OrderItemService.add_item(
+                        order=order,
+                        product=item_data.get("product"),
+                        product_name=item_data.get("product_name", ""),
+                        quantity=item_data.get("quantity"),
+                        specifications=item_data.get("specifications", ""),
+                        price=item_data.get("price"),
+                        reference_image=item_data.get("reference_image"),
+                        design_attachment=item_data.get("design_attachment"),
+                        length_cm=item_data.get("length_cm"),
+                        width_cm=item_data.get("width_cm"),
+                        height_cm=item_data.get("height_cm"),
+                        material_preference=item_data.get("material_preference", ""),
+                        colour=item_data.get("colour", ""),
+                        finish=item_data.get("finish", ""),
+                        customer_budget=item_data.get("customer_budget"),
+                        actor=request.user,
+                    )
 
             except ValidationError as error:
                 form.add_error(
@@ -443,12 +468,17 @@ def order_create(request):
             order_type=order_type,
             business_unit=business_unit,
         )
+        item_form = OrderItemForm(
+            order_type=order_type,
+            business_unit=business_unit,
+        )
 
     return render(
         request,
         "orders/order_form.html",
         {
             "form": form,
+            "item_form": item_form,
             "business_unit": business_unit,
             "order_type": order_type,
             "business_unit_display": dict(
