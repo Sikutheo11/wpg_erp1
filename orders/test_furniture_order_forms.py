@@ -1,9 +1,10 @@
-from django.test import SimpleTestCase
+from django.template.loader import render_to_string
+from django.test import TestCase
 
-from .forms import OrderItemForm
+from .forms import OrderForm, OrderItemForm
 
 
-class FurnitureOrderItemFormTests(SimpleTestCase):
+class FurnitureOrderItemFormTests(TestCase):
     def test_ecommerce_only_uses_catalogue_product_fields(self):
         form = OrderItemForm(order_type="ECOMMERCE", business_unit="FURNITURE")
         self.assertEqual(set(form.fields), {"product", "quantity", "specifications"})
@@ -32,3 +33,28 @@ class FurnitureOrderItemFormTests(SimpleTestCase):
     def test_pos_uses_catalogue_product_selection(self):
         form = OrderItemForm(order_type="POS", business_unit="FURNITURE")
         self.assertEqual(set(form.fields), {"product", "quantity", "specifications"})
+
+    def test_custom_fields_are_visible_on_initial_order_page(self):
+        item_form = OrderItemForm(
+            order_type="CUSTOM_FURNITURE",
+            business_unit="FURNITURE",
+        )
+        html = render_to_string(
+            "orders/order_form.html",
+            {
+                "form": OrderForm(
+                    order_type="CUSTOM_FURNITURE", business_unit="FURNITURE"
+                ),
+                "item_form": item_form,
+                "business_unit": "FURNITURE",
+                "business_unit_display": "Furniture & Manufacturing",
+                "order_type": "CUSTOM_FURNITURE",
+                "order_type_display": "Custom Furniture Order",
+            },
+        )
+        for field_name in (
+            "reference_image", "design_attachment", "length_cm", "width_cm",
+            "height_cm", "material_preference", "colour", "finish",
+            "customer_budget", "price",
+        ):
+            self.assertIn(f'name="{field_name}"', html)
