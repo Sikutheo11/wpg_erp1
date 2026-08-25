@@ -198,12 +198,12 @@ MODULES = [
 
 BUSINESS_UNIT_FEATURES = {
     "FURNITURE": [
-        ("Dashboard", "FURNITURE_DASHBOARD", "furniture:production_job_list", "bi bi-speedometer2", 1),
+        ("Production Overview", "FURNITURE_DASHBOARD", "furniture:production_job_list", "bi bi-speedometer2", 1),
         ("Production Jobs", "FURNITURE_PRODUCTION_JOBS", "furniture:production_job_list", "bi bi-list-task", 2),
-        ("Quotations", "FURNITURE_QUOTATIONS", "furniture:quotation_list", "bi bi-file-earmark-text", 3),
+        ("Production Costing", "FURNITURE_QUOTATIONS", "furniture:quotation_list", "bi bi-calculator", 3),
         ("Materials", "FURNITURE_MATERIALS", "furniture:material_list", "bi bi-tree", 4),
         ("Outputs", "FURNITURE_OUTPUTS", "furniture:output_list", "bi bi-box-arrow-up", 5),
-        ("Legacy Orders", "FURNITURE_ORDERS", "furniture:order_list", "bi bi-cart", 6),
+        ("Legacy Records (Read Only)", "FURNITURE_ORDERS", "furniture:order_list", "bi bi-archive", 6),
         ("Production Tasks", "FURNITURE_TASKS", "furniture:production_task_list", "bi bi-check2-square", 7),
         ("My Tasks", "FURNITURE_MY_TASKS", "furniture:my_production_tasks", "bi bi-person-check", 8),
         ("Labour", "FURNITURE_LABOUR", "furniture:labour_list", "bi bi-people", 9),
@@ -261,8 +261,8 @@ ENGINE_FEATURES = {
         ("Sales Reports", "SALES_REPORTS", "sales:sales_report", "bi bi-bar-chart", 9),
     ],
     "QUOTATION": [
-        ("Quotations", "QUOTATION_LIST", "sales:quotation_list", "bi bi-file-earmark-text", 1),
-        ("Quotation Approval", "QUOTATION_APPROVAL", "sales:quotation_list", "bi bi-check-circle", 2),
+        ("Customer Quotations", "QUOTATION_LIST", "sales:quotation_list", "bi bi-file-earmark-text", 1),
+        ("Customer Quotation Approval", "QUOTATION_APPROVAL", "sales:quotation_list", "bi bi-check-circle", 2),
     ],
     "INVENTORY": [
         ("Dashboard", "INVENTORY_DASHBOARD", "inventory:inventory_dashboard", "bi bi-speedometer2", 1),
