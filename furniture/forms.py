@@ -188,6 +188,9 @@ class ProductionJobForm(forms.ModelForm):
         self.fields["assigned_to"].required = False
         self.fields["order"].required = False
         self.fields["product"].required = False
+        self.fields["product"].help_text = (
+            "Use an existing product for restock or product-based production."
+        )
 
         self.fields["expected_end_date"].input_formats = [
             "%Y-%m-%d",
@@ -242,8 +245,12 @@ class ProductionJobForm(forms.ModelForm):
             .order_by("-id")
         )
 
+        self.fields["order"].label = "Approved Enterprise Order"
+        self.fields["order"].help_text = (
+            "Select the shared Order Engine record that authorizes this production job."
+        )
         self.fields["order"].empty_label = (
-            "Select customer order"
+            "Select enterprise order"
         )
 
     def clean_quantity_to_produce(self):
