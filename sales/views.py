@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from core.permissions import wpg_permission_required
 from inventory.models import Product
+from orders.models import Order
 from .dashboard import get_sales_dashboard
 from .models import (
     Customer,
@@ -17,6 +18,7 @@ from .models import (
     Sale,
     SalesQuotation,
     SalesQuotationItem,
+    EnterpriseInvoice,
 )
 from .services import (
     CustomerService,
@@ -27,7 +29,11 @@ from .services import (
 from .forms import (
     SalesQuotationForm,
     SalesQuotationItemFormSet,
+    EnterpriseInvoiceDraftForm,
 )
+from .pdf import enterprise_invoice_pdf_response
+from .services.invoice_service import EnterpriseInvoiceService
+from .services.invoice_delivery_service import InvoiceDeliveryService
 
 
 def _validation_message(error):
@@ -803,7 +809,7 @@ def sale_list(request):
 
     return render(
         request,
-        "sales/sales/sale_list.html",
+        "sales/sale_list.html",
         {"sales": sales, "legacy_mode": True},
     )
 
@@ -822,7 +828,7 @@ def sale_detail(request, pk):
 
     return render(
         request,
-        "sales/sales/sale_detail.html",
+        "sales/sale_detail.html",
         {"sale": sale, "legacy_mode": True},
     )
 
@@ -846,34 +852,128 @@ def complete_sale_view(request, pk):
 @login_required
 @wpg_permission_required("sales.view_invoice", feature_code="SALES_INVOICES")
 def invoice_list(request):
-    invoices = Invoice.objects.select_related(
-        "sale",
-        "sale__customer",
+    invoices = EnterpriseInvoice.objects.select_related(
+        "order", "customer", "receivable",
     ).order_by("-invoice_date", "-pk")
+    invoiceable_orders = Order.objects.filter(
+        status__in=EnterpriseInvoiceService.INVOICEABLE_ORDER_STATUSES,
+        sales_invoice__isnull=True,
+        total_amount__gt=0,
+    ).order_by("-created_at")[:50]
 
     return render(
         request,
-        "sales/invoices/invoice_list.html",
-        {"invoices": invoices, "legacy_mode": True},
+        "sales/invoice_list.html",
+        {
+            "invoices": invoices,
+            "invoiceable_orders": invoiceable_orders,
+            "legacy_mode": False,
+        },
     )
 
 
 @login_required
 @wpg_permission_required("sales.view_invoice", feature_code="SALES_INVOICES")
 def invoice_detail(request, pk):
-    invoice = get_object_or_404(
-        Invoice.objects.select_related(
-            "sale",
-            "sale__customer",
-        ).prefetch_related("payments"),
-        pk=pk,
+    invoice = (
+        EnterpriseInvoice.objects.select_related(
+            "order", "customer", "receivable", "issued_by",
+        ).prefetch_related("order__items", "deliveries")
+        .filter(pk=pk)
+        .first()
     )
+    if invoice is None:
+        legacy_invoice = get_object_or_404(
+            Invoice.objects.select_related(
+                "sale", "sale__customer",
+            ).prefetch_related("payments"),
+            pk=pk,
+        )
+        return render(
+            request,
+            "sales/invoice_legacy_detail.html",
+            {"invoice": legacy_invoice, "legacy_mode": True},
+        )
+    EnterpriseInvoiceService.sync_payment_status(invoice)
 
     return render(
         request,
-        "sales/invoices/invoice_detail.html",
-        {"invoice": invoice, "legacy_mode": True},
+        "sales/invoice_detail.html",
+        {"invoice": invoice, "legacy_mode": False},
     )
+
+
+@login_required
+@wpg_permission_required("sales.add_enterpriseinvoice", feature_code="SALES_INVOICES", action="add")
+def enterprise_invoice_create(request, order_pk):
+    order = get_object_or_404(Order.objects.prefetch_related("items"), pk=order_pk)
+    if request.method == "POST":
+        form = EnterpriseInvoiceDraftForm(request.POST)
+        if form.is_valid():
+            try:
+                invoice = EnterpriseInvoiceService.create_draft(
+                    order=order, due_date=form.cleaned_data["due_date"]
+                )
+                messages.success(request, "Invoice draft created.")
+                return redirect("sales:invoice_detail", pk=invoice.pk)
+            except ValidationError as error:
+                form.add_error(None, _validation_message(error))
+    else:
+        form = EnterpriseInvoiceDraftForm()
+    return render(request, "sales/invoices/invoice_form.html", {"form": form, "order": order})
+
+
+@login_required
+@require_POST
+@wpg_permission_required("sales.issue_enterpriseinvoice", feature_code="SALES_INVOICES", action="change")
+def enterprise_invoice_issue(request, pk):
+    invoice = get_object_or_404(EnterpriseInvoice, pk=pk)
+    try:
+        EnterpriseInvoiceService.issue(invoice=invoice, actor=request.user)
+        messages.success(request, "Invoice issued and Finance receivable created.")
+    except ValidationError as error:
+        messages.error(request, _validation_message(error))
+    return redirect("sales:invoice_detail", pk=pk)
+
+
+@login_required
+@wpg_permission_required("sales.view_enterpriseinvoice", feature_code="SALES_INVOICES")
+def enterprise_invoice_pdf(request, pk):
+    invoice = get_object_or_404(
+        EnterpriseInvoice.objects.select_related("customer", "order").prefetch_related("order__items"), pk=pk
+    )
+    return enterprise_invoice_pdf_response(invoice, inline=True)
+
+
+def enterprise_invoice_public_pdf(request, token):
+    invoice = get_object_or_404(
+        EnterpriseInvoice.objects.select_related("customer", "order").prefetch_related("order__items"),
+        public_token=token, status__in=[EnterpriseInvoice.ISSUED, EnterpriseInvoice.PARTIAL, EnterpriseInvoice.PAID],
+    )
+    return enterprise_invoice_pdf_response(invoice, inline=True)
+
+
+@login_required
+@require_POST
+@wpg_permission_required("sales.send_enterpriseinvoice", feature_code="SALES_INVOICES", action="change")
+def enterprise_invoice_send(request, pk, channel):
+    invoice = get_object_or_404(
+        EnterpriseInvoice.objects.select_related("customer", "order", "receivable"), pk=pk
+    )
+    if invoice.status == EnterpriseInvoice.DRAFT:
+        messages.error(request, "Issue the invoice before sending it.")
+        return redirect("sales:invoice_detail", pk=pk)
+    try:
+        if channel == "email":
+            InvoiceDeliveryService.send_email(invoice=invoice, actor=request.user, request=request)
+        elif channel == "whatsapp":
+            InvoiceDeliveryService.send_whatsapp(invoice=invoice, actor=request.user, request=request)
+        else:
+            raise ValidationError("Unknown delivery channel.")
+        messages.success(request, f"Invoice sent by {channel.title()}.")
+    except Exception as error:
+        messages.error(request, f"Invoice was not sent: {_validation_message(error)}")
+    return redirect("sales:invoice_detail", pk=pk)
 
 
 @login_required
@@ -887,7 +987,7 @@ def payment_list(request):
 
     return render(
         request,
-        "sales/payments/payment_list.html",
+        "sales/payment_list.html",
         {"payments": payments, "legacy_mode": True},
     )
 
@@ -897,7 +997,7 @@ def payment_list(request):
 def sales_report(request):
     return render(
         request,
-        "sales/reports/sales_report.html",
+        "sales/sales_report.html",
         {
             "sales": Sale.objects.select_related(
                 "customer",

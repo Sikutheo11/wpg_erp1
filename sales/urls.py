@@ -126,6 +126,31 @@ urlpatterns = [
         views.invoice_detail,
         name="invoice_detail",
     ),
+    path(
+        "orders/<int:order_pk>/invoice/create/",
+        views.enterprise_invoice_create,
+        name="invoice_create_from_order",
+    ),
+    path(
+        "invoices/<int:pk>/issue/",
+        views.enterprise_invoice_issue,
+        name="invoice_issue",
+    ),
+    path(
+        "invoices/<int:pk>/pdf/",
+        views.enterprise_invoice_pdf,
+        name="invoice_pdf",
+    ),
+    path(
+        "invoices/public/<uuid:token>/pdf/",
+        views.enterprise_invoice_public_pdf,
+        name="invoice_public_pdf",
+    ),
+    path(
+        "invoices/<int:pk>/send/<str:channel>/",
+        views.enterprise_invoice_send,
+        name="invoice_send",
+    ),
 
     path(
         "payments/",

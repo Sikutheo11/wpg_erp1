@@ -1,0 +1,36 @@
+{% extends account_shell_template %}
+
+{% block title %}Access Denied | WPG BOS{% endblock %}
+{% block page_title %}Access Denied{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-7 col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 p-md-5 text-center">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger-subtle text-danger mb-4"
+                         style="width:76px;height:76px;">
+                        <i class="bi bi-shield-lock fs-1"></i>
+                    </div>
+                    <p class="text-danger fw-bold text-uppercase small mb-2">403 · Permission required</p>
+                    <h1 class="h3 fw-bold mb-3">You do not have access to this page</h1>
+                    <p class="text-muted mb-4">
+                        Your account is working, but your current Django Group does not include
+                        the permission required for this action. Ask an administrator or your
+                        manager if you believe you need this access.
+                    </p>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <a href="{% url 'core:dashboard' %}" class="btn btn-primary">
+                            <i class="bi bi-speedometer2 me-1"></i> My Dashboard
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                            <i class="bi bi-arrow-left me-1"></i> Go Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

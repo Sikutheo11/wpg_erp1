@@ -266,7 +266,7 @@
             </a>
         </nav>
 
-        {% if request.user.is_authenticated %}
+        {% if request.user.is_staff or request.user.is_superuser %}
             <div class="sidebar-label">Management</div>
             <nav>
                 <a href="{% url 'ecommerce:ecommerce_dashboard' %}"

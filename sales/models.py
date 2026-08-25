@@ -1,4 +1,5 @@
 from decimal import Decimal
+import uuid
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -67,10 +68,12 @@ class Customer(models.Model):
             return self.full_name
 
         if self.user:
-            return (
-                self.user.get_full_name()
-                or getattr(self.user, "username", "")
-                or str(self.user)
+            full_name = getattr(self.user, "full_name", "")
+            if callable(full_name):
+                full_name = full_name()
+
+            return full_name or getattr(self.user, "username", "") or str(
+                self.user
             )
 
         return f"Customer-{self.pk or 'New'}"
@@ -474,3 +477,95 @@ class CustomerPayment(models.Model):
 
     def __str__(self):
         return f"{self.invoice.invoice_no} - {self.amount}"
+
+
+class EnterpriseInvoice(models.Model):
+    DRAFT = "DRAFT"
+    ISSUED = "ISSUED"
+    PARTIAL = "PARTIAL"
+    PAID = "PAID"
+    VOID = "VOID"
+    STATUS = (
+        (DRAFT, "Draft"),
+        (ISSUED, "Issued"),
+        (PARTIAL, "Partially paid"),
+        (PAID, "Paid"),
+        (VOID, "Void"),
+    )
+
+    order = models.OneToOneField(
+        "orders.Order", on_delete=models.PROTECT,
+        related_name="sales_invoice",
+    )
+    customer = models.ForeignKey(
+        Customer, on_delete=models.PROTECT,
+        related_name="enterprise_invoices",
+    )
+    receivable = models.OneToOneField(
+        "finance.Receivable", on_delete=models.PROTECT,
+        null=True, blank=True, related_name="sales_invoice",
+    )
+    invoice_number = models.CharField(max_length=50, unique=True)
+    invoice_date = models.DateField(default=timezone.localdate)
+    due_date = models.DateField()
+    subtotal = models.DecimalField(max_digits=15, decimal_places=2)
+    discount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    tax = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS, default=DRAFT)
+    public_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    issued_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="issued_sales_invoices",
+    )
+    issued_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-invoice_date", "-pk"]
+        permissions = [
+            ("issue_enterpriseinvoice", "Can issue enterprise invoices"),
+            ("send_enterpriseinvoice", "Can send enterprise invoices"),
+            ("void_enterpriseinvoice", "Can void enterprise invoices"),
+        ]
+
+    @property
+    def amount_paid(self):
+        return self.receivable.amount_paid if self.receivable_id else Decimal("0.00")
+
+    @property
+    def balance(self):
+        return max(self.total_amount - self.amount_paid, Decimal("0.00"))
+
+    def __str__(self):
+        return self.invoice_number
+
+
+class InvoiceDelivery(models.Model):
+    EMAIL = "EMAIL"
+    WHATSAPP = "WHATSAPP"
+    CHANNELS = ((EMAIL, "Email"), (WHATSAPP, "WhatsApp"))
+    PENDING = "PENDING"
+    SENT = "SENT"
+    FAILED = "FAILED"
+    STATUS = ((PENDING, "Pending"), (SENT, "Sent"), (FAILED, "Failed"))
+
+    invoice = models.ForeignKey(
+        EnterpriseInvoice, on_delete=models.CASCADE,
+        related_name="deliveries",
+    )
+    channel = models.CharField(max_length=20, choices=CHANNELS)
+    destination = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS, default=PENDING)
+    provider_message_id = models.CharField(max_length=255, blank=True)
+    error_message = models.TextField(blank=True)
+    sent_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="sent_sales_invoices",
+    )
+    sent_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]

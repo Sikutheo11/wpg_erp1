@@ -13,6 +13,12 @@ def redirect_by_role(user):
             "core:dashboard"
         )
 
+    # Customers always enter the customer-facing Marketplace. Their Group
+    # must never land in an internal BOS dashboard even if old feature data
+    # was assigned accidentally.
+    if user.groups.filter(name="Customer").exists():
+        return redirect("ecommerce:shop")
+
 
     access_profiles = (
         user.groups.filter(
@@ -45,13 +51,6 @@ def redirect_by_role(user):
             return redirect(feature.url_name)
         except NoReverseMatch:
             pass
-
-    if user.groups.filter(name="Customer").exists():
-
-        return redirect(
-            "core:customer_dashboard"
-        )
-
 
     # Default
 

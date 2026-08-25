@@ -13,6 +13,7 @@ from .models import (
     SaleItem,
     Invoice,
     CustomerPayment,
+    EnterpriseInvoice,
 )
 
 
@@ -693,3 +694,19 @@ class CustomerPaymentForm(forms.ModelForm):
             )
 
         return amount
+
+
+class EnterpriseInvoiceDraftForm(forms.ModelForm):
+    class Meta:
+        model = EnterpriseInvoice
+        fields = ["due_date"]
+        widgets = {
+            "due_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+        }
+
+    def clean_due_date(self):
+        due_date = self.cleaned_data["due_date"]
+        from django.utils import timezone
+        if due_date < timezone.localdate():
+            raise forms.ValidationError("Due date cannot be in the past.")
+        return due_date

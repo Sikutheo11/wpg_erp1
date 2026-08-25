@@ -6,10 +6,12 @@
     <div class="card-header d-flex justify-content-between">
         <h4>Customers</h4>
 
-        <a href="{% url 'customer_create' %}"
-           class="btn btn-primary">
-            New Customer
-        </a>
+        {% if perms.sales.add_customer %}
+            <a href="{% url 'sales:customer_create' %}"
+               class="btn btn-primary">
+                New Customer
+            </a>
+        {% endif %}
     </div>
 
     <div class="card-body">
@@ -21,6 +23,7 @@
                     <th>Company</th>
                     <th>Phone</th>
                     <th>Address</th>
+                    <th></th>
                 </tr>
             </thead>
 
@@ -32,8 +35,18 @@
                     <td>{{ customer }}</td>
                     <td>{{ customer.phone }}</td>
                     <td>{{ customer.address }}</td>
+                    <td class="text-end">
+                        <a href="{% url 'sales:customer_detail' customer.pk %}"
+                           class="btn btn-sm btn-outline-primary">View</a>
+                    </td>
                 </tr>
 
+            {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">
+                        No customers found.
+                    </td>
+                </tr>
             {% endfor %}
 
             </tbody>

@@ -28,12 +28,15 @@ Customer Details
 
         <div>
 
-            <a href="{% url 'sales:customer_update' customer.id %}"
-               class="btn btn-warning">
+            {% if perms.sales.change_customer %}
+                <a href="{% url 'sales:customer_update' customer.id %}"
+                   class="btn btn-warning">Edit</a>
+            {% endif %}
 
-                Edit
-
-            </a>
+            {% if customer.is_active and perms.sales.delete_customer %}
+                <a href="{% url 'sales:customer_delete' customer.id %}"
+                   class="btn btn-outline-danger">Deactivate</a>
+            {% endif %}
 
             <a href="{% url 'sales:customer_list' %}"
                class="btn btn-secondary">
@@ -204,12 +207,10 @@ Customer Details
 
                     </h5>
 
-                    <a href="{% url 'sales:quotation_create' %}"
-                       class="btn btn-primary btn-sm">
-
-                        New Quotation
-
-                    </a>
+                    {% if perms.sales.add_salesquotation %}
+                        <a href="{% url 'sales:quotation_create' %}"
+                           class="btn btn-primary btn-sm">New Quotation</a>
+                    {% endif %}
 
                 </div>
 

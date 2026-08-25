@@ -86,9 +86,21 @@ def profile(request):
     else:
 
         form = UserProfileForm(instance=profile)
+    is_customer = (
+        not request.user.is_superuser
+        and request.user.groups.filter(name="Customer").exists()
+    )
     return render(request,'accounts/profile.html',{
             'form':form,
-            'profile':profile
+            'profile':profile,
+            'role_names': ', '.join(
+                request.user.groups.values_list('name', flat=True)
+            ) or ('System Administrator' if request.user.is_superuser else 'User'),
+            'base_template': (
+                'ecommerce/base_ecommerce.html'
+                if is_customer
+                else 'base_dashboard.html'
+            ),
         }
     )
 

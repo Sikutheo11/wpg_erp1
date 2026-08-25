@@ -1,0 +1,12 @@
+{% extends 'base_dashboard.html' %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="alert alert-info">This is a read-only invoice from the former Sales workflow.</div>
+  <div class="card shadow-sm"><div class="card-body">
+    <div class="d-flex justify-content-between"><div><h1>{{ invoice.invoice_no }}</h1><p>{{ invoice.sale.customer.display_name }}</p></div><span class="badge bg-secondary">{{ invoice.get_status_display }}</span></div>
+    <div class="row mt-3"><div class="col-md-4"><strong>Sale</strong><p>{{ invoice.sale.sale_no }}</p></div><div class="col-md-4"><strong>Invoice date</strong><p>{{ invoice.invoice_date }}</p></div><div class="col-md-4"><strong>Due date</strong><p>{{ invoice.due_date }}</p></div></div>
+    <div class="row"><div class="col-md-4"><strong>Total</strong><p>{{ invoice.total_amount }} RWF</p></div><div class="col-md-4"><strong>Paid</strong><p>{{ invoice.amount_paid }} RWF</p></div><div class="col-md-4"><strong>Balance</strong><p>{{ invoice.balance }} RWF</p></div></div>
+    <a class="btn btn-outline-secondary" href="{% url 'sales:invoice_list' %}">Back to invoices</a>
+  </div></div>
+</div>
+{% endblock %}
