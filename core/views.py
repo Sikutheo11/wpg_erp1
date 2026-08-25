@@ -90,7 +90,7 @@ def home(request):
 
 @login_required
 def customer_dashboard(request):
-    return render(request, "accounts/customer_dashboard.html")
+    return redirect("ecommerce:shop")
 
 @login_required
 def dashboard(request):

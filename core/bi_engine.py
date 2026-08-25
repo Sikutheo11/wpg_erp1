@@ -4,6 +4,8 @@
 # ==========================================
 
 from .models import KPIWidget
+from django.db.models import Q
+from .permissions import PermissionService
 from .providers.registry import ProviderRegistry
 # Import providers so they auto-register
 import core.providers  # noqa
@@ -58,6 +60,22 @@ class BIEngine:
             "order",
             "title"
         )
+
+        if user is not None and not user.is_superuser:
+            allowed_business_units = {
+                feature.business_unit_id
+                for feature in PermissionService.get_allowed_business_unit_features(user)
+                if feature.business_unit_id
+            }
+            allowed_engines = {
+                feature.engine_id
+                for feature in PermissionService.get_allowed_engine_features(user)
+                if feature.engine_id
+            }
+            widgets = widgets.filter(
+                Q(business_unit_id__in=allowed_business_units)
+                | Q(engine_id__in=allowed_engines)
+            )
 
         return [
             cls.resolve_widget(widget)

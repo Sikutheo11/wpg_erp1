@@ -1,11 +1,11 @@
 {% extends "base_dashboard.html" %}
 
 {% block title %}
-Executive Dashboard - WPG BOS
+{{ dashboard_title|default:"WPG BOS Dashboard" }} - WPG BOS
 {% endblock %}
 
 {% block page_title %}
-Executive Dashboard
+{{ dashboard_title|default:"WPG BOS Dashboard" }}
 {% endblock %}
 
 {% block content %}
@@ -14,9 +14,9 @@ Executive Dashboard
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="fw-bold">Executive Dashboard</h3>
+            <h3 class="fw-bold">{{ dashboard_title|default:"WPG BOS Dashboard" }}</h3>
             <p class="text-muted mb-0">
-                WPG BOS intelligence overview
+                {{ dashboard_subtitle|default:"Your WPG BOS overview" }}
             </p>
         </div>
 
@@ -97,9 +97,8 @@ Executive Dashboard
 
     <!-- BUSINESS SUMMARY -->
 
-    <h4 class="fw-bold mb-3">
-        Business Summary
-    </h4>
+    {% if business_summary %}
+    <h4 class="fw-bold mb-3">Your Business Summary</h4>
 
     <div class="row g-4 mb-5">
 
@@ -170,6 +169,7 @@ Executive Dashboard
         {% endfor %}
 
     </div>
+    {% endif %}
 
 
     <div class="row g-4">

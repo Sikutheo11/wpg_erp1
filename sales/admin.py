@@ -8,6 +8,8 @@ from .models import (
     SaleItem,
     Invoice,
     CustomerPayment,
+    EnterpriseInvoice,
+    InvoiceDelivery,
 )
 
 
@@ -228,3 +230,19 @@ class CustomerPaymentAdmin(admin.ModelAdmin):
         'invoice__invoice_no',
         'reference',
     )
+
+
+class InvoiceDeliveryInline(admin.TabularInline):
+    model = InvoiceDelivery
+    extra = 0
+    readonly_fields = ("channel", "destination", "status", "provider_message_id", "error_message", "sent_by", "sent_at", "created_at")
+    can_delete = False
+
+
+@admin.register(EnterpriseInvoice)
+class EnterpriseInvoiceAdmin(admin.ModelAdmin):
+    list_display = ("invoice_number", "customer", "order", "invoice_date", "due_date", "total_amount", "status")
+    list_filter = ("status", "invoice_date", "due_date")
+    search_fields = ("invoice_number", "order__order_number", "customer__full_name", "customer__company_name")
+    readonly_fields = ("public_token", "issued_by", "issued_at", "created_at", "updated_at")
+    inlines = [InvoiceDeliveryInline]

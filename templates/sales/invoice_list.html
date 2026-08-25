@@ -1,71 +1,30 @@
 {% extends 'base_dashboard.html' %}
 {% block content %}
-
-<div class="card">
-
-    <div class="card-header">
-
-        <h4>Invoices</h4>
-
-    </div>
-
-    <div class="card-body">
-
-        <table class="table table-striped">
-
-            <thead>
-
-                <tr>
-                    <th>Invoice No</th>
-                    <th>Customer</th>
-                    <th>Total</th>
-                    <th>Paid</th>
-                    <th>Balance</th>
-                    <th>Status</th>
-                    <th></th>
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-            {% for invoice in invoices %}
-
-                <tr>
-
-                    <td>{{ invoice.invoice_no }}</td>
-
-                    <td>{{ invoice.sale.customer }}</td>
-
-                    <td>{{ invoice.total_amount }}</td>
-
-                    <td>{{ invoice.amount_paid }}</td>
-
-                    <td>{{ invoice.balance }}</td>
-
-                    <td>{{ invoice.status }}</td>
-
-                    <td>
-
-                        <a href="{% url 'invoice_detail' invoice.id %}"
-                           class="btn btn-info btn-sm">
-
-                            View
-
-                        </a>
-
-                    </td>
-
-                </tr>
-
-            {% endfor %}
-
-            </tbody>
-
-        </table>
-
-    </div>
-
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div><h1>Customer Invoices</h1><p class="text-muted mb-0">Issued from Enterprise Orders; payments are confirmed in Finance.</p></div>
+  </div>
+  {% if perms.sales.add_enterpriseinvoice and invoiceable_orders %}
+  <div class="card shadow-sm mb-3"><div class="card-body"><h5>Orders ready for invoicing</h5>
+    <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Order</th><th>Customer</th><th>Unit</th><th>Total</th><th></th></tr></thead><tbody>
+    {% for order in invoiceable_orders %}<tr><td>{{ order.order_number }}</td><td>{{ order.customer_name }}</td><td>{{ order.get_business_unit_display }}</td><td>{{ order.total_amount }} RWF</td><td class="text-end"><a class="btn btn-sm btn-primary" href="{% url 'sales:invoice_create_from_order' order.pk %}">Create invoice</a></td></tr>{% endfor %}
+    </tbody></table></div>
+  </div></div>
+  {% endif %}
+  <div class="card shadow-sm"><div class="card-body table-responsive">
+    <table class="table align-middle">
+      <thead><tr><th>Invoice</th><th>Customer</th><th>Order</th><th>Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for invoice in invoices %}
+        <tr>
+          <td><a href="{% url 'sales:invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a></td>
+          <td>{{ invoice.customer.display_name }}</td><td>{{ invoice.order.order_number }}</td>
+          <td>{{ invoice.invoice_date }}</td><td>{{ invoice.total_amount }} RWF</td>
+          <td>{{ invoice.amount_paid }} RWF</td><td>{{ invoice.balance }} RWF</td><td>{{ invoice.get_status_display }}</td>
+        </tr>
+      {% empty %}<tr><td colspan="8" class="text-center text-muted py-5">No enterprise invoices found. Create one from an eligible Order.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div></div>
 </div>
-
 {% endblock %}

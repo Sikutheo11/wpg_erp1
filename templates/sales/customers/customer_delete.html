@@ -1,0 +1,17 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Deactivate Customer{% endblock %}
+{% block content %}
+<div class="container-fluid py-4"><div class="row justify-content-center"><div class="col-lg-6">
+  <div class="card shadow-sm">
+    <div class="card-header"><h4 class="mb-0">Deactivate Customer</h4></div>
+    <div class="card-body">
+      <p>Deactivate <strong>{{ customer.display_name }}</strong>?</p>
+      <p class="text-muted">Historical quotations and transactions will be preserved.</p>
+      <form method="post">{% csrf_token %}<div class="d-flex gap-2">
+        <button type="submit" class="btn btn-danger">Deactivate</button>
+        <a href="{% url 'sales:customer_detail' customer.pk %}" class="btn btn-secondary">Cancel</a>
+      </div></form>
+    </div>
+  </div>
+</div></div></div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Sales Report{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="mb-4"><h3 class="mb-1">Sales Report</h3><p class="text-muted mb-0">Quotations and legacy sales overview.</p></div>
+  <div class="card shadow-sm mb-4">
+    <div class="card-header"><h5 class="mb-0">Quotations</h5></div><div class="card-body table-responsive">
+      <table class="table table-striped align-middle mb-0"><thead><tr><th>No</th><th>Customer</th><th>Date</th><th>Status</th><th>Total</th><th></th></tr></thead><tbody>
+      {% for quotation in quotations %}
+        <tr><td>{{ quotation.quotation_no }}</td><td>{{ quotation.customer }}</td><td>{{ quotation.quotation_date }}</td><td>{{ quotation.get_status_display }}</td><td>{{ quotation.total_amount|floatformat:2 }}</td><td><a href="{% url 'sales:quotation_detail' quotation.pk %}" class="btn btn-sm btn-outline-primary">View</a></td></tr>
+      {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No quotations found.</td></tr>{% endfor %}
+      </tbody></table>
+    </div>
+  </div>
+  <div class="card shadow-sm">
+    <div class="card-header"><h5 class="mb-0">Legacy Sales</h5></div><div class="card-body table-responsive">
+      <table class="table table-striped align-middle mb-0"><thead><tr><th>No</th><th>Customer</th><th>Date</th><th>Status</th><th>Total</th><th></th></tr></thead><tbody>
+      {% for sale in sales %}
+        <tr><td>{{ sale.sale_no }}</td><td>{{ sale.customer }}</td><td>{{ sale.sale_date }}</td><td>{{ sale.get_status_display }}</td><td>{{ sale.total_amount|floatformat:2 }}</td><td><a href="{% url 'sales:sale_detail' sale.pk %}" class="btn btn-sm btn-outline-primary">View</a></td></tr>
+      {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No legacy sales found.</td></tr>{% endfor %}
+      </tbody></table>
+    </div>
+  </div>
+</div>
+{% endblock %}
