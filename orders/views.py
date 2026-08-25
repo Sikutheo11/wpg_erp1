@@ -760,6 +760,7 @@ def add_order_item(request, pk):
 
     form = OrderItemForm(
         request.POST,
+        request.FILES,
         order_type=order.order_type,
         business_unit=order.business_unit,
     )
@@ -782,6 +783,16 @@ def add_order_item(request, pk):
                     "specifications",
                     "",
                 ),
+                price=data.get("price"),
+                reference_image=data.get("reference_image"),
+                design_attachment=data.get("design_attachment"),
+                length_cm=data.get("length_cm"),
+                width_cm=data.get("width_cm"),
+                height_cm=data.get("height_cm"),
+                material_preference=data.get("material_preference", ""),
+                colour=data.get("colour", ""),
+                finish=data.get("finish", ""),
+                customer_budget=data.get("customer_budget"),
                 actor=request.user,
             )
 
@@ -856,6 +867,7 @@ def edit_order_item(request, pk):
     if request.method == "POST":
         form = OrderItemForm(
             request.POST,
+            request.FILES,
             instance=item,
             order_type=order.order_type,
             business_unit=order.business_unit,
@@ -864,47 +876,37 @@ def edit_order_item(request, pk):
         if form.is_valid():
             data = form.cleaned_data
 
-            product = data.get("product")
-
-            product_name = (
-                data.get("product_name")
-                or getattr(
-                    product,
-                    "name",
-                    "",
+            try:
+                OrderItemService.update_item(
+                    item=item,
+                    product=data.get("product"),
+                    product_name=data.get("product_name", ""),
+                    quantity=data.get("quantity"),
+                    specifications=data.get("specifications", ""),
+                    price=data.get("price"),
+                    reference_image=data.get("reference_image"),
+                    design_attachment=data.get("design_attachment"),
+                    length_cm=data.get("length_cm"),
+                    width_cm=data.get("width_cm"),
+                    height_cm=data.get("height_cm"),
+                    material_preference=data.get("material_preference", ""),
+                    colour=data.get("colour", ""),
+                    finish=data.get("finish", ""),
+                    customer_budget=data.get("customer_budget"),
+                    actor=request.user,
                 )
-            )
-
-            item.product = product
-            item.product_name = product_name
-            item.quantity = data["quantity"]
-            item.specifications = data.get(
-                "specifications",
-                "",
-            )
-
-            if product:
-                item.price = getattr(
-                    product,
-                    "selling_price",
-                    item.price,
+            except ValidationError as error:
+                form.add_error(None, _validation_message(error))
+            else:
+                messages.success(
+                    request,
+                    "Order item updated successfully.",
                 )
 
-            item.save()
-
-            OrderService.recalculate_totals(
-                order
-            )
-
-            messages.success(
-                request,
-                "Order item updated successfully.",
-            )
-
-            return redirect(
-                "orders:order_detail",
-                pk=order.pk,
-            )
+                return redirect(
+                    "orders:order_detail",
+                    pk=order.pk,
+                )
 
     else:
         form = OrderItemForm(
