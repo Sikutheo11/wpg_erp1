@@ -464,6 +464,41 @@ Order Detail
 
                                     <td>
                                         {{ item.specifications|default:"-"|truncatechars:90 }}
+
+                                        {% if item.length_cm or item.width_cm or item.height_cm %}
+                                            <small class="text-muted d-block mt-1">
+                                                Dimensions:
+                                                {{ item.length_cm|default:"-" }} ×
+                                                {{ item.width_cm|default:"-" }} ×
+                                                {{ item.height_cm|default:"-" }} cm
+                                            </small>
+                                        {% endif %}
+
+                                        {% if item.material_preference or item.colour or item.finish %}
+                                            <small class="text-muted d-block">
+                                                {{ item.material_preference|default:"" }}
+                                                {% if item.colour %} · {{ item.colour }}{% endif %}
+                                                {% if item.finish %} · {{ item.finish }} finish{% endif %}
+                                            </small>
+                                        {% endif %}
+
+                                        {% if item.reference_image %}
+                                            <a class="small d-block mt-1" href="{{ item.reference_image.url }}" target="_blank" rel="noopener">
+                                                <i class="bi bi-image me-1"></i>Reference photo
+                                            </a>
+                                        {% endif %}
+
+                                        {% if item.design_attachment %}
+                                            <a class="small d-block" href="{{ item.design_attachment.url }}" target="_blank" rel="noopener">
+                                                <i class="bi bi-paperclip me-1"></i>Design attachment
+                                            </a>
+                                        {% endif %}
+
+                                        {% if item.customer_budget %}
+                                            <small class="text-muted d-block">
+                                                Customer budget: {{ item.customer_budget|floatformat:0 }} RWF
+                                            </small>
+                                        {% endif %}
                                     </td>
 
                                     <td>
@@ -720,6 +755,7 @@ Order Detail
                     <div class="card-body">
 
                         <form method="post"
+                              enctype="multipart/form-data"
                               action="{% url 'orders:add_order_item' order.pk %}"
                               novalidate>
 
