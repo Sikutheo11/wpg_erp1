@@ -1,5 +1,6 @@
+from django.contrib.auth.models import AnonymousUser
 from django.template.loader import render_to_string
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 
 from .forms import OrderForm, OrderItemForm
 
@@ -35,6 +36,10 @@ class FurnitureOrderItemFormTests(TestCase):
         self.assertEqual(set(form.fields), {"product", "quantity", "specifications"})
 
     def test_custom_fields_are_visible_on_initial_order_page(self):
+        request = RequestFactory().get(
+            "/orders/create/form/?business_unit=FURNITURE&type=CUSTOM_FURNITURE"
+        )
+        request.user = AnonymousUser()
         item_form = OrderItemForm(
             order_type="CUSTOM_FURNITURE",
             business_unit="FURNITURE",
@@ -51,6 +56,7 @@ class FurnitureOrderItemFormTests(TestCase):
                 "order_type": "CUSTOM_FURNITURE",
                 "order_type_display": "Custom Furniture Order",
             },
+            request=request,
         )
         for field_name in (
             "reference_image", "design_attachment", "length_cm", "width_cm",
