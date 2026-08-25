@@ -399,7 +399,17 @@ class OrderItemForm(forms.ModelForm):
             "product",
             "product_name",
             "quantity",
+            "price",
             "specifications",
+            "reference_image",
+            "design_attachment",
+            "length_cm",
+            "width_cm",
+            "height_cm",
+            "material_preference",
+            "colour",
+            "finish",
+            "customer_budget",
         ]
 
         widgets = {
@@ -423,6 +433,16 @@ class OrderItemForm(forms.ModelForm):
                     "step": 1,
                 }
             ),
+            "price": forms.NumberInput(attrs={"class": "form-control", "min": 0, "step": "0.01"}),
+            "reference_image": forms.ClearableFileInput(attrs={"class": "form-control", "accept": "image/*"}),
+            "design_attachment": forms.ClearableFileInput(attrs={"class": "form-control", "accept": "image/*,.pdf,.doc,.docx,.xls,.xlsx"}),
+            "length_cm": forms.NumberInput(attrs={"class": "form-control", "min": 0, "step": "0.01"}),
+            "width_cm": forms.NumberInput(attrs={"class": "form-control", "min": 0, "step": "0.01"}),
+            "height_cm": forms.NumberInput(attrs={"class": "form-control", "min": 0, "step": "0.01"}),
+            "material_preference": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Muvula, MDF, steel, fabric"}),
+            "colour": forms.TextInput(attrs={"class": "form-control", "placeholder": "Preferred colour"}),
+            "finish": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. matte, gloss, natural"}),
+            "customer_budget": forms.NumberInput(attrs={"class": "form-control", "min": 0, "step": "0.01"}),
             "specifications": forms.Textarea(
                 attrs={
                     "class": "form-control",
@@ -451,6 +471,15 @@ class OrderItemForm(forms.ModelForm):
         self.fields["product"].required = False
         self.fields["product_name"].required = False
         self.fields["specifications"].required = False
+        self.fields["price"].required = False
+
+        optional_detail_fields = [
+            "reference_image", "design_attachment", "length_cm", "width_cm",
+            "height_cm", "material_preference", "colour", "finish",
+            "customer_budget",
+        ]
+        for field_name in optional_detail_fields:
+            self.fields[field_name].required = False
 
         self.fields["product"].empty_label = (
             "Select an existing product or service"
@@ -518,6 +547,19 @@ class OrderItemForm(forms.ModelForm):
             if self.order_type != "RESTOCK":
                 self.fields["specifications"].required = False
 
+            if self.order_type in {"ECOMMERCE", "POS"}:
+                self.fields.pop("price", None)
+                for field_name in optional_detail_fields:
+                    self.fields.pop(field_name, None)
+
+            elif self.order_type == "RESTOCK":
+                self.fields.pop("price", None)
+                for field_name in [
+                    "design_attachment", "length_cm", "width_cm", "height_cm",
+                    "material_preference", "colour", "finish", "customer_budget",
+                ]:
+                    self.fields.pop(field_name, None)
+
         elif self.order_type in custom_request_types:
             self.fields["product_name"].required = True
             self.fields["specifications"].required = True
@@ -549,6 +591,10 @@ class OrderItemForm(forms.ModelForm):
                 self.fields["specifications"].label = (
                     "Product Development Specifications"
                 )
+                self.fields.pop("price", None)
+                self.fields.pop("customer_budget", None)
+                self.fields["design_attachment"].required = True
+                self.fields["design_attachment"].label = "Design / Reference Attachment"
 
             elif self.order_type == "CUSTOM_FURNITURE":
                 self.fields["product_name"].label = (
@@ -557,6 +603,9 @@ class OrderItemForm(forms.ModelForm):
                 self.fields["specifications"].label = (
                     "Furniture Specifications"
                 )
+                self.fields["price"].label = "Quoted Unit Price"
+                self.fields["reference_image"].label = "Reference Photo"
+                self.fields["customer_budget"].label = "Customer Budget (Optional)"
 
     def clean_quantity(self):
         quantity = self.cleaned_data.get(
