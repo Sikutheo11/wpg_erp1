@@ -126,23 +126,19 @@ def order_list(request):
 
 
 @login_required
-@wpg_permission_required("furniture.add_order", feature_code="FURNITURE_ORDERS", action="add")
+@wpg_permission_required("orders.add_order", feature_code="ORDER_LIST", action="add")
 def order_create(request):
-    form = OrderForm(request.POST or None)
+    """
+    Compatibility endpoint for the retired furniture.Order creation page.
 
-    if request.method == "POST" and form.is_valid():
-        order = form.save(commit=False)
-        order.created_by = _employee_for_user(request.user)
-        order.save()
-
-        messages.success(request, "Customer order created successfully.")
-        return redirect("furniture:order_list")
-
-    return render(
+    New records must be created by the shared Order Engine. Keeping this
+    redirect preserves old bookmarks without creating more legacy data.
+    """
+    messages.info(
         request,
-        "furniture/order_form.html",
-        {"form": form},
+        "Furniture orders are now created in the shared Order Engine.",
     )
+    return redirect("orders:business_unit_select")
 
 
 @login_required
