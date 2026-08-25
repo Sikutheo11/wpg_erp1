@@ -312,7 +312,6 @@ def quotation_detail(request, pk):
         ),
         pk=pk,
     )
-
     workflow_actions = (
         WorkflowService.get_available_action_map(
             obj=quotation,
@@ -373,6 +372,62 @@ def quotation_detail(request, pk):
             "can_convert": can_convert,
         },
     )
+
+
+@login_required
+def customer_quotation_detail(request, pk):
+    quotation = get_object_or_404(
+        SalesQuotation.objects.select_related("customer", "source_order_request").prefetch_related("items"),
+        Q(customer__user=request.user) | Q(source_order_request__user=request.user),
+        pk=pk,
+    )
+    return render(
+        request,
+        "sales/quotations/customer_quotation_detail.html",
+        {"quotation": quotation, "items": quotation.items.all()},
+    )
+
+
+@login_required
+@require_POST
+def customer_quotation_accept(request, pk):
+    quotation = get_object_or_404(
+        SalesQuotation,
+        Q(customer__user=request.user) | Q(source_order_request__user=request.user),
+        pk=pk,
+    )
+    try:
+        QuotationService.approve(
+            quotation=quotation,
+            approved_by=request.user,
+            actor=request.user,
+        )
+    except ValidationError as error:
+        messages.error(request, _validation_message(error))
+    else:
+        messages.success(request, "Quotation accepted. Your order is now ready for production.")
+    return redirect("sales:customer_quotation_detail", pk=quotation.pk)
+
+
+@login_required
+@require_POST
+def customer_quotation_revision(request, pk):
+    quotation = get_object_or_404(
+        SalesQuotation,
+        Q(customer__user=request.user) | Q(source_order_request__user=request.user),
+        pk=pk,
+    )
+    try:
+        QuotationService.reject(
+            quotation=quotation,
+            reason=request.POST.get("reason", ""),
+            actor=request.user,
+        )
+    except ValidationError as error:
+        messages.error(request, _validation_message(error))
+    else:
+        messages.warning(request, "Your revision request was sent to the team.")
+    return redirect("sales:customer_quotation_detail", pk=quotation.pk)
 
 @login_required
 @wpg_permission_required("sales.add_salesquotation", feature_code="QUOTATION_LIST", action="add")
@@ -534,6 +589,20 @@ def quotation_create(request):
             "product_lookup": product_lookup,
         },
     )
+
+
+@login_required
+@require_POST
+@wpg_permission_required("sales.add_salesquotation", feature_code="QUOTATION_LIST", action="add")
+def quotation_create_from_order(request, order_pk):
+    order = get_object_or_404(Order.objects.prefetch_related("items__product"), pk=order_pk)
+    try:
+        quotation = QuotationService.create_from_order(order=order, actor=request.user)
+    except ValidationError as error:
+        messages.error(request, _validation_message(error))
+        return redirect("orders:order_detail", pk=order.pk)
+    messages.success(request, "Customer quotation draft created. Add prices and send it to the customer.")
+    return redirect("sales:quotation_detail", pk=quotation.pk)
 
 @login_required
 @wpg_permission_required("sales.change_salesquotation", feature_code="QUOTATION_LIST", action="change")

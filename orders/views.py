@@ -632,6 +632,8 @@ def order_detail(request, pk):
             "delivered_by",
             "production_job",
             "source_sales_quotation",
+            "customer_quotation",
+            "production_costing",
         ).prefetch_related(
             "items__product",
         ),

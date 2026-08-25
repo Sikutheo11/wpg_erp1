@@ -19,6 +19,10 @@ class Order(models.Model):
     STATUS = (
         ("DRAFT", "Draft"),
         ("PENDING", "Pending"),
+        ("AWAITING_QUOTATION", "Awaiting Quotation / Costing"),
+        ("QUOTED", "Quotation Prepared"),
+        ("AWAITING_CUSTOMER_APPROVAL", "Awaiting Customer Approval"),
+        ("READY_FOR_PRODUCTION", "Ready for Production"),
         ("CONFIRMED", "Confirmed"),
         ("PROCESSING", "Processing"),
         ("IN_PRODUCTION", "In Production"),
@@ -139,6 +143,31 @@ class Order(models.Model):
         blank=True
     )
 
+    customer_quotation = models.OneToOneField(
+        "sales.SalesQuotation",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="source_order_request",
+    )
+
+    production_costing = models.OneToOneField(
+        "furniture.Quotation",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="source_order_request",
+    )
+
+    production_authorized_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="production_authorized_orders",
+    )
+    production_authorized_at = models.DateTimeField(null=True, blank=True)
+
     delivered_at = models.DateTimeField(
         null=True,
         blank=True
@@ -208,6 +237,22 @@ class Order(models.Model):
     def __str__(self):
 
         return f"{self.order_number} - {self.customer_name}"
+
+    @property
+    def requires_customer_quotation(self):
+        return self.order_type == "CUSTOM_FURNITURE"
+
+    @property
+    def requires_internal_costing(self):
+        return self.order_type in {"RESTOCK", "NEW_PRODUCT"}
+
+    @property
+    def is_production_authorized(self):
+        return (
+            self.business_unit == "FURNITURE"
+            and self.status == "READY_FOR_PRODUCTION"
+            and self.production_authorized_at is not None
+        )
 
 class OrderItem(models.Model):
 

@@ -16,9 +16,10 @@ class FurnitureOrderItemFormTests(TestCase):
         for field_name in (
             "reference_image", "design_attachment", "length_cm", "width_cm",
             "height_cm", "material_preference", "colour", "finish",
-            "customer_budget", "price",
+            "customer_budget",
         ):
             self.assertIn(field_name, form.fields)
+        self.assertNotIn("price", form.fields)
 
     def test_restock_uses_product_quantity_and_optional_photo(self):
         form = OrderItemForm(order_type="RESTOCK", business_unit="FURNITURE")
@@ -63,6 +64,7 @@ class FurnitureOrderItemFormTests(TestCase):
         for field_name in (
             "reference_image", "design_attachment", "length_cm", "width_cm",
             "height_cm", "material_preference", "colour", "finish",
-            "customer_budget", "price",
+            "customer_budget",
         ):
             self.assertIn(f'name="{field_name}"', html)
+        self.assertNotIn('name="price"', html)

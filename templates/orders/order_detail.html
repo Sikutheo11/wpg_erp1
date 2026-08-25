@@ -142,12 +142,13 @@ Order Detail
                         View Production Job
                     </a>
 
-                {% elif order.status == "CONFIRMED" %}
+                {% elif order.status == "READY_FOR_PRODUCTION" %}
 
                     {% if order.order_type == "CUSTOM_FURNITURE" or order.order_type == "RESTOCK" or order.order_type == "NEW_PRODUCT" %}
 
-                        <a href="{% url 'orders:create_production_job' order.pk %}"
-                           class="btn btn-warning">
+                        <form method="post" action="{% url 'furniture:create_production_job' order.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning">
 
                             <i class="bi bi-gear me-1"></i>
 
@@ -158,7 +159,8 @@ Order Detail
                             {% elif order.order_type == "NEW_PRODUCT" %}
                                 Create Product Development Job
                             {% endif %}
-                        </a>
+                            </button>
+                        </form>
 
                     {% endif %}
 
@@ -188,7 +190,9 @@ Order Detail
                             bg-secondary
                         {% elif order.status == 'PENDING' %}
                             bg-warning text-dark
-                        {% elif order.status == 'CONFIRMED' %}
+                        {% elif order.status == 'AWAITING_QUOTATION' or order.status == 'QUOTED' or order.status == 'AWAITING_CUSTOMER_APPROVAL' %}
+                            bg-warning text-dark
+                        {% elif order.status == 'READY_FOR_PRODUCTION' or order.status == 'CONFIRMED' %}
                             bg-primary
                         {% elif order.status == 'PROCESSING' %}
                             bg-info text-dark
@@ -427,8 +431,10 @@ Order Detail
                                 <th>Item</th>
                                 <th>Specifications</th>
                                 <th>Quantity</th>
-                                <th>Unit Price</th>
-                                <th>Subtotal</th>
+                                {% if order.order_type != "CUSTOM_FURNITURE" %}
+                                    <th>Unit Price</th>
+                                    <th>Subtotal</th>
+                                {% endif %}
 
                                 {% if can_edit_items %}
                                     <th></th>
@@ -505,15 +511,10 @@ Order Detail
                                         {{ item.quantity }}
                                     </td>
 
-                                    <td>
-                                        {{ item.price|default:0|floatformat:0 }} RWF
-                                    </td>
-
-                                    <td>
-                                        <strong>
-                                            {{ item.subtotal|default:0|floatformat:0 }} RWF
-                                        </strong>
-                                    </td>
+                                    {% if order.order_type != "CUSTOM_FURNITURE" %}
+                                        <td>{{ item.price|default:0|floatformat:0 }} RWF</td>
+                                        <td><strong>{{ item.subtotal|default:0|floatformat:0 }} RWF</strong></td>
+                                    {% endif %}
 
                                     {% if can_edit_items %}
 
@@ -547,7 +548,7 @@ Order Detail
                             {% empty %}
 
                                 <tr>
-                                    <td colspan="{% if can_edit_items %}7{% else %}6{% endif %}"
+                                    <td colspan="{% if order.order_type == 'CUSTOM_FURNITURE' %}{% if can_edit_items %}5{% else %}4{% endif %}{% else %}{% if can_edit_items %}7{% else %}6{% endif %}{% endif %}"
                                         class="text-center text-muted py-5">
 
                                         <i class="bi bi-cart-x fs-1 d-block mb-2"></i>
@@ -560,6 +561,7 @@ Order Detail
 
                         </tbody>
 
+                        {% if order.order_type != "CUSTOM_FURNITURE" %}
                         <tfoot>
 
                             <tr>
@@ -619,6 +621,7 @@ Order Detail
                             </tr>
 
                         </tfoot>
+                        {% endif %}
 
                     </table>
 
@@ -820,6 +823,38 @@ Order Detail
                 </div>
 
                 <div class="card-body">
+
+                    {% if order.status == "AWAITING_QUOTATION" and order.business_unit == "FURNITURE" %}
+                        {% if order.order_type == "CUSTOM_FURNITURE" %}
+                            <form method="post" action="{% url 'sales:quotation_create_from_order' order.pk %}" class="mb-3">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-receipt me-1"></i>Create Customer Quotation
+                                </button>
+                            </form>
+                        {% elif order.order_type == "RESTOCK" or order.order_type == "NEW_PRODUCT" %}
+                            <a href="{% url 'furniture:create_order_costing' order.pk %}" class="btn btn-primary w-100 mb-3">
+                                <i class="bi bi-calculator me-1"></i>Prepare Production Costing
+                            </a>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if order.customer_quotation %}
+                        <div class="alert alert-light border">
+                            <strong>Customer quotation:</strong>
+                            <a href="{% url 'sales:quotation_detail' order.customer_quotation.pk %}">
+                                {{ order.customer_quotation.quotation_no }}
+                            </a>
+                            <span class="badge bg-secondary ms-1">{{ order.customer_quotation.get_status_display }}</span>
+                        </div>
+                    {% endif %}
+
+                    {% if order.production_costing %}
+                        <div class="alert alert-light border">
+                            <strong>Production costing:</strong> #{{ order.production_costing.pk }}
+                            <span class="badge bg-secondary ms-1">{{ order.production_costing.get_status_display }}</span>
+                        </div>
+                    {% endif %}
 
                     <div class="workflow-step">
                         <i class="bi bi-check-circle-fill text-success"></i>

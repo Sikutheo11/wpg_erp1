@@ -288,7 +288,17 @@ class OrderService:
             order
         )
 
-        order.status = "PENDING"
+        if (
+            order.business_unit == "FURNITURE"
+            and order.order_type in {
+                "CUSTOM_FURNITURE",
+                "RESTOCK",
+                "NEW_PRODUCT",
+            }
+        ):
+            order.status = "AWAITING_QUOTATION"
+        else:
+            order.status = "PENDING"
 
         order.save(
             update_fields=[
@@ -304,6 +314,49 @@ class OrderService:
             title="Order Submitted",
         )
 
+        return order
+
+    @classmethod
+    @transaction.atomic
+    def authorize_for_production(
+        cls,
+        *,
+        order,
+        actor=None,
+        customer_quotation=None,
+        production_costing=None,
+    ):
+        if order.business_unit != "FURNITURE":
+            raise ValidationError("Only Furniture orders enter this production workflow.")
+
+        if order.requires_customer_quotation:
+            if customer_quotation is None or customer_quotation.status not in {"approved", "converted"}:
+                raise ValidationError("The customer quotation must be approved first.")
+            order.customer_quotation = customer_quotation
+            order.subtotal = customer_quotation.subtotal
+            order.discount = customer_quotation.discount
+            order.tax = customer_quotation.tax
+            order.total_amount = customer_quotation.total_amount
+
+        elif order.requires_internal_costing:
+            if production_costing is None or production_costing.status != "APPROVED":
+                raise ValidationError("The internal production costing must be approved first.")
+            order.production_costing = production_costing
+
+        else:
+            raise ValidationError("This order type does not require a Furniture production authorization.")
+
+        order.status = "READY_FOR_PRODUCTION"
+        order.production_authorized_by = cls._user(actor)
+        order.production_authorized_at = timezone.now()
+        order.save()
+
+        cls._dispatch_status_event(
+            order=order,
+            actor=actor,
+            event_code="ORDER_READY_FOR_PRODUCTION",
+            title="Order Ready for Production",
+        )
         return order
 
     @classmethod

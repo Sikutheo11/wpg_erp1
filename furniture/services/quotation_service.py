@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -402,11 +402,15 @@ class QuotationService:
 
         quotation.status = "APPROVED"
         quotation.approved_by = employee
+        quotation.approval_note = (note or "").strip()
+        quotation.approved_at = timezone.now()
 
         quotation.save(
             update_fields=[
                 "status",
                 "approved_by",
+                "approval_note",
+                "approved_at",
             ]
         )
 
@@ -421,6 +425,18 @@ class QuotationService:
                 update_fields=[
                     "status",
                 ]
+            )
+
+        try:
+            source_order = quotation.source_order_request
+        except ObjectDoesNotExist:
+            source_order = None
+        if source_order is not None:
+            from orders.services.order_service import OrderService
+            OrderService.authorize_for_production(
+                order=source_order,
+                actor=approved_by,
+                production_costing=quotation,
             )
 
         prepared_by_user = (

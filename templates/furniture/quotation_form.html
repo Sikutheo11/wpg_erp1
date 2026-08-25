@@ -28,7 +28,11 @@ Create Quotation
                         {% if production_job %}
                             Production Job #{{ production_job.pk }}
                         {% else %}
-                            Prepare production quotation
+                            {% if order %}
+                                {{ order.order_number }} · {{ order.get_order_type_display }} · Shared Order Engine request
+                            {% else %}
+                                Prepare production quotation
+                            {% endif %}
                         {% endif %}
                     </small>
 

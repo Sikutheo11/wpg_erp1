@@ -173,6 +173,13 @@ def assign_worker(request, pk):
 def create_production_job(request, order_id):
     order = get_object_or_404(EnterpriseOrder, pk=order_id)
 
+    if not order.is_production_authorized:
+        messages.error(
+            request,
+            "This order must complete quotation or internal costing approval before production starts.",
+        )
+        return redirect("orders:order_detail", pk=order.pk)
+
     if hasattr(order, "production_job"):
         messages.info(request, "This order already has a production job.")
         return redirect(
@@ -181,21 +188,23 @@ def create_production_job(request, order_id):
         )
 
     employee = _employee_for_user(request.user)
-    product = getattr(order, "product", None)
-    quantity = (
-        getattr(order, "quantity", None)
-        or getattr(order, "quantity_to_produce", None)
-        or 1
-    )
+    first_item = order.items.select_related("product").order_by("id").first()
+    product = first_item.product if first_item else None
+    quantity = first_item.quantity if first_item else 1
+    job_types = {
+        "CUSTOM_FURNITURE": "CUSTOMER_CUSTOM",
+        "RESTOCK": "RESTOCK",
+        "NEW_PRODUCT": "NEW_PRODUCT",
+    }
 
     try:
         job = ProductionService.create_job(
             order=order,
             product=product,
-            job_type="CUSTOMER_CUSTOM",
+            job_type=job_types.get(order.order_type, "CUSTOMER_CUSTOM"),
             quantity_to_produce=quantity,
             created_by=employee,
-            description=getattr(order, "description", "") or "",
+            description=order.notes or (first_item.specifications if first_item else ""),
         )
     except ValidationError as error:
         messages.error(request, _validation_message(error))
@@ -418,6 +427,55 @@ def production_job_create(request):
 
 @login_required
 @wpg_permission_required("furniture.add_quotation", feature_code="FURNITURE_QUOTATIONS", action="add")
+def create_order_costing(request, order_id):
+    order = get_object_or_404(
+        EnterpriseOrder.objects.prefetch_related("items__product"),
+        pk=order_id,
+        business_unit="FURNITURE",
+        order_type__in=["RESTOCK", "NEW_PRODUCT"],
+    )
+
+    if order.production_costing_id:
+        quotation = order.production_costing
+    else:
+        quotation = Quotation(
+            prepared_by=_employee_for_user(request.user),
+        )
+
+    form = QuotationForm(
+        request.POST or None,
+        instance=quotation,
+        order=order,
+    )
+
+    if request.method == "POST" and form.is_valid():
+        quotation = form.save(commit=False)
+        quotation.production_job = None
+        quotation.prepared_by = quotation.prepared_by or _employee_for_user(request.user)
+        quotation.status = "DRAFT"
+        quotation.save()
+
+        order.production_costing = quotation
+        order.status = "QUOTED"
+        order.save(update_fields=["production_costing", "status", "updated_at"])
+
+        try:
+            QuotationService.submit(quotation, actor=request.user)
+        except ValidationError as error:
+            form.add_error(None, _validation_message(error))
+        else:
+            messages.success(request, "Internal production costing submitted for approval.")
+            return redirect("orders:order_detail", pk=order.pk)
+
+    return render(
+        request,
+        "furniture/quotation_form.html",
+        {"form": form, "order": order},
+    )
+
+
+@login_required
+@wpg_permission_required("furniture.add_quotation", feature_code="FURNITURE_QUOTATIONS", action="add")
 def create_quotation(request, pk):
     production_job = get_object_or_404(ProductionJob, pk=pk)
     quotation, _ = Quotation.objects.get_or_create(
@@ -437,7 +495,7 @@ def create_quotation(request, pk):
         quotation.save()
 
         try:
-            QuotationService.submit(quotation, user=request.user)
+            QuotationService.submit(quotation, actor=request.user)
         except ValidationError as error:
             form.add_error(None, _validation_message(error))
         else:
@@ -458,6 +516,7 @@ def quotation_list(request):
         "production_job",
         "prepared_by",
         "approved_by",
+        "source_order_request",
     ).order_by("-created_at")
 
     status = request.GET.get("status", "SUBMITTED").upper()
@@ -497,6 +556,7 @@ def approve_quotation(request, pk):
                 QuotationService.approve(
                     quotation=quotation,
                     approved_by=request.user,
+                    note=request.POST.get("note", "Quotation approved"),
                 )
 
                 messages.success(
@@ -2346,5 +2406,3 @@ def production_schedule(request, pk):
         "furniture:production_job_detail",
         pk=job.pk,
     )
-
-

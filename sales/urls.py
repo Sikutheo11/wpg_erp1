@@ -53,9 +53,29 @@ urlpatterns = [
         name="quotation_create",
     ),
     path(
+        "orders/<int:order_pk>/quotation/create/",
+        views.quotation_create_from_order,
+        name="quotation_create_from_order",
+    ),
+    path(
         "quotations/<int:pk>/",
         views.quotation_detail,
         name="quotation_detail",
+    ),
+    path(
+        "my-quotations/<int:pk>/",
+        views.customer_quotation_detail,
+        name="customer_quotation_detail",
+    ),
+    path(
+        "my-quotations/<int:pk>/accept/",
+        views.customer_quotation_accept,
+        name="customer_quotation_accept",
+    ),
+    path(
+        "my-quotations/<int:pk>/revision/",
+        views.customer_quotation_revision,
+        name="customer_quotation_revision",
     ),
 
     path(

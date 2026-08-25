@@ -603,7 +603,7 @@ class OrderItemForm(forms.ModelForm):
                 self.fields["specifications"].label = (
                     "Furniture Specifications"
                 )
-                self.fields["price"].label = "Quoted Unit Price"
+                self.fields.pop("price", None)
                 self.fields["reference_image"].label = "Reference Photo"
                 self.fields["customer_budget"].label = "Customer Budget (Optional)"
 

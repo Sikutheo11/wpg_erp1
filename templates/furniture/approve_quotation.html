@@ -41,7 +41,7 @@ Quotation Approval
                             </label>
 
                             <div class="fw-bold">
-                                {{ quotation.production_job }}
+                                {{ quotation.production_job|default:quotation.source_order_request }}
                             </div>
 
                         </div>
@@ -54,7 +54,11 @@ Quotation Approval
 
                             <div class="fw-bold">
 
-                                {{ quotation.production_job.product }}
+                                {% if quotation.production_job %}
+                                    {{ quotation.production_job.product }}
+                                {% else %}
+                                    {{ quotation.source_order_request.get_order_type_display }}
+                                {% endif %}
 
                             </div>
 
@@ -179,6 +183,25 @@ Quotation Approval
                     <form method="post">
 
                         {% csrf_token %}
+
+                        {% if quotation.notes %}
+                            <div class="alert alert-light border">
+                                <strong>Prepared notes</strong><br>
+                                {{ quotation.notes|linebreaksbr }}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="approvalNote" class="form-label">Approval / communication note</label>
+                            <textarea name="note" id="approvalNote" class="form-control" rows="3"
+                                      placeholder="Approval conditions, material instructions, deadline notes, or corrections."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="rejectionReason" class="form-label">Rejection reason</label>
+                            <textarea name="reason" id="rejectionReason" class="form-control" rows="2"
+                                      placeholder="Required when returning the costing for correction."></textarea>
+                        </div>
 
                         <div class="d-flex justify-content-end gap-2">
 

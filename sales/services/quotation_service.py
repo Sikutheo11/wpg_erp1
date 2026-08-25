@@ -1,7 +1,7 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
 from django.db.models import DecimalField, ExpressionWrapper, F, Sum
 from django.utils import timezone
@@ -154,6 +154,53 @@ class QuotationService:
             notify_groups=["Sales Manager"],
             notify_owner=True,
         )
+        return quotation
+
+    @classmethod
+    @transaction.atomic
+    def create_from_order(cls, *, order, actor=None):
+        if order.business_unit != "FURNITURE" or order.order_type != "CUSTOM_FURNITURE":
+            raise ValidationError("Customer quotation is only available for Custom Furniture orders.")
+        if order.customer_quotation_id:
+            return order.customer_quotation
+
+        customer = None
+        if order.user_id:
+            customer = Customer.objects.filter(user=order.user).first()
+        if customer is None and order.customer_phone:
+            customer = Customer.objects.filter(phone=order.customer_phone).first()
+        if customer is None:
+            customer = Customer.objects.create(
+                user=order.user if order.user_id and not Customer.objects.filter(user=order.user).exists() else None,
+                full_name=order.customer_name or "Furniture Customer",
+                phone=order.customer_phone,
+                email=order.customer_email or "",
+                address=order.delivery_address or "",
+            )
+
+        quotation = cls.create_quotation(
+            customer=customer,
+            business_unit=order.business_unit,
+            order_type=order.order_type,
+            discount=order.discount,
+            tax=order.tax,
+            notes=f"Prepared from customer request {order.order_number}.",
+            prepared_by=cls._user(actor),
+            actor=actor,
+        )
+        for source in order.items.select_related("product"):
+            SalesQuotationItem.objects.create(
+                quotation=quotation,
+                product=source.product,
+                product_name=source.product_name,
+                specifications=source.specifications,
+                quantity=source.quantity,
+                unit_price=Decimal("0.00"),
+            )
+        cls.recalculate_totals(quotation, actor=actor)
+        order.customer_quotation = quotation
+        order.status = "QUOTED"
+        order.save(update_fields=["customer_quotation", "status", "updated_at"])
         return quotation
 
     @classmethod
@@ -357,6 +404,13 @@ class QuotationService:
 
         quotation.status = "sent"
         quotation.save(update_fields=["status", "updated_at"])
+        try:
+            source_order = quotation.source_order_request
+        except ObjectDoesNotExist:
+            source_order = None
+        if source_order is not None:
+            source_order.status = "AWAITING_CUSTOMER_APPROVAL"
+            source_order.save(update_fields=["status", "updated_at"])
         EventEngine.dispatch(
             event_code="SALES_QUOTATION_SENT",
             actor=cls._user(actor),
@@ -390,6 +444,17 @@ class QuotationService:
                 "updated_at",
             ]
         )
+        try:
+            source_order = quotation.source_order_request
+        except ObjectDoesNotExist:
+            source_order = None
+        if source_order is not None:
+            from orders.services.order_service import OrderService
+            OrderService.authorize_for_production(
+                order=source_order,
+                actor=actor or approved_by,
+                customer_quotation=quotation,
+            )
         EventEngine.dispatch(
             event_code="SALES_QUOTATION_APPROVED",
             actor=cls._user(actor),
@@ -433,6 +498,13 @@ class QuotationService:
                 "updated_at",
             ]
         )
+        try:
+            source_order = quotation.source_order_request
+        except ObjectDoesNotExist:
+            source_order = None
+        if source_order is not None:
+            source_order.status = "AWAITING_QUOTATION"
+            source_order.save(update_fields=["status", "updated_at"])
         return quotation
 
     @classmethod
