@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AnonymousUser
+from django.contrib.sessions.middleware import SessionMiddleware
 from django.template.loader import render_to_string
 from django.test import RequestFactory, TestCase
 
@@ -40,6 +41,7 @@ class FurnitureOrderItemFormTests(TestCase):
             "/orders/create/form/?business_unit=FURNITURE&type=CUSTOM_FURNITURE"
         )
         request.user = AnonymousUser()
+        SessionMiddleware(lambda current_request: None).process_request(request)
         item_form = OrderItemForm(
             order_type="CUSTOM_FURNITURE",
             business_unit="FURNITURE",
