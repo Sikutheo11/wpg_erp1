@@ -256,7 +256,54 @@ LOGIN_REDIRECT_URL = 'index'  # Change 'index' to your desired redirect URL afte
 LOGOUT_REDIRECT_URL = 'login'  # Change 'login' to your desired redirect URL after logout
 # settings.py
 AUTH_USER_MODEL = 'accounts.User'
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+)
+
+EMAIL_HOST = os.environ.get(
+    "EMAIL_HOST",
+    "localhost",
+)
+
+EMAIL_PORT = int(
+    os.environ.get(
+        "EMAIL_PORT",
+        "25",
+    )
+)
+
+EMAIL_USE_TLS = _environment_boolean(
+    "EMAIL_USE_TLS",
+    default=False,
+)
+
+EMAIL_USE_SSL = _environment_boolean(
+    "EMAIL_USE_SSL",
+    default=False,
+)
+
+EMAIL_HOST_USER = os.environ.get(
+    "EMAIL_HOST_USER",
+    "",
+)
+
+EMAIL_HOST_PASSWORD = os.environ.get(
+    "EMAIL_HOST_PASSWORD",
+    "",
+)
+
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL",
+    "webmaster@localhost",
+)
+
+EMAIL_TIMEOUT = int(
+    os.environ.get(
+        "EMAIL_TIMEOUT",
+        "20",
+    )
+)
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
