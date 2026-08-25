@@ -246,6 +246,36 @@ class OrderItem(models.Model):
         ),
     )
 
+    reference_image = models.ImageField(
+        upload_to="orders/reference_images/%Y/%m/",
+        null=True,
+        blank=True,
+        help_text="Customer reference photo or existing product photo.",
+    )
+
+    design_attachment = models.FileField(
+        upload_to="orders/design_attachments/%Y/%m/",
+        null=True,
+        blank=True,
+        help_text="Drawing, design, specification sheet, or supporting document.",
+    )
+
+    length_cm = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    width_cm = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    height_cm = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    material_preference = models.CharField(max_length=200, blank=True)
+    colour = models.CharField(max_length=100, blank=True)
+    finish = models.CharField(max_length=100, blank=True)
+    customer_budget = models.DecimalField(
+        max_digits=15, decimal_places=2, null=True, blank=True
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
