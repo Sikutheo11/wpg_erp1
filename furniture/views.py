@@ -411,12 +411,31 @@ def production_job_create(request):
             initial=initial
         )
 
+    used_order_ids = ProductionJob.objects.exclude(
+        order__isnull=True
+    ).values_list("order_id", flat=True)
+    production_order_base = EnterpriseOrder.objects.filter(
+        business_unit="FURNITURE",
+        order_type__in=[
+            "CUSTOM_FURNITURE",
+            "RESTOCK",
+            "NEW_PRODUCT",
+        ],
+    ).exclude(pk__in=used_order_ids)
+    eligible_order_count = form.fields["order"].queryset.count()
+    awaiting_authorization_count = production_order_base.exclude(
+        status="READY_FOR_PRODUCTION",
+        production_authorized_at__isnull=False,
+    ).count()
+
     return render(
         request,
         "furniture/production_job_form.html",
         {
             "form": form,
             "page_title": "Create Production Job",
+            "eligible_order_count": eligible_order_count,
+            "awaiting_authorization_count": awaiting_authorization_count,
         },
     )
 

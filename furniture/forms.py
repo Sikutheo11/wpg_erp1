@@ -251,16 +251,33 @@ class ProductionJobForm(forms.ModelForm):
 
         self.fields["order"].queryset = (
             available_orders
+            .prefetch_related("items")
             .distinct()
             .order_by("-id")
         )
 
-        self.fields["order"].label = "Approved Enterprise Order"
+        def order_engine_label(order):
+            items = list(order.items.all())
+            first_item = items[0] if items else None
+            item_name = first_item.product_name if first_item else "No item"
+            quantity = first_item.quantity if first_item else 0
+            deadline = (
+                order.expected_delivery_date.strftime("%d %b %Y")
+                if order.expected_delivery_date
+                else "No deadline"
+            )
+            return (
+                f"{order.order_number} | {order.get_order_type_display()} | "
+                f"{order.customer_name} | {item_name} x {quantity} | Due: {deadline}"
+            )
+
+        self.fields["order"].label_from_instance = order_engine_label
+        self.fields["order"].label = "Order Engine Order"
         self.fields["order"].help_text = (
             "Only quoted/costed and approved shared orders ready for production are shown."
         )
         self.fields["order"].empty_label = (
-            "Select enterprise order"
+            "Select approved Order Engine order"
         )
 
     def clean_quantity_to_produce(self):

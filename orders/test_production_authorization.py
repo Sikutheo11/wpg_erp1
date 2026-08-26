@@ -77,6 +77,26 @@ class FurnitureProductionAuthorizationTests(TestCase):
         self.assertIsNotNone(order.production_authorized_at)
         self.assertIn(order, ProductionJobForm().fields["order"].queryset)
 
+    def test_production_job_page_lists_approved_order_engine_order(self):
+        order = self.make_order("RESTOCK")
+        order.expected_delivery_date = "2026-09-15"
+        order.save(update_fields=["expected_delivery_date", "updated_at"])
+        OrderService.submit(order=order, actor=self.user)
+        costing = Quotation.objects.create(status="APPROVED", selling_price=100000)
+        OrderService.authorize_for_production(
+            order=order,
+            actor=self.user,
+            production_costing=costing,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("furniture:production_job_create"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, order.order_number)
+        self.assertContains(response, "Order Engine Order")
+        self.assertContains(response, "ready for production")
+
     def test_customer_acceptance_authorizes_custom_order(self):
         order = self.make_order("CUSTOM_FURNITURE")
         OrderService.submit(order=order, actor=self.user)

@@ -22,6 +22,25 @@
                         recorded in the shared Order Engine.
                     </div>
 
+                    {% if eligible_order_count %}
+                        <div class="alert alert-success">
+                            <strong>{{ eligible_order_count }}</strong>
+                            approved Order Engine order{{ eligible_order_count|pluralize }}
+                            ready for production.
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            No approved Order Engine order is currently ready for production.
+                            {% if awaiting_authorization_count %}
+                                {{ awaiting_authorization_count }} Furniture order{{ awaiting_authorization_count|pluralize }}
+                                still await quotation, customer acceptance or internal costing approval.
+                            {% endif %}
+                            <a href="{% url 'orders:order_list' %}" class="alert-link">
+                                Open Order Engine
+                            </a>
+                        </div>
+                    {% endif %}
+
                     {% if form.non_field_errors %}
                         <div class="alert alert-danger">
                             {% for error in form.non_field_errors %}
