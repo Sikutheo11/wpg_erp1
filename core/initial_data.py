@@ -225,16 +225,25 @@ BUSINESS_UNIT_FEATURES = {
         ("Reports", "CONSTRUCTION_REPORTS", "core:construction_report", "bi bi-bar-chart", 9),
     ],
     "AGRICULTURE": [
-        ("Dashboard", "AGRICULTURE_DASHBOARD", "", "bi bi-speedometer2", 1),
-        ("Poultry Batches", "AGRICULTURE_POULTRY_BATCHES", "", "bi bi-egg", 2),
-        ("Egg Production", "AGRICULTURE_EGG_PRODUCTION", "", "bi bi-basket", 3),
-        ("Mortality", "AGRICULTURE_MORTALITY", "", "bi bi-heart-pulse", 4),
+        ("Dashboard", "AGRICULTURE_DASHBOARD", "agriculture:dashboard", "bi bi-speedometer2", 1),
+        ("Farms", "AGRICULTURE_FARMS", "agriculture:farm_list", "bi bi-house", 2),
+        ("Poultry Houses", "AGRICULTURE_HOUSES", "agriculture:farm_list", "bi bi-building", 3),
+        ("Breeds", "AGRICULTURE_BREEDS", "agriculture:breed_list", "bi bi-diagram-3", 4),
+        ("Flocks", "AGRICULTURE_FLOCKS", "agriculture:flock_list", "bi bi-collection", 5),
+        ("Operations", "AGRICULTURE_OPERATIONS", "agriculture:operation_list", "bi bi-list-check", 6),
+        ("Daily Records", "AGRICULTURE_DAILY_RECORDS", "agriculture:flock_list", "bi bi-calendar3", 7),
+        ("Egg Production", "AGRICULTURE_EGG_PRODUCTION", "agriculture:flock_list", "bi bi-basket", 8),
+        ("Feeding", "AGRICULTURE_FEEDING", "agriculture:flock_list", "bi bi-cup-straw", 9),
+        ("Health", "AGRICULTURE_HEALTH", "agriculture:flock_list", "bi bi-heart-pulse", 10),
+        ("Mortality", "AGRICULTURE_MORTALITY", "agriculture:flock_list", "bi bi-clipboard2-pulse", 11),
+        ("Incubation", "AGRICULTURE_INCUBATION", "agriculture:incubation_list", "bi bi-egg", 12),
+        ("Valuation Report", "AGRICULTURE_REPORTS", "agriculture:valuation_report", "bi bi-bar-chart", 13),
     ],
     "MARKETPLACE": [
         ("Dashboard", "MARKETPLACE_DASHBOARD", "ecommerce:shop", "bi bi-speedometer2", 1),
         ("Shop", "MARKETPLACE_SHOP", "ecommerce:shop", "bi bi-shop", 2),
         ("Online Products", "MARKETPLACE_PRODUCTS", "ecommerce:online_product_list", "bi bi-tags", 3),
-        ("Online Orders", "MARKETPLACE_ORDERS", "", "bi bi-cart-check", 4),
+        ("Online Orders", "MARKETPLACE_ORDERS", "ecommerce:ecommerce_dashboard", "bi bi-cart-check", 4),
         ("Sellers", "MARKETPLACE_SELLERS", "ecommerce:marketplace_seller_list", "bi bi-people", 5),
         ("Commissions", "MARKETPLACE_COMMISSIONS", "ecommerce:marketplace_seller_list", "bi bi-percent", 6),
         ("Settlements", "MARKETPLACE_SETTLEMENTS", "ecommerce:seller_settlement_list", "bi bi-wallet2", 7),
@@ -266,10 +275,14 @@ ENGINE_FEATURES = {
     ],
     "INVENTORY": [
         ("Dashboard", "INVENTORY_DASHBOARD", "inventory:inventory_dashboard", "bi bi-speedometer2", 1),
-        ("Products", "INVENTORY_PRODUCTS", "inventory:product_list", "bi bi-box", 2),
-        ("Raw Materials", "INVENTORY_RAW_MATERIALS", "inventory:rawmaterial_list", "bi bi-boxes", 3),
-        ("Stock Movements", "INVENTORY_STOCK_MOVEMENTS", "inventory:movement_list", "bi bi-arrow-left-right", 4),
-        ("Reports", "INVENTORY_REPORTS", "core:inventory_report", "bi bi-bar-chart", 5),
+        ("Categories", "INVENTORY_CATEGORIES", "inventory:category_list", "bi bi-tags", 2),
+        ("Warehouses", "INVENTORY_WAREHOUSES", "inventory:warehouse_list", "bi bi-buildings", 3),
+        ("Suppliers", "INVENTORY_SUPPLIERS", "inventory:supplier_list", "bi bi-truck", 4),
+        ("Products", "INVENTORY_PRODUCTS", "inventory:product_list", "bi bi-box", 5),
+        ("Raw Materials", "INVENTORY_RAW_MATERIALS", "inventory:material_list", "bi bi-boxes", 6),
+        ("Stock Movements", "INVENTORY_STOCK_MOVEMENTS", "inventory:movement_list", "bi bi-arrow-left-right", 7),
+        ("Low Stock", "INVENTORY_LOW_STOCK", "inventory:low_stock", "bi bi-exclamation-triangle", 8),
+        ("Reports", "INVENTORY_REPORTS", "core:inventory_report", "bi bi-bar-chart", 9),
     ],
     "FINANCE": [
         ("Dashboard", "FINANCE_DASHBOARD", "finance:finance_dashboard", "bi bi-speedometer2", 1),
@@ -299,23 +312,22 @@ ENGINE_FEATURES = {
         ("People Reports", "PEOPLE_REPORTS", "employee:employee_report", "bi bi-file-bar-graph", 8),
     ],
     "ASSET": [
-        ("Assets", "ASSET_LIST", "", "bi bi-tools", 1),
-        ("Asset Assignments", "ASSET_ASSIGNMENTS", "", "bi bi-person-check", 2),
+        ("Assets", "ASSET_LIST", "inventory:asset_list", "bi bi-tools", 1),
+        ("Asset Assignments", "ASSET_ASSIGNMENTS", "inventory:asset_assignment_list", "bi bi-person-check", 2),
     ],
     "APPROVAL": [
-        ("Pending Approvals", "APPROVAL_PENDING", "", "bi bi-hourglass-split", 1),
-        ("Approval History", "APPROVAL_HISTORY", "", "bi bi-clock-history", 2),
+        ("Pending Approvals", "APPROVAL_PENDING", "core:approval_request_list", "bi bi-hourglass-split", 1),
+        ("Approval History", "APPROVAL_HISTORY", "core:approval_request_list", "bi bi-clock-history", 2),
     ],
     "NOTIFICATION": [
-        ("Notifications", "NOTIFICATION_LIST", "", "bi bi-bell", 1),
+        ("Notifications", "NOTIFICATION_LIST", "core:notification_list", "bi bi-bell", 1),
     ],
     "AUDIT": [
-        ("Audit Logs", "AUDIT_LOGS", "", "bi bi-shield-check", 1),
         ("Audit Logs", "AUDIT_LOGS", "core:audit_log_list", "bi bi-shield-check", 1),
     ],
     "REPORTING": [
         ("Executive Dashboard", "REPORTING_EXECUTIVE_DASHBOARD", "core:dashboard", "bi bi-graph-up", 1),
-        ("Reports", "REPORTING_REPORTS", "", "bi bi-file-bar-graph", 2),
+        ("Reports", "REPORTING_REPORTS", "core:reports_home", "bi bi-file-bar-graph", 2),
     ],
 }
 
@@ -510,6 +522,9 @@ ROLE_FEATURES = {
         "FINANCE_INCOME_DECLARATIONS": {"view": True, "add": True, "edit": True},
         "FINANCE_INCOME_CONFIRMATIONS": {"view": True, "edit": True, "approve": True},
         "INVENTORY_DASHBOARD": {"view": True},
+        "INVENTORY_CATEGORIES": {"view": True},
+        "INVENTORY_WAREHOUSES": {"view": True},
+        "INVENTORY_SUPPLIERS": {"view": True},
         "INVENTORY_PRODUCTS": {"view": True},
         "INVENTORY_RAW_MATERIALS": {"view": True},
         "INVENTORY_STOCK_MOVEMENTS": {"view": True, "add": True},
@@ -595,18 +610,26 @@ ROLE_FEATURES = {
 
     "Inventory Manager": {
         "INVENTORY_DASHBOARD": {"view": True},
+        "INVENTORY_CATEGORIES": {"view": True, "add": True, "edit": True},
+        "INVENTORY_WAREHOUSES": {"view": True, "add": True, "edit": True},
+        "INVENTORY_SUPPLIERS": {"view": True, "add": True, "edit": True},
         "INVENTORY_PRODUCTS": {"view": True, "add": True, "edit": True},
         "INVENTORY_RAW_MATERIALS": {"view": True, "add": True, "edit": True},
         "INVENTORY_STOCK_MOVEMENTS": {"view": True, "add": True, "edit": True, "approve": True},
+        "INVENTORY_LOW_STOCK": {"view": True},
         "ASSET_LIST": {"view": True, "add": True, "edit": True},
         "ASSET_ASSIGNMENTS": {"view": True, "add": True, "edit": True},
     },
 
     "Store Keeper": {
         "INVENTORY_DASHBOARD": {"view": True},
+        "INVENTORY_CATEGORIES": {"view": True},
+        "INVENTORY_WAREHOUSES": {"view": True},
+        "INVENTORY_SUPPLIERS": {"view": True},
         "INVENTORY_PRODUCTS": {"view": True},
         "INVENTORY_RAW_MATERIALS": {"view": True},
         "INVENTORY_STOCK_MOVEMENTS": {"view": True, "add": True},
+        "INVENTORY_LOW_STOCK": {"view": True},
         "ASSET_LIST": {"view": True},
     },
 
@@ -940,6 +963,24 @@ FEATURE_DJANGO_PERMISSIONS = {
     "INVENTORY_DASHBOARD": {
         "view_permission": "inventory.view_product",
     },
+    "INVENTORY_CATEGORIES": {
+        "view_permission": "inventory.view_category",
+        "add_permission": "inventory.add_category",
+        "change_permission": "inventory.change_category",
+        "delete_permission": "inventory.delete_category",
+    },
+    "INVENTORY_WAREHOUSES": {
+        "view_permission": "inventory.view_warehouse",
+        "add_permission": "inventory.add_warehouse",
+        "change_permission": "inventory.change_warehouse",
+        "delete_permission": "inventory.delete_warehouse",
+    },
+    "INVENTORY_SUPPLIERS": {
+        "view_permission": "inventory.view_supplier",
+        "add_permission": "inventory.add_supplier",
+        "change_permission": "inventory.change_supplier",
+        "delete_permission": "inventory.delete_supplier",
+    },
     "INVENTORY_PRODUCTS": {
         "view_permission": "inventory.view_product",
         "add_permission": "inventory.add_product",
@@ -958,6 +999,22 @@ FEATURE_DJANGO_PERMISSIONS = {
         "change_permission": "inventory.change_stockmovement",
         "delete_permission": "inventory.delete_stockmovement",
     },
+    "INVENTORY_LOW_STOCK": {
+        "view_permission": "inventory.view_product",
+    },
+    "AGRICULTURE_DASHBOARD": {"view_permission": "agriculture.view_agricultureoperation"},
+    "AGRICULTURE_FARMS": {"view_permission": "agriculture.view_poultryfarm", "add_permission": "agriculture.add_poultryfarm", "change_permission": "agriculture.change_poultryfarm", "delete_permission": "agriculture.delete_poultryfarm"},
+    "AGRICULTURE_HOUSES": {"view_permission": "agriculture.view_poultryhouse", "add_permission": "agriculture.add_poultryhouse", "change_permission": "agriculture.change_poultryhouse", "delete_permission": "agriculture.delete_poultryhouse"},
+    "AGRICULTURE_BREEDS": {"view_permission": "agriculture.view_poultrybreed", "add_permission": "agriculture.add_poultrybreed", "change_permission": "agriculture.change_poultrybreed", "delete_permission": "agriculture.delete_poultrybreed"},
+    "AGRICULTURE_OPERATIONS": {"view_permission": "agriculture.view_agricultureoperation", "add_permission": "agriculture.add_agricultureoperation", "change_permission": "agriculture.change_agricultureoperation", "delete_permission": "agriculture.delete_agricultureoperation"},
+    "AGRICULTURE_FLOCKS": {"view_permission": "agriculture.view_poultryflock", "add_permission": "agriculture.add_poultryflock", "change_permission": "agriculture.change_poultryflock", "delete_permission": "agriculture.delete_poultryflock"},
+    "AGRICULTURE_DAILY_RECORDS": {"view_permission": "agriculture.view_dailyflockrecord", "add_permission": "agriculture.add_dailyflockrecord", "change_permission": "agriculture.change_dailyflockrecord", "delete_permission": "agriculture.delete_dailyflockrecord"},
+    "AGRICULTURE_EGG_PRODUCTION": {"view_permission": "agriculture.view_eggproduction", "add_permission": "agriculture.add_eggproduction", "change_permission": "agriculture.change_eggproduction", "delete_permission": "agriculture.delete_eggproduction"},
+    "AGRICULTURE_FEEDING": {"view_permission": "agriculture.view_feedingrecord", "add_permission": "agriculture.add_feedingrecord", "change_permission": "agriculture.change_feedingrecord", "delete_permission": "agriculture.delete_feedingrecord"},
+    "AGRICULTURE_HEALTH": {"view_permission": "agriculture.view_healthrecord", "add_permission": "agriculture.add_healthrecord", "change_permission": "agriculture.change_healthrecord", "delete_permission": "agriculture.delete_healthrecord"},
+    "AGRICULTURE_MORTALITY": {"view_permission": "agriculture.view_mortalityrecord", "add_permission": "agriculture.add_mortalityrecord", "change_permission": "agriculture.change_mortalityrecord", "delete_permission": "agriculture.delete_mortalityrecord"},
+    "AGRICULTURE_INCUBATION": {"view_permission": "agriculture.view_incubationbatch", "add_permission": "agriculture.add_incubationbatch", "change_permission": "agriculture.change_incubationbatch", "delete_permission": "agriculture.delete_incubationbatch"},
+    "AGRICULTURE_REPORTS": {"view_permission": "agriculture.view_agricultureoperation"},
     "INVENTORY_REPORTS": {
         "view_permission": "inventory.view_product",
     },
@@ -981,5 +1038,11 @@ FEATURE_DJANGO_PERMISSIONS = {
     },
     "AUDIT_LOGS": {
         "view_permission": "core.view_auditlog",
+    },
+    "APPROVAL_PENDING": {
+        "view_permission": "core.view_approvalrequest",
+    },
+    "APPROVAL_HISTORY": {
+        "view_permission": "core.view_approvalrequest",
     },
 }

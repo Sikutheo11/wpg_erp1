@@ -11,6 +11,9 @@ from core.permissions import wpg_permission_required
 
 
 from .models import (
+    Category,
+    Warehouse,
+    Supplier,
     Product,
     RawMaterial,
     Asset,
@@ -54,6 +57,57 @@ def inventory_dashboard(request):
         context
     )
 
+
+
+# ==================================================
+# MASTER DATA
+# ==================================================
+
+@login_required
+@wpg_permission_required("inventory.view_category", feature_code="INVENTORY_CATEGORIES")
+def category_list(request):
+    return render(
+        request,
+        "inventory/master_data/category_list.html",
+        {"categories": Category.objects.order_by("name")},
+    )
+
+
+@login_required
+@wpg_permission_required("inventory.view_warehouse", feature_code="INVENTORY_WAREHOUSES")
+def warehouse_list(request):
+    return render(
+        request,
+        "inventory/master_data/warehouse_list.html",
+        {
+            "warehouses": Warehouse.objects.select_related(
+                "manager", "manager__user"
+            ).order_by("warehouse_type", "name")
+        },
+    )
+
+
+@login_required
+@wpg_permission_required("inventory.view_supplier", feature_code="INVENTORY_SUPPLIERS")
+def supplier_list(request):
+    return render(
+        request,
+        "inventory/master_data/supplier_list.html",
+        {"suppliers": Supplier.objects.order_by("name")},
+    )
+
+
+@login_required
+@wpg_permission_required("inventory.view_assetassignment", feature_code="ASSET_ASSIGNMENTS")
+def asset_assignment_list(request):
+    assignments = AssetAssignment.objects.select_related(
+        "asset", "department", "employee", "employee__user"
+    ).order_by("-assigned_date", "-pk")
+    return render(
+        request,
+        "inventory/assets/asset_assignment_list.html",
+        {"assignments": assignments},
+    )
 
 
 # ==================================================

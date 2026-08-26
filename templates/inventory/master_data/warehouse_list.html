@@ -1,0 +1,9 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Warehouses{% endblock %}
+{% block page_title %}Warehouses{% endblock %}
+{% block content %}
+<div class="container-fluid"><div class="mb-4"><h3 class="fw-bold mb-1">Warehouses &amp; Stores</h3><p class="text-muted mb-0">Physical stock locations across business units.</p></div>
+<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Business Unit</th><th>Location</th><th>Manager</th><th>Status</th></tr></thead><tbody>
+{% for item in warehouses %}<tr><td><code>{{ item.code }}</code></td><td class="fw-semibold">{{ item.name }}</td><td>{{ item.get_warehouse_type_display }}</td><td>{{ item.get_business_unit_display|default:"Shared" }}</td><td>{{ item.location|default:"-" }}</td><td>{{ item.manager|default:"-" }}</td><td>{% if item.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="7" class="text-center text-muted py-5">No warehouses found.</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+{% endblock %}

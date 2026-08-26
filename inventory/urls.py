@@ -6,6 +6,10 @@ app_name="inventory"
 
 
 urlpatterns=[
+    path("categories/", views.category_list, name="category_list"),
+    path("warehouses/", views.warehouse_list, name="warehouse_list"),
+    path("suppliers/", views.supplier_list, name="supplier_list"),
+    path("asset-assignments/", views.asset_assignment_list, name="asset_assignment_list"),
     
 
     path(
