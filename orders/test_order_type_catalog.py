@@ -22,7 +22,15 @@ class OrderTypeCatalogTests(TestCase):
         self.assertContains(response, "Furniture &amp; Manufacturing")
         self.assertContains(response, "Construction")
         self.assertContains(response, "Agriculture / Poultry")
-        self.assertNotContains(response, "Marketplace")
+        unit_codes = {
+            unit["code"]
+            for unit in response.context["business_units"]
+        }
+        self.assertEqual(
+            unit_codes,
+            {"FURNITURE", "CONSTRUCTION", "AGRICULTURE"},
+        )
+        self.assertNotIn("MARKETPLACE", unit_codes)
 
     def test_staff_order_type_select_excludes_ecommerce(self):
         response = self.client.get(
