@@ -81,6 +81,9 @@ class AccountAdmin(admin.ModelAdmin):
         'account_type',
     )
 
+    def get_readonly_fields(self, request, obj=None):
+        return ("balance",) if obj else ()
+
 
 
 
@@ -91,6 +94,11 @@ class AccountAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
+
+    readonly_fields = (
+        "account", "transaction_type", "amount", "description",
+        "date", "created_at", "posting_key",
+    )
 
     list_display = (
         'account',
@@ -108,6 +116,15 @@ class TransactionAdmin(admin.ModelAdmin):
     search_fields = (
         'description',
     )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 
@@ -120,6 +137,10 @@ class TransactionAdmin(admin.ModelAdmin):
 @admin.register(Income)
 class IncomeAdmin(admin.ModelAdmin):
 
+    readonly_fields = tuple(
+        field.name for field in Income._meta.fields
+    )
+
     list_display = (
         'title',
         'income_type',
@@ -137,6 +158,15 @@ class IncomeAdmin(admin.ModelAdmin):
         'title',
     )
 
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 
 
 
@@ -147,6 +177,10 @@ class IncomeAdmin(admin.ModelAdmin):
 
 @admin.register(Expense)
 class ExpenseAdmin(admin.ModelAdmin):
+
+    readonly_fields = tuple(
+        field.name for field in Expense._meta.fields
+    )
 
     list_display = (
         'title',
@@ -167,6 +201,15 @@ class ExpenseAdmin(admin.ModelAdmin):
     search_fields = (
         'title',
     )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(IncomeDeclaration)

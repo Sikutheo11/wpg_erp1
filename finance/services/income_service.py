@@ -164,7 +164,11 @@ class IncomeService:
         amount,
         income_date=None,
         sale=None,
+        business_unit="SHARED",
+        received_from=None,
+        notes="",
         reference="",
+        posting_reference=None,
         actor=None,
         post_to_account=True,
     ):
@@ -177,11 +181,17 @@ class IncomeService:
         reference = (
             reference or ""
         ).strip()
+        posting_reference = (
+            posting_reference
+            if posting_reference is not None
+            else reference
+        )
+        posting_reference = (posting_reference or "").strip()
 
         if (
-            reference
+            posting_reference
             and cls.is_duplicate_reference(
-                reference=reference
+                reference=posting_reference
             )
         ):
             raise ValidationError(
@@ -196,19 +206,21 @@ class IncomeService:
 
         posting_title = title
 
-        if reference:
+        if posting_reference:
             posting_title = (
-                f"{title} [{reference}]"
+                f"{title} [{posting_reference}]"
             )
 
         income = Income.objects.create(
-            # AccountService owns automated balance posting. Creating with a
-            # null relation prevents Income.save() from posting a second time.
-            account=None,
+            account=account,
+            business_unit=business_unit or "SHARED",
             title=posting_title,
             income_type=resolved_income_type,
             amount=amount,
             sale=sale,
+            received_from=received_from,
+            reference=reference,
+            notes=(notes or "").strip(),
             date=(
                 income_date
                 or timezone.localdate()
@@ -231,11 +243,13 @@ class IncomeService:
                     ),
                     actor=actor,
                     create_transaction=True,
+                    posting_key=f"finance-income:{income.pk}",
                 )
             )
 
-        Income.objects.filter(pk=income.pk).update(account=account)
-        income.account = account
+        if account_result["transaction"]:
+            income.ledger_transaction = account_result["transaction"]
+            income.save(update_fields=["ledger_transaction"])
 
         EventEngine.dispatch(
             event_code="FINANCE_INCOME_CREATED",

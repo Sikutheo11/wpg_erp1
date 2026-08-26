@@ -8,7 +8,13 @@ from django.test import TestCase
 from django.utils import timezone
 
 from Employee.models import Department
-from finance.models import Account, Counterparty, ExpenseRequest, IncomeDeclaration
+from finance.models import (
+    Account,
+    Counterparty,
+    ExpenseRequest,
+    IncomeDeclaration,
+    Transaction,
+)
 from finance.services.expense_request_service import ExpenseRequestService
 from finance.services.income_declaration_service import IncomeDeclarationService
 
@@ -63,6 +69,12 @@ class ExpenseRequestWorkflowTests(TestCase):
         self.account.refresh_from_db()
         self.assertEqual(self.request.status, "COMPLETED")
         self.assertEqual(self.request.expense.paid_to, self.payee)
+        self.assertIsNotNone(self.request.expense.ledger_transaction_id)
+        self.assertEqual(
+            self.request.expense.ledger_transaction.posting_key,
+            f"finance-expense:{self.request.expense_id}",
+        )
+        self.assertEqual(Transaction.objects.count(), 1)
         self.assertEqual(self.account.balance, Decimal("400000"))
 
     def test_requester_cannot_approve_own_request(self):
@@ -188,6 +200,14 @@ class IncomeDeclarationWorkflowTests(TestCase):
         self.account.refresh_from_db()
         self.assertEqual(self.declaration.status, "FINANCE_CONFIRMED")
         self.assertEqual(self.declaration.posted_income.business_unit, "AGRICULTURE")
+        self.assertIsNotNone(
+            self.declaration.posted_income.ledger_transaction_id
+        )
+        self.assertEqual(
+            self.declaration.posted_income.ledger_transaction.posting_key,
+            f"finance-income:{self.declaration.posted_income_id}",
+        )
+        self.assertEqual(Transaction.objects.count(), 1)
         self.assertEqual(self.account.balance, Decimal("500000"))
 
     def test_recorder_cannot_confirm_own_income(self):

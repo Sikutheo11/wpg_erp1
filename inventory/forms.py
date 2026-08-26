@@ -1,5 +1,14 @@
 from django import forms
-from .models import (Product, RawMaterial, Asset, StockMovement, AssetAssignment)
+from .models import (
+    Asset,
+    AssetAssignment,
+    Category,
+    Product,
+    RawMaterial,
+    StockMovement,
+    Supplier,
+    Warehouse,
+)
 
 
 
@@ -24,6 +33,54 @@ class BootstrapFormMixin:
                     "class":
                     "form-control"
                 })
+
+
+class CategoryForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = ["name", "description", "is_active"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_bootstrap()
+
+
+class WarehouseForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Warehouse
+        fields = [
+            "name",
+            "code",
+            "warehouse_type",
+            "business_unit",
+            "location",
+            "manager",
+            "is_active",
+            "allow_negative_stock",
+            "notes",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_bootstrap()
+
+
+class SupplierForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Supplier
+        fields = [
+            "name",
+            "contact_person",
+            "phone",
+            "email",
+            "address",
+            "tax_number",
+            "is_active",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_bootstrap()
 
 
 
@@ -167,6 +224,27 @@ class AssetAssignmentForm(BootstrapFormMixin, forms.ModelForm):
         )
 
         self.apply_bootstrap()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        department = cleaned_data.get("department")
+        employee = cleaned_data.get("employee")
+        assigned_date = cleaned_data.get("assigned_date")
+        returned_date = cleaned_data.get("returned_date")
+
+        if employee and employee.department_id != getattr(department, "pk", None):
+            self.add_error(
+                "employee",
+                "The selected employee must belong to the selected department.",
+            )
+
+        if assigned_date and returned_date and returned_date < assigned_date:
+            self.add_error(
+                "returned_date",
+                "Returned date cannot be earlier than assigned date.",
+            )
+
+        return cleaned_data
 
 
 

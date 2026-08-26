@@ -86,6 +86,10 @@ class ProductionService:
 
         # One order can create only one production job.
         if order:
+            if not getattr(order, "is_production_authorized", False):
+                raise ValidationError(
+                    "This order is not ready for production. Complete and approve its quotation or costing first."
+                )
             existing_job = (
                 ProductionJob.objects
                 .filter(order=order)
@@ -588,4 +592,3 @@ class ProductionService:
 
         return production_job
 
-    

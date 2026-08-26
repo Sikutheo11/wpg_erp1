@@ -2,7 +2,8 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from ..models import Account, Income, IncomeDeclaration
+from ..models import Account, IncomeDeclaration
+from .income_service import IncomeService
 
 
 class IncomeDeclarationService:
@@ -72,18 +73,21 @@ class IncomeDeclarationService:
             "RENT": "other", "INTEREST": "other", "INVESTMENT": "other",
             "LOAN": "other", "GRANT": "other", "OTHER": "other",
         }
-        income = Income.objects.create(
+        result = IncomeService.create_income(
             account=account,
             business_unit=obj.business_unit,
-            title=f"{obj.title} [{obj.declaration_number}]",
+            title=obj.title,
             income_type=type_map[obj.source_type],
             amount=obj.amount,
             sale=obj.related_sale,
             received_from=obj.received_from,
             reference=obj.reference,
+            posting_reference=obj.declaration_number,
             notes=obj.notes,
-            date=obj.receipt_date,
+            income_date=obj.receipt_date,
+            actor=actor,
         )
+        income = result["income"]
         obj.confirmed_account = account
         obj.finance_confirmed_by = actor
         obj.finance_confirmed_at = timezone.now()

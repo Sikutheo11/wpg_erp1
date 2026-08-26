@@ -12,6 +12,7 @@ urlpatterns = [
     path("notifications/<int:pk>/read/", views.notification_mark_read, name="notification_mark_read"),
     path("notifications/read-all/", views.notification_mark_all_read, name="notification_mark_all_read"),
     path("audit-logs/", views.audit_log_list, name="audit_log_list"),
+    path("approvals/", views.approval_request_list, name="approval_request_list"),
     path("reports/", views.reports_home, name="reports_home"),
     path("reports/executive/", views.executive_report, name="executive_report"),
     path("reports/finance/", views.finance_report, name="finance_report"),

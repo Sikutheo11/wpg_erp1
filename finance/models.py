@@ -25,6 +25,10 @@ from .identity import (
     normalize_bank_account,
     normalize_rwanda_phone,
 )
+from core.file_validators import (
+    validate_business_document,
+    validate_finance_proof,
+)
 
 
 
@@ -862,6 +866,18 @@ class Transaction(models.Model):
         auto_now_add=True
     )
 
+    posting_key = models.CharField(
+        max_length=160,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
+        help_text=(
+            "Stable source identifier used to prevent duplicate "
+            "account postings."
+        ),
+    )
+
 
     def __str__(self):
         return self.description
@@ -951,27 +967,14 @@ class Income(models.Model):
         auto_now_add=True
     )
 
-
-
-    def save(self,*args,**kwargs):
-
-        is_new=self.pk is None
-
-        super().save(*args,**kwargs)
-
-
-        if is_new and self.account:
-
-            self.account.balance += self.amount
-            self.account.save()
-
-
-            Transaction.objects.create(
-                account=self.account,
-                transaction_type="income",
-                amount=self.amount,
-                description=self.title or "Income"
-            )
+    ledger_transaction = models.OneToOneField(
+        Transaction,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        editable=False,
+        related_name="income_record",
+    )
 
 
     def __str__(self):
@@ -1025,7 +1028,11 @@ class IncomeDeclaration(models.Model):
     receipt_method = models.CharField(max_length=30, choices=RECEIPT_METHODS)
     receipt_date = models.DateField()
     reference = models.CharField(max_length=100)
-    proof_document = models.FileField(upload_to="finance/income_declarations/%Y/%m/", blank=True)
+    proof_document = models.FileField(
+        upload_to="finance/income_declarations/%Y/%m/",
+        blank=True,
+        validators=[validate_finance_proof],
+    )
     notes = models.TextField(blank=True)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="DRAFT", db_index=True)
 
@@ -1142,27 +1149,14 @@ class Expense(models.Model):
         auto_now_add=True
     )
 
-
-
-    def save(self,*args,**kwargs):
-
-        is_new=self.pk is None
-
-        super().save(*args,**kwargs)
-
-
-        if is_new and self.account:
-
-            self.account.balance -= self.amount
-            self.account.save()
-
-
-            Transaction.objects.create(
-                account=self.account,
-                transaction_type="expense",
-                amount=self.amount,
-                description=self.title or "Expense"
-            )
+    ledger_transaction = models.OneToOneField(
+        Transaction,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        editable=False,
+        related_name="expense_record",
+    )
 
 
 
@@ -1238,7 +1232,11 @@ class ExpenseRequest(models.Model):
     amount_requested = models.DecimalField(max_digits=15, decimal_places=2)
     needed_by = models.DateField()
     urgency = models.CharField(max_length=20, choices=URGENCY_CHOICES, default="NORMAL")
-    supporting_document = models.FileField(upload_to="finance/expense_requests/%Y/%m/", blank=True)
+    supporting_document = models.FileField(
+        upload_to="finance/expense_requests/%Y/%m/",
+        blank=True,
+        validators=[validate_business_document],
+    )
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="DRAFT", db_index=True)
 
     proposed_account = models.ForeignKey(
@@ -1271,7 +1269,11 @@ class ExpenseRequest(models.Model):
     payment_reference = models.CharField(max_length=100, blank=True)
     expense = models.OneToOneField(Expense, on_delete=models.SET_NULL, null=True, blank=True, related_name="source_request")
     accountability_notes = models.TextField(blank=True)
-    accountability_document = models.FileField(upload_to="finance/accountability/%Y/%m/", blank=True)
+    accountability_document = models.FileField(
+        upload_to="finance/accountability/%Y/%m/",
+        blank=True,
+        validators=[validate_business_document],
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

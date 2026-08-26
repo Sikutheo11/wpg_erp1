@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .dashboard import DashboardService
-from .models import Notification, AuditLog
+from .models import Notification, AuditLog, ApprovalRequest
 from .report_engine import ReportEngine
 from .executive_dashboard import ExecutiveDashboard
 from django.http import JsonResponse
@@ -178,6 +178,33 @@ def audit_log_list(request):
         {
             "logs": logs
         }
+    )
+
+
+# =====================================================
+# APPROVAL REGISTER
+# =====================================================
+
+@login_required
+@wpg_permission_required(
+    "core.view_approvalrequest",
+    feature_code="APPROVAL_PENDING",
+)
+def approval_request_list(request):
+    selected_status = request.GET.get("status", "PENDING").upper()
+    approvals = ApprovalRequest.objects.select_related(
+        "requested_by", "approved_by"
+    )
+    if selected_status != "ALL":
+        approvals = approvals.filter(status=selected_status)
+    return render(
+        request,
+        "core/approval_request_list.html",
+        {
+            "approvals": approvals,
+            "selected_status": selected_status,
+            "status_choices": ApprovalRequest.STATUS_CHOICES,
+        },
     )
 
 

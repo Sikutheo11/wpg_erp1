@@ -208,6 +208,15 @@ class OrderItemService:
         quantity=1,
         specifications="",
         price=None,
+        reference_image=None,
+        design_attachment=None,
+        length_cm=None,
+        width_cm=None,
+        height_cm=None,
+        material_preference="",
+        colour="",
+        finish="",
+        customer_budget=None,
         actor=None,
     ):
         cls.validate_item_data(
@@ -237,6 +246,15 @@ class OrderItemService:
             quantity=quantity,
             price=resolved_price,
             specifications=(specifications or "").strip(),
+            reference_image=reference_image,
+            design_attachment=design_attachment,
+            length_cm=length_cm,
+            width_cm=width_cm,
+            height_cm=height_cm,
+            material_preference=(material_preference or "").strip(),
+            colour=(colour or "").strip(),
+            finish=(finish or "").strip(),
+            customer_budget=customer_budget,
         )
 
         OrderService.recalculate_totals(order)
@@ -276,6 +294,15 @@ class OrderItemService:
         quantity=None,
         specifications=None,
         price=None,
+        reference_image=None,
+        design_attachment=None,
+        length_cm=None,
+        width_cm=None,
+        height_cm=None,
+        material_preference="",
+        colour="",
+        finish="",
+        customer_budget=None,
         actor=None,
     ):
         order = item.order
@@ -317,6 +344,17 @@ class OrderItemService:
         item.quantity = quantity
         item.price = resolved_price
         item.specifications = (specifications or "").strip()
+        if reference_image is not None:
+            item.reference_image = reference_image
+        if design_attachment is not None:
+            item.design_attachment = design_attachment
+        item.length_cm = length_cm
+        item.width_cm = width_cm
+        item.height_cm = height_cm
+        item.material_preference = (material_preference or "").strip()
+        item.colour = (colour or "").strip()
+        item.finish = (finish or "").strip()
+        item.customer_budget = customer_budget
 
         item.save(
             update_fields=[
@@ -325,6 +363,15 @@ class OrderItemService:
                 "quantity",
                 "price",
                 "specifications",
+                "reference_image",
+                "design_attachment",
+                "length_cm",
+                "width_cm",
+                "height_cm",
+                "material_preference",
+                "colour",
+                "finish",
+                "customer_budget",
             ]
         )
 

@@ -1,7 +1,10 @@
 from urllib.parse import urlencode
+from pathlib import Path
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.http import FileResponse, Http404
+from django.db import transaction
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 from core.permissions import PermissionService, wpg_permission_required
@@ -67,16 +70,14 @@ BUSINESS_UNITS_CONFIG = [
         ),
         "icon": "bi bi-egg",
     },
-    {
-        "code": "MARKETPLACE",
-        "name": "Marketplace",
-        "description": (
-            "Online orders for products from "
-            "different WPG business units."
-        ),
-        "icon": "bi bi-shop",
-    },
 ]
+
+MARKETPLACE_BUSINESS_UNIT_CONFIG = {
+    "code": "MARKETPLACE",
+    "name": "Marketplace",
+    "description": "Customer ecommerce orders submitted through WPG Marketplace.",
+    "icon": "bi bi-shop",
+}
 
 
 # =========================================================
@@ -85,12 +86,6 @@ BUSINESS_UNITS_CONFIG = [
 
 ORDER_TYPES_BY_UNIT = {
     "FURNITURE": [
-        {
-            "code": "ECOMMERCE",
-            "name": "Ecommerce Order",
-            "description": "Online furniture order.",
-            "icon": "bi bi-cart",
-        },
         {
             "code": "CUSTOM_FURNITURE",
             "name": "Custom Furniture Order",
@@ -155,14 +150,6 @@ ORDER_TYPES_BY_UNIT = {
 
     "AGRICULTURE": [
         {
-            "code": "ECOMMERCE",
-            "name": "Ecommerce Order",
-            "description": (
-                "Online order for poultry products."
-            ),
-            "icon": "bi bi-cart",
-        },
-        {
             "code": "RESTOCK",
             "name": "Restock Order",
             "description": (
@@ -189,18 +176,22 @@ ORDER_TYPES_BY_UNIT = {
         },
     ],
 
-    "MARKETPLACE": [
-        {
-            "code": "ECOMMERCE",
-            "name": "Marketplace Order",
-            "description": (
-                "Online order routed to the owning "
-                "business unit."
-            ),
-            "icon": "bi bi-bag",
-        },
-    ],
 }
+
+
+def _staff_order_type_catalog():
+    """Return order types that employees may create and manage."""
+    unit_names = dict(Order.BUSINESS_UNITS)
+    return [
+        {
+            **item,
+            "business_unit": business_unit,
+            "business_unit_display": unit_names.get(business_unit, business_unit),
+        }
+        for business_unit, order_types in ORDER_TYPES_BY_UNIT.items()
+        for item in order_types
+        if item["code"] != "ECOMMERCE"
+    ]
 
 
 def _order_type_url(business_unit):
@@ -244,6 +235,24 @@ def business_unit_select(request):
         "orders/business_unit_select.html",
         {
             "business_units": BUSINESS_UNITS_CONFIG,
+            "selection_mode": "create",
+        },
+    )
+
+
+@login_required
+@wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
+def all_order_business_units(request):
+    """Select one business unit before opening its complete order register."""
+    return render(
+        request,
+        "orders/business_unit_select.html",
+        {
+            "business_units": [
+                *BUSINESS_UNITS_CONFIG,
+                MARKETPLACE_BUSINESS_UNIT_CONFIG,
+            ],
+            "selection_mode": "list",
         },
     )
 
@@ -328,6 +337,13 @@ def order_create(request):
         or ""
     ).strip().upper()
 
+    if order_type == "ECOMMERCE":
+        messages.error(
+            request,
+            "Ecommerce orders can only be created by customers in Marketplace.",
+        )
+        return redirect("orders:business_unit_select")
+
     valid_business_units = {
         value
         for value, label in Order.BUSINESS_UNITS
@@ -392,31 +408,88 @@ def order_create(request):
             order_type=order_type,
             business_unit=business_unit,
         )
+        item_form = OrderItemForm(
+            request.POST,
+            request.FILES,
+            order_type=order_type,
+            business_unit=business_unit,
+        )
 
-        if form.is_valid():
+        if form.is_valid() and item_form.is_valid():
             data = form.cleaned_data
+            item_data = item_form.cleaned_data
+            next_route = None
 
             try:
-                order = OrderService.create_order(
-                    user=request.user,
-                    business_unit=business_unit,
-                    order_type=order_type,
-                    customer_name=data.get("customer_name", ""),
-                    customer_phone=data.get("customer_phone", ""),
-                    customer_email=data.get("customer_email", ""),
-                    province=data.get("province", ""),
-                    district=data.get("district", ""),
-                    sector=data.get("sector", ""),
-                    cell=data.get("cell", ""),
-                    village=data.get("village", ""),
-                    delivery_address=data.get("delivery_address", ""),
-                    notes=data.get("notes", ""),
-                    discount=data.get("discount", 0),
-                    tax=data.get("tax", 0),
-                    expected_delivery_date=data.get(
-                        "expected_delivery_date"
-                    ),
-                )
+                with transaction.atomic():
+                    order = OrderService.create_order(
+                        user=request.user,
+                        business_unit=business_unit,
+                        order_type=order_type,
+                        customer_name=data.get("customer_name", ""),
+                        customer_phone=data.get("customer_phone", ""),
+                        customer_email=data.get("customer_email", ""),
+                        province=data.get("province", ""),
+                        district=data.get("district", ""),
+                        sector=data.get("sector", ""),
+                        cell=data.get("cell", ""),
+                        village=data.get("village", ""),
+                        delivery_address=data.get("delivery_address", ""),
+                        notes=data.get("notes", ""),
+                        discount=data.get("discount", 0),
+                        tax=data.get("tax", 0),
+                        expected_delivery_date=data.get("expected_delivery_date"),
+                    )
+                    OrderItemService.add_item(
+                        order=order,
+                        product=item_data.get("product"),
+                        product_name=item_data.get("product_name", ""),
+                        quantity=item_data.get("quantity"),
+                        specifications=item_data.get("specifications", ""),
+                        price=item_data.get("price"),
+                        reference_image=item_data.get("reference_image"),
+                        design_attachment=item_data.get("design_attachment"),
+                        length_cm=item_data.get("length_cm"),
+                        width_cm=item_data.get("width_cm"),
+                        height_cm=item_data.get("height_cm"),
+                        material_preference=item_data.get("material_preference", ""),
+                        colour=item_data.get("colour", ""),
+                        finish=item_data.get("finish", ""),
+                        customer_budget=item_data.get("customer_budget"),
+                        actor=request.user,
+                    )
+
+                    if (
+                        business_unit == "FURNITURE"
+                        and order_type in {
+                            "CUSTOM_FURNITURE",
+                            "RESTOCK",
+                            "NEW_PRODUCT",
+                        }
+                    ):
+                        OrderService.submit(
+                            order=order,
+                            actor=request.user,
+                        )
+
+                        if order_type == "CUSTOM_FURNITURE":
+                            from sales.services.quotation_service import (
+                                QuotationService as SalesQuotationService,
+                            )
+
+                            quotation = SalesQuotationService.create_from_order(
+                                order=order,
+                                actor=request.user,
+                            )
+                            next_route = (
+                                "sales:quotation_detail",
+                                {"pk": quotation.pk},
+                            )
+                        else:
+                            next_route = (
+                                "furniture:create_order_costing",
+                                {"order_id": order.pk},
+                            )
 
             except ValidationError as error:
                 form.add_error(
@@ -425,13 +498,34 @@ def order_create(request):
                 )
 
             else:
-                messages.success(
-                    request,
-                    (
-                        f"Order {order.order_number} "
-                        "created successfully."
-                    ),
-                )
+                if order_type == "CUSTOM_FURNITURE":
+                    messages.success(
+                        request,
+                        (
+                            f"Order {order.order_number} was created and routed "
+                            "to the Customer Quotation Engine. Add prices and submit "
+                            "the quotation to the customer."
+                        ),
+                    )
+                elif order_type in {"RESTOCK", "NEW_PRODUCT"}:
+                    messages.success(
+                        request,
+                        (
+                            f"Order {order.order_number} was created and routed "
+                            "to internal production costing."
+                        ),
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f"Order {order.order_number} created successfully.",
+                    )
+
+                if next_route:
+                    return redirect(
+                        next_route[0],
+                        **next_route[1],
+                    )
 
                 return redirect(
                     "orders:order_detail",
@@ -443,12 +537,17 @@ def order_create(request):
             order_type=order_type,
             business_unit=business_unit,
         )
+        item_form = OrderItemForm(
+            order_type=order_type,
+            business_unit=business_unit,
+        )
 
     return render(
         request,
         "orders/order_form.html",
         {
             "form": form,
+            "item_form": item_form,
             "business_unit": business_unit,
             "order_type": order_type,
             "business_unit_display": dict(
@@ -463,6 +562,14 @@ def order_create(request):
                 order_type,
                 order_type,
             ),
+            "production_quotation_flow": (
+                business_unit == "FURNITURE"
+                and order_type in {
+                    "CUSTOM_FURNITURE",
+                    "RESTOCK",
+                    "NEW_PRODUCT",
+                }
+            ),
         },
     )
 
@@ -472,7 +579,24 @@ def order_create(request):
 
 @login_required
 @wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
-def order_list(request):
+def order_catalog(request):
+    """Order Engine landing page grouped by employee-managed order type."""
+    cards = []
+    for item in _staff_order_type_catalog():
+        cards.append(
+            {
+                **item,
+                "count": Order.objects.filter(
+                    business_unit=item["business_unit"],
+                    order_type=item["code"],
+                ).count(),
+            }
+        )
+    return render(request, "orders/order_catalog.html", {"order_types": cards})
+
+@login_required
+@wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
+def order_list(request, business_unit=None, order_type=None):
     orders = (
         Order.objects
         .select_related(
@@ -497,16 +621,14 @@ def order_list(request):
     )
 
     business_unit = (
-        request.GET.get("business_unit", "")
-        .strip()
-        .upper()
-    )
+        business_unit
+        or request.GET.get("business_unit", "")
+    ).strip().upper()
 
     order_type = (
-        request.GET.get("order_type", "")
-        .strip()
-        .upper()
-    )
+        order_type
+        or request.GET.get("order_type", "")
+    ).strip().upper()
 
     if search:
         orders = orders.filter(
@@ -585,6 +707,8 @@ def order_list(request):
             "order_type_choices": (
                 Order.ORDER_TYPES
             ),
+            "type_scoped": bool(business_unit and order_type),
+            "can_create_type": order_type != "ECOMMERCE",
         },
     )
 
@@ -602,6 +726,8 @@ def order_detail(request, pk):
             "delivered_by",
             "production_job",
             "source_sales_quotation",
+            "customer_quotation",
+            "production_costing",
         ).prefetch_related(
             "items__product",
         ),
@@ -723,6 +849,33 @@ def order_detail(request, pk):
     )
 
 
+@login_required
+@wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
+def order_item_attachment(request, pk, kind):
+    item = get_object_or_404(
+        OrderItem.objects.select_related("order"),
+        pk=pk,
+    )
+    fields = {
+        "reference": item.reference_image,
+        "design": item.design_attachment,
+    }
+    if kind not in fields:
+        raise Http404("Unknown attachment type.")
+    field_file = fields[kind]
+    if not field_file or not field_file.name:
+        raise Http404("Attachment not found.")
+    try:
+        stream = field_file.storage.open(field_file.name, "rb")
+    except (FileNotFoundError, OSError):
+        raise Http404("Attachment not found.")
+    return FileResponse(
+        stream,
+        as_attachment=True,
+        filename=Path(field_file.name).name,
+    )
+
+
 # =========================================================
 # ADD ORDER ITEM
 # =========================================================
@@ -760,6 +913,7 @@ def add_order_item(request, pk):
 
     form = OrderItemForm(
         request.POST,
+        request.FILES,
         order_type=order.order_type,
         business_unit=order.business_unit,
     )
@@ -782,6 +936,16 @@ def add_order_item(request, pk):
                     "specifications",
                     "",
                 ),
+                price=data.get("price"),
+                reference_image=data.get("reference_image"),
+                design_attachment=data.get("design_attachment"),
+                length_cm=data.get("length_cm"),
+                width_cm=data.get("width_cm"),
+                height_cm=data.get("height_cm"),
+                material_preference=data.get("material_preference", ""),
+                colour=data.get("colour", ""),
+                finish=data.get("finish", ""),
+                customer_budget=data.get("customer_budget"),
                 actor=request.user,
             )
 
@@ -856,6 +1020,7 @@ def edit_order_item(request, pk):
     if request.method == "POST":
         form = OrderItemForm(
             request.POST,
+            request.FILES,
             instance=item,
             order_type=order.order_type,
             business_unit=order.business_unit,
@@ -864,47 +1029,37 @@ def edit_order_item(request, pk):
         if form.is_valid():
             data = form.cleaned_data
 
-            product = data.get("product")
-
-            product_name = (
-                data.get("product_name")
-                or getattr(
-                    product,
-                    "name",
-                    "",
+            try:
+                OrderItemService.update_item(
+                    item=item,
+                    product=data.get("product"),
+                    product_name=data.get("product_name", ""),
+                    quantity=data.get("quantity"),
+                    specifications=data.get("specifications", ""),
+                    price=data.get("price"),
+                    reference_image=data.get("reference_image"),
+                    design_attachment=data.get("design_attachment"),
+                    length_cm=data.get("length_cm"),
+                    width_cm=data.get("width_cm"),
+                    height_cm=data.get("height_cm"),
+                    material_preference=data.get("material_preference", ""),
+                    colour=data.get("colour", ""),
+                    finish=data.get("finish", ""),
+                    customer_budget=data.get("customer_budget"),
+                    actor=request.user,
                 )
-            )
-
-            item.product = product
-            item.product_name = product_name
-            item.quantity = data["quantity"]
-            item.specifications = data.get(
-                "specifications",
-                "",
-            )
-
-            if product:
-                item.price = getattr(
-                    product,
-                    "selling_price",
-                    item.price,
+            except ValidationError as error:
+                form.add_error(None, _validation_message(error))
+            else:
+                messages.success(
+                    request,
+                    "Order item updated successfully.",
                 )
 
-            item.save()
-
-            OrderService.recalculate_totals(
-                order
-            )
-
-            messages.success(
-                request,
-                "Order item updated successfully.",
-            )
-
-            return redirect(
-                "orders:order_detail",
-                pk=order.pk,
-            )
+                return redirect(
+                    "orders:order_detail",
+                    pk=order.pk,
+                )
 
     else:
         form = OrderItemForm(

@@ -448,6 +448,13 @@ class Quotation(models.Model):
         default=0
     )
 
+    notes = models.TextField(
+        blank=True,
+        help_text="Costing assumptions, material notes, and communication for reviewers.",
+    )
+    approval_note = models.TextField(blank=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
     status = models.CharField(
         max_length=20,
         choices=STATUS,
@@ -2102,5 +2109,4 @@ class ReworkOrder(models.Model):
 
     def __str__(self):
         return self.rework_code
-
 

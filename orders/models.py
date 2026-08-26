@@ -2,6 +2,10 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from furniture.models import Product
+from core.file_validators import (
+    validate_business_document,
+    validate_image_upload,
+)
 
 
 class Order(models.Model):
@@ -19,6 +23,10 @@ class Order(models.Model):
     STATUS = (
         ("DRAFT", "Draft"),
         ("PENDING", "Pending"),
+        ("AWAITING_QUOTATION", "Awaiting Quotation / Costing"),
+        ("QUOTED", "Quotation Prepared"),
+        ("AWAITING_CUSTOMER_APPROVAL", "Awaiting Customer Approval"),
+        ("READY_FOR_PRODUCTION", "Ready for Production"),
         ("CONFIRMED", "Confirmed"),
         ("PROCESSING", "Processing"),
         ("IN_PRODUCTION", "In Production"),
@@ -139,6 +147,31 @@ class Order(models.Model):
         blank=True
     )
 
+    customer_quotation = models.OneToOneField(
+        "sales.SalesQuotation",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="source_order_request",
+    )
+
+    production_costing = models.OneToOneField(
+        "furniture.Quotation",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="source_order_request",
+    )
+
+    production_authorized_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="production_authorized_orders",
+    )
+    production_authorized_at = models.DateTimeField(null=True, blank=True)
+
     delivered_at = models.DateTimeField(
         null=True,
         blank=True
@@ -209,6 +242,22 @@ class Order(models.Model):
 
         return f"{self.order_number} - {self.customer_name}"
 
+    @property
+    def requires_customer_quotation(self):
+        return self.order_type == "CUSTOM_FURNITURE"
+
+    @property
+    def requires_internal_costing(self):
+        return self.order_type in {"RESTOCK", "NEW_PRODUCT"}
+
+    @property
+    def is_production_authorized(self):
+        return (
+            self.business_unit == "FURNITURE"
+            and self.status == "READY_FOR_PRODUCTION"
+            and self.production_authorized_at is not None
+        )
+
 class OrderItem(models.Model):
 
     order = models.ForeignKey(
@@ -244,6 +293,38 @@ class OrderItem(models.Model):
             "Dimensions, materials, colour, design, location "
             "or other customer requirements."
         ),
+    )
+
+    reference_image = models.ImageField(
+        upload_to="orders/reference_images/%Y/%m/",
+        null=True,
+        blank=True,
+        validators=[validate_image_upload],
+        help_text="Customer reference photo or existing product photo.",
+    )
+
+    design_attachment = models.FileField(
+        upload_to="orders/design_attachments/%Y/%m/",
+        null=True,
+        blank=True,
+        validators=[validate_business_document],
+        help_text="Drawing, design, specification sheet, or supporting document.",
+    )
+
+    length_cm = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    width_cm = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    height_cm = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    material_preference = models.CharField(max_length=200, blank=True)
+    colour = models.CharField(max_length=100, blank=True)
+    finish = models.CharField(max_length=100, blank=True)
+    customer_budget = models.DecimalField(
+        max_digits=15, decimal_places=2, null=True, blank=True
     )
 
     created_at = models.DateTimeField(

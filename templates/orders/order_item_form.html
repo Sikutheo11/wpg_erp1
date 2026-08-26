@@ -1,0 +1,46 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-xl-9">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-1">{{ page_title }}</h4>
+                    <small class="text-muted">
+                        {{ order.order_number }} · {{ order.get_order_type_display }}
+                    </small>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                        {% endif %}
+                        <div class="row g-3">
+                            {% for field in form %}
+                                <div class="{% if field.name == 'specifications' %}col-12{% else %}col-md-6{% endif %}">
+                                    <label class="form-label fw-semibold" for="{{ field.id_for_label }}">
+                                        {{ field.label }}{% if field.field.required %}<span class="text-danger"> *</span>{% endif %}
+                                    </label>
+                                    {{ field }}
+                                    {% if field.help_text %}<small class="text-muted d-block mt-1">{{ field.help_text }}</small>{% endif %}
+                                    {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <hr class="my-4">
+                        <div class="d-flex justify-content-between gap-2">
+                            <a class="btn btn-outline-secondary" href="{% url 'orders:order_detail' order.pk %}">Cancel</a>
+                            <button class="btn btn-primary" type="submit">Save Item</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

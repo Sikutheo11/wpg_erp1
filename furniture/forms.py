@@ -188,6 +188,9 @@ class ProductionJobForm(forms.ModelForm):
         self.fields["assigned_to"].required = False
         self.fields["order"].required = False
         self.fields["product"].required = False
+        self.fields["product"].help_text = (
+            "Use an existing product for restock or product-based production."
+        )
 
         self.fields["expected_end_date"].input_formats = [
             "%Y-%m-%d",
@@ -216,6 +219,16 @@ class ProductionJobForm(forms.ModelForm):
         # show only orders that do not yet have a production job.
         available_orders = (
             OrderModel.objects
+            .filter(
+                business_unit="FURNITURE",
+                status="READY_FOR_PRODUCTION",
+                production_authorized_at__isnull=False,
+                order_type__in=[
+                    "CUSTOM_FURNITURE",
+                    "RESTOCK",
+                    "NEW_PRODUCT",
+                ],
+            )
             .exclude(pk__in=used_order_ids)
         )
 
@@ -238,12 +251,33 @@ class ProductionJobForm(forms.ModelForm):
 
         self.fields["order"].queryset = (
             available_orders
+            .prefetch_related("items")
             .distinct()
             .order_by("-id")
         )
 
+        def order_engine_label(order):
+            items = list(order.items.all())
+            first_item = items[0] if items else None
+            item_name = first_item.product_name if first_item else "No item"
+            quantity = first_item.quantity if first_item else 0
+            deadline = (
+                order.expected_delivery_date.strftime("%d %b %Y")
+                if order.expected_delivery_date
+                else "No deadline"
+            )
+            return (
+                f"{order.order_number} | {order.get_order_type_display()} | "
+                f"{order.customer_name} | {item_name} x {quantity} | Due: {deadline}"
+            )
+
+        self.fields["order"].label_from_instance = order_engine_label
+        self.fields["order"].label = "Order Engine Order"
+        self.fields["order"].help_text = (
+            "Only quoted/costed and approved shared orders ready for production are shown."
+        )
         self.fields["order"].empty_label = (
-            "Select customer order"
+            "Select approved Order Engine order"
         )
 
     def clean_quantity_to_produce(self):
@@ -271,6 +305,12 @@ class ProductionJobForm(forms.ModelForm):
             )
 
         if order:
+            if not order.is_production_authorized:
+                self.add_error(
+                    "order",
+                    "Only an order with an approved quotation or internal costing can start production.",
+                )
+
             existing_job = (
                 ProductionJob.objects
                 .filter(order=order)
@@ -323,17 +363,30 @@ class ProductionJobForm(forms.ModelForm):
                 ),
             )
 
-        # If an order is selected and product is empty,
-        # use the product linked to the order when available.
-        if order and not product:
-            order_product = getattr(
-                order,
-                "product",
-                None,
-            )
+        if order:
+            first_item = order.items.select_related("product").order_by("id").first()
+            expected_job_type = {
+                "CUSTOM_FURNITURE": "CUSTOMER_CUSTOM",
+                "RESTOCK": "RESTOCK",
+                "NEW_PRODUCT": "NEW_PRODUCT",
+            }.get(order.order_type)
 
-            if order_product is not None:
-                cleaned_data["product"] = order_product
+            if expected_job_type and job_type != expected_job_type:
+                self.add_error(
+                    "job_type",
+                    f"This order requires the {expected_job_type.replace('_', ' ').title()} job type.",
+                )
+
+            if not product and first_item and first_item.product_id:
+                cleaned_data["product"] = first_item.product
+
+            if order.order_type in {"RESTOCK", "NEW_PRODUCT"} and not (
+                product or (first_item and first_item.product_id)
+            ):
+                self.add_error(
+                    "product",
+                    "Restock and new product jobs require a catalogue product on the order.",
+                )
 
         return cleaned_data
 
@@ -362,6 +415,7 @@ class QuotationForm(forms.ModelForm):
             "profit",
             "profit_margin",
             "selling_price",
+            "notes",
         ]
 
         widgets = {
@@ -425,16 +479,26 @@ class QuotationForm(forms.ModelForm):
                     "step": "0.01",
                 }
             ),
+            "notes": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 4,
+                    "placeholder": "Material assumptions, shortages, labour plan, risks, or instructions for the approver.",
+                }
+            ),
         }
 
     def __init__(self, *args, **kwargs):
         production_job = kwargs.pop("production_job", None)
+        order = kwargs.pop("order", None)
 
         super().__init__(*args, **kwargs)
 
         if production_job is not None:
             self.fields["production_job"].initial = production_job
             self.fields["production_job"].widget = forms.HiddenInput()
+        elif order is not None:
+            self.fields.pop("production_job", None)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -1725,4 +1789,3 @@ class ReworkVerificationForm(forms.Form):
             }
         ),
     )
-

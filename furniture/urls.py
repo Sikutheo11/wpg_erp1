@@ -140,6 +140,11 @@ urlpatterns = [
         views.quotation_list,
         name="quotation_list",
     ),
+    path(
+        "orders/<int:order_id>/production-costing/",
+        views.create_order_costing,
+        name="create_order_costing",
+    ),
 
     path(
         "quotations/<int:pk>/approve/",

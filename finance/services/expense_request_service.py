@@ -3,6 +3,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from ..models import Account, Expense, ExpenseRequest
+from .expense_service import ExpenseService
 
 
 class ExpenseRequestService:
@@ -162,17 +163,20 @@ class ExpenseRequestService:
         account = Account.objects.select_for_update().get(pk=account.pk)
         if account.balance < amount:
             raise ValidationError("The selected account does not have enough funds.")
-        expense = Expense.objects.create(
+        result = ExpenseService.create_expense(
             account=account,
             business_unit=obj.business_unit,
-            title=f"{obj.title} [{obj.request_number}]",
+            title=obj.title,
             expense_type=obj.expense_type,
             amount=amount,
             paid_to=obj.payee,
             reference=(reference or "").strip(),
+            posting_reference=obj.request_number,
             notes=(notes or obj.purpose).strip(),
-            date=timezone.localdate(),
+            expense_date=timezone.localdate(),
+            actor=actor,
         )
+        expense = result["expense"]
         obj.expense = expense
         obj.paid_by = actor
         obj.paid_at = timezone.now()

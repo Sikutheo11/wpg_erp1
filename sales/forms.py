@@ -248,6 +248,19 @@ class SalesQuotationForm(forms.ModelForm):
         self.fields["order_type"].empty_label = (
             "Select order type"
         )
+        self.fields["order_type"].choices = [
+            ("", "Select order type"),
+            *[
+                choice
+                for choice in SalesQuotation.ORDER_TYPES
+                if choice[0] in {
+                    "CUSTOM_FURNITURE",
+                    "PROJECT",
+                    "CUSTOM_ORDER",
+                    "MAINTENANCE",
+                }
+            ],
+        ]
 
         self.fields["quotation_date"].input_formats = [
             "%Y-%m-%d",

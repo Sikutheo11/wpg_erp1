@@ -10,8 +10,22 @@ urlpatterns = [
 
     path(
         "",
-        views.order_list,
+        views.order_catalog,
         name="order_list",
+    ),
+
+    path("all/", views.order_list, name="all_orders"),
+
+    path(
+        "all/business-unit/",
+        views.all_order_business_units,
+        name="all_order_business_units",
+    ),
+
+    path(
+        "type/<str:business_unit>/<str:order_type>/",
+        views.order_list,
+        name="order_type_orders",
     ),
 
     path(
@@ -58,6 +72,11 @@ urlpatterns = [
         "items/<int:pk>/remove/",
         views.remove_order_item,
         name="remove_order_item",
+    ),
+    path(
+        "items/<int:pk>/attachments/<str:kind>/",
+        views.order_item_attachment,
+        name="order_item_attachment",
     ),
 
     # ======================================================
