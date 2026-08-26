@@ -247,7 +247,9 @@ def customer_activate(request, pk):
 @login_required
 @wpg_permission_required("sales.view_salesquotation", feature_code="QUOTATION_LIST")
 def quotation_list(request):
-    base_queryset = SalesQuotation.objects.select_related(
+    base_queryset = SalesQuotation.objects.exclude(
+        order_type="ECOMMERCE",
+    ).select_related(
         "customer",
         "prepared_by",
         "approved_by",
