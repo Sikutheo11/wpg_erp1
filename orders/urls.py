@@ -10,8 +10,16 @@ urlpatterns = [
 
     path(
         "",
-        views.order_list,
+        views.order_catalog,
         name="order_list",
+    ),
+
+    path("all/", views.order_list, name="all_orders"),
+
+    path(
+        "type/<str:business_unit>/<str:order_type>/",
+        views.order_list,
+        name="order_type_orders",
     ),
 
     path(

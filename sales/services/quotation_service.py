@@ -15,6 +15,12 @@ class QuotationService:
     """Business logic for enterprise sales quotations."""
 
     EDITABLE_STATUSES = {"draft", "rejected"}
+    CUSTOMER_QUOTATION_ORDER_TYPES = {
+        "CUSTOM_FURNITURE",
+        "PROJECT",
+        "CUSTOM_ORDER",
+        "MAINTENANCE",
+    }
 
     @staticmethod
     def _decimal(value):
@@ -55,9 +61,11 @@ class QuotationService:
 
     @classmethod
     def _validate_order_type(cls, value):
-        valid = {v for v, _ in SalesQuotation.ORDER_TYPES}
+        valid = cls.CUSTOMER_QUOTATION_ORDER_TYPES
         if value not in valid:
-            raise ValidationError("Invalid order type.")
+            raise ValidationError(
+                "Customer quotations are not available for this order type."
+            )
         return value
 
     @classmethod

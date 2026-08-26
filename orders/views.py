@@ -68,15 +68,6 @@ BUSINESS_UNITS_CONFIG = [
         ),
         "icon": "bi bi-egg",
     },
-    {
-        "code": "MARKETPLACE",
-        "name": "Marketplace",
-        "description": (
-            "Online orders for products from "
-            "different WPG business units."
-        ),
-        "icon": "bi bi-shop",
-    },
 ]
 
 
@@ -86,12 +77,6 @@ BUSINESS_UNITS_CONFIG = [
 
 ORDER_TYPES_BY_UNIT = {
     "FURNITURE": [
-        {
-            "code": "ECOMMERCE",
-            "name": "Ecommerce Order",
-            "description": "Online furniture order.",
-            "icon": "bi bi-cart",
-        },
         {
             "code": "CUSTOM_FURNITURE",
             "name": "Custom Furniture Order",
@@ -156,14 +141,6 @@ ORDER_TYPES_BY_UNIT = {
 
     "AGRICULTURE": [
         {
-            "code": "ECOMMERCE",
-            "name": "Ecommerce Order",
-            "description": (
-                "Online order for poultry products."
-            ),
-            "icon": "bi bi-cart",
-        },
-        {
             "code": "RESTOCK",
             "name": "Restock Order",
             "description": (
@@ -190,18 +167,22 @@ ORDER_TYPES_BY_UNIT = {
         },
     ],
 
-    "MARKETPLACE": [
-        {
-            "code": "ECOMMERCE",
-            "name": "Marketplace Order",
-            "description": (
-                "Online order routed to the owning "
-                "business unit."
-            ),
-            "icon": "bi bi-bag",
-        },
-    ],
 }
+
+
+def _staff_order_type_catalog():
+    """Return order types that employees may create and manage."""
+    unit_names = dict(Order.BUSINESS_UNITS)
+    return [
+        {
+            **item,
+            "business_unit": business_unit,
+            "business_unit_display": unit_names.get(business_unit, business_unit),
+        }
+        for business_unit, order_types in ORDER_TYPES_BY_UNIT.items()
+        for item in order_types
+        if item["code"] != "ECOMMERCE"
+    ]
 
 
 def _order_type_url(business_unit):
@@ -240,11 +221,14 @@ def _validation_message(error):
 @login_required
 @wpg_permission_required("orders.add_order", feature_code="ORDER_LIST", action="add")
 def business_unit_select(request):
+    # The staff workflow starts with one clear order-type selector. Ecommerce
+    # orders are created by customers in Marketplace and are intentionally not
+    # offered here.
     return render(
         request,
-        "orders/business_unit_select.html",
+        "orders/order_create_select.html",
         {
-            "business_units": BUSINESS_UNITS_CONFIG,
+            "order_types": _staff_order_type_catalog(),
         },
     )
 
@@ -328,6 +312,13 @@ def order_create(request):
         or request.POST.get("order_type")
         or ""
     ).strip().upper()
+
+    if order_type == "ECOMMERCE":
+        messages.error(
+            request,
+            "Ecommerce orders can only be created by customers in Marketplace.",
+        )
+        return redirect("orders:business_unit_select")
 
     valid_business_units = {
         value
@@ -564,7 +555,24 @@ def order_create(request):
 
 @login_required
 @wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
-def order_list(request):
+def order_catalog(request):
+    """Order Engine landing page grouped by employee-managed order type."""
+    cards = []
+    for item in _staff_order_type_catalog():
+        cards.append(
+            {
+                **item,
+                "count": Order.objects.filter(
+                    business_unit=item["business_unit"],
+                    order_type=item["code"],
+                ).count(),
+            }
+        )
+    return render(request, "orders/order_catalog.html", {"order_types": cards})
+
+@login_required
+@wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
+def order_list(request, business_unit=None, order_type=None):
     orders = (
         Order.objects
         .select_related(
@@ -589,16 +597,14 @@ def order_list(request):
     )
 
     business_unit = (
-        request.GET.get("business_unit", "")
-        .strip()
-        .upper()
-    )
+        business_unit
+        or request.GET.get("business_unit", "")
+    ).strip().upper()
 
     order_type = (
-        request.GET.get("order_type", "")
-        .strip()
-        .upper()
-    )
+        order_type
+        or request.GET.get("order_type", "")
+    ).strip().upper()
 
     if search:
         orders = orders.filter(
@@ -677,6 +683,8 @@ def order_list(request):
             "order_type_choices": (
                 Order.ORDER_TYPES
             ),
+            "type_scoped": bool(business_unit and order_type),
+            "can_create_type": order_type != "ECOMMERCE",
         },
     )
 

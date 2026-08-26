@@ -1,0 +1,54 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Order Types{% endblock %}
+{% block page_title %}Order Engine{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Order Types</h3>
+            <p class="text-muted mb-0">
+                Open a workflow to view its orders and create a new request.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'orders:all_orders' %}" class="btn btn-outline-primary">
+                <i class="bi bi-list-ul me-1"></i> All Orders
+            </a>
+            <a href="{% url 'orders:business_unit_select' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> New Order
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {% for item in order_types %}
+            <div class="col-xl-4 col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light text-primary"
+                                  style="width:58px;height:58px">
+                                <i class="{{ item.icon }} fs-3"></i>
+                            </span>
+                            <span class="badge bg-primary rounded-pill">{{ item.count }}</span>
+                        </div>
+                        <small class="text-uppercase text-muted fw-semibold">{{ item.business_unit_display }}</small>
+                        <h5 class="fw-bold mt-1">{{ item.name }}</h5>
+                        <p class="text-muted flex-grow-1">{{ item.description }}</p>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'orders:order_type_orders' item.business_unit item.code %}"
+                               class="btn btn-outline-primary flex-grow-1">View Orders</a>
+                            <a href="{% url 'orders:order_create' %}?business_unit={{ item.business_unit }}&type={{ item.code }}"
+                               class="btn btn-primary" aria-label="Create {{ item.name }}">
+                                <i class="bi bi-plus-lg"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

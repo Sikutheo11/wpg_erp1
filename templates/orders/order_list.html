@@ -74,17 +74,29 @@ Orders
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
 
         <div>
-            <h3 class="fw-bold mb-1">Order Management</h3>
+            <h3 class="fw-bold mb-1">
+                {% if type_scoped %}{{ selected_order_type|title }} Orders{% else %}All Orders{% endif %}
+            </h3>
             <p class="text-muted mb-0">
                 Manage customer, catalogue, restock and production orders.
             </p>
         </div>
 
-        <a href="{% url 'orders:business_unit_select' %}"
-           class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i>
-            Create Order
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{% url 'orders:order_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-grid me-1"></i> Order Types
+            </a>
+            {% if type_scoped and can_create_type %}
+                <a href="{% url 'orders:order_create' %}?business_unit={{ selected_business_unit }}&type={{ selected_order_type }}"
+                   class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> New {{ selected_order_type|title }} Order
+                </a>
+            {% else %}
+                <a href="{% url 'orders:business_unit_select' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> New Order
+                </a>
+            {% endif %}
+        </div>
 
     </div>
 
@@ -169,7 +181,7 @@ Orders
 
             {% if request.GET.status %}
                 <div class="col-md-auto">
-                    <a href="{% url 'orders:order_list' %}"
+                    <a href="{{ request.path }}"
                        class="btn btn-outline-secondary">
                         <i class="bi bi-x-circle me-1"></i>
                         Clear
@@ -333,7 +345,7 @@ Orders
                                 </p>
 
                                 {% if request.GET.status %}
-                                    <a href="{% url 'orders:order_list' %}"
+                                    <a href="{{ request.path }}"
                                        class="btn btn-outline-secondary">
                                         Clear Filter
                                     </a>
