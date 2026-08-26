@@ -70,6 +70,13 @@ BUSINESS_UNITS_CONFIG = [
     },
 ]
 
+MARKETPLACE_BUSINESS_UNIT_CONFIG = {
+    "code": "MARKETPLACE",
+    "name": "Marketplace",
+    "description": "Customer ecommerce orders submitted through WPG Marketplace.",
+    "icon": "bi bi-shop",
+}
+
 
 # =========================================================
 # ORDER TYPES BY BUSINESS UNIT
@@ -221,14 +228,29 @@ def _validation_message(error):
 @login_required
 @wpg_permission_required("orders.add_order", feature_code="ORDER_LIST", action="add")
 def business_unit_select(request):
-    # The staff workflow starts with one clear order-type selector. Ecommerce
-    # orders are created by customers in Marketplace and are intentionally not
-    # offered here.
     return render(
         request,
-        "orders/order_create_select.html",
+        "orders/business_unit_select.html",
         {
-            "order_types": _staff_order_type_catalog(),
+            "business_units": BUSINESS_UNITS_CONFIG,
+            "selection_mode": "create",
+        },
+    )
+
+
+@login_required
+@wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
+def all_order_business_units(request):
+    """Select one business unit before opening its complete order register."""
+    return render(
+        request,
+        "orders/business_unit_select.html",
+        {
+            "business_units": [
+                *BUSINESS_UNITS_CONFIG,
+                MARKETPLACE_BUSINESS_UNIT_CONFIG,
+            ],
+            "selection_mode": "list",
         },
     )
 

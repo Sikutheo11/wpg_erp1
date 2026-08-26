@@ -261,7 +261,7 @@ ENGINE_FEATURES = {
     "ORDER": [
         ("Order Types", "ORDER_LIST", "orders:order_list", "bi bi-grid", 1),
         ("New Order", "ORDER_RESTOCK", "orders:business_unit_select", "bi bi-plus-circle", 2),
-        ("All Orders", "ORDER_APPROVAL", "orders:all_orders", "bi bi-list-ul", 3),
+        ("All Orders", "ORDER_APPROVAL", "orders:all_order_business_units", "bi bi-list-ul", 3),
         ("Order Fulfilment", "ORDER_FULFILMENT", "orders:all_orders", "bi bi-truck", 4),
         ("Sales Dashboard", "SALES_DASHBOARD", "sales:sales_dashboard", "bi bi-speedometer2", 5),
         ("Sales", "SALES_LIST", "sales:sale_list", "bi bi-receipt", 6),

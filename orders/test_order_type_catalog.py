@@ -16,12 +16,35 @@ class OrderTypeCatalogTests(TestCase):
         )
         self.client.force_login(self.user)
 
-    def test_staff_order_select_excludes_ecommerce(self):
+    def test_new_order_starts_with_staff_business_units(self):
         response = self.client.get(reverse("orders:business_unit_select"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Furniture &amp; Manufacturing")
+        self.assertContains(response, "Construction")
+        self.assertContains(response, "Agriculture / Poultry")
+        self.assertNotContains(response, "Marketplace")
+
+    def test_staff_order_type_select_excludes_ecommerce(self):
+        response = self.client.get(
+            reverse("orders:order_type_select"),
+            {"business_unit": "FURNITURE"},
+        )
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Ecommerce Order")
         self.assertContains(response, "Custom Furniture Order")
         self.assertContains(response, "Restock Existing Product")
+
+    def test_all_orders_starts_with_all_business_units(self):
+        response = self.client.get(
+            reverse("orders:all_order_business_units")
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Furniture &amp; Manufacturing")
+        self.assertContains(response, "Marketplace")
+        self.assertContains(
+            response,
+            reverse("orders:all_orders") + "?business_unit=MARKETPLACE",
+        )
 
     def test_staff_cannot_open_ecommerce_create_form(self):
         response = self.client.get(

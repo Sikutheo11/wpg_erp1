@@ -17,6 +17,12 @@ urlpatterns = [
     path("all/", views.order_list, name="all_orders"),
 
     path(
+        "all/business-unit/",
+        views.all_order_business_units,
+        name="all_order_business_units",
+    ),
+
+    path(
         "type/<str:business_unit>/<str:order_type>/",
         views.order_list,
         name="order_type_orders",
