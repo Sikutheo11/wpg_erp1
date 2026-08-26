@@ -84,8 +84,12 @@ class ExpenseService:
         amount,
         expense_type=None,
         supplier=None,
+        paid_to=None,
+        business_unit="SHARED",
+        notes="",
         expense_date=None,
         reference="",
+        posting_reference=None,
         actor=None,
         post_to_account=True,
         allow_negative=False,
@@ -103,8 +107,14 @@ class ExpenseService:
             )
 
         reference = (reference or "").strip()
+        posting_reference = (
+            posting_reference
+            if posting_reference is not None
+            else reference
+        )
+        posting_reference = (posting_reference or "").strip()
 
-        if reference and cls.is_duplicate_reference(reference):
+        if posting_reference and cls.is_duplicate_reference(posting_reference):
             raise ValidationError(
                 "This expense reference has already been posted."
             )
@@ -112,18 +122,20 @@ class ExpenseService:
         expense_type = cls._resolve_expense_type(expense_type)
 
         final_title = (
-            f"{title} [{reference}]"
-            if reference else title
+            f"{title} [{posting_reference}]"
+            if posting_reference else title
         )
 
         expense = Expense.objects.create(
-            # AccountService owns automated balance posting. Creating with a
-            # null relation prevents Expense.save() from posting a second time.
-            account=None,
+            account=account,
+            business_unit=business_unit or "SHARED",
             title=final_title,
             expense_type=expense_type,
             amount=amount,
             supplier=supplier,
+            paid_to=paid_to,
+            reference=reference,
+            notes=(notes or "").strip(),
             date=expense_date or timezone.localdate(),
         )
 
@@ -141,10 +153,12 @@ class ExpenseService:
                 actor=actor,
                 allow_negative=allow_negative,
                 create_transaction=True,
+                posting_key=f"finance-expense:{expense.pk}",
             )
 
-        Expense.objects.filter(pk=expense.pk).update(account=account)
-        expense.account = account
+        if account_result["transaction"]:
+            expense.ledger_transaction = account_result["transaction"]
+            expense.save(update_fields=["ledger_transaction"])
 
         EventEngine.dispatch(
             event_code="FINANCE_EXPENSE_CREATED",

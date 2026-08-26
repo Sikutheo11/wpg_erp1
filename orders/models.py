@@ -2,6 +2,10 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from furniture.models import Product
+from core.file_validators import (
+    validate_business_document,
+    validate_image_upload,
+)
 
 
 class Order(models.Model):
@@ -295,6 +299,7 @@ class OrderItem(models.Model):
         upload_to="orders/reference_images/%Y/%m/",
         null=True,
         blank=True,
+        validators=[validate_image_upload],
         help_text="Customer reference photo or existing product photo.",
     )
 
@@ -302,6 +307,7 @@ class OrderItem(models.Model):
         upload_to="orders/design_attachments/%Y/%m/",
         null=True,
         blank=True,
+        validators=[validate_business_document],
         help_text="Drawing, design, specification sheet, or supporting document.",
     )
 

@@ -1,13 +1,14 @@
 from datetime import date
 import csv
 from io import BytesIO
+from pathlib import Path
 
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models.deletion import ProtectedError
-from django.http import HttpResponse, JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.db.models import F, Q, Sum
 from django.shortcuts import (
     get_object_or_404,
@@ -69,6 +70,8 @@ from .services.counterparty_service import (
 )
 from .services.expense_request_service import ExpenseRequestService
 from .services.income_declaration_service import IncomeDeclarationService
+from .services.expense_service import ExpenseService
+from .services.income_service import IncomeService
 
 
 
@@ -608,6 +611,20 @@ def _can_access_unit_record(user, owner_id, department):
         or bool(department and department.manager_id == user.id)
     )
 
+
+def _protected_file_response(field_file):
+    if not field_file or not field_file.name:
+        raise Http404("Document not found.")
+    try:
+        stream = field_file.storage.open(field_file.name, "rb")
+    except (FileNotFoundError, OSError):
+        raise Http404("Document not found.")
+    return FileResponse(
+        stream,
+        as_attachment=True,
+        filename=Path(field_file.name).name,
+    )
+
 @login_required
 @wpg_permission_required("finance.view_incomedeclaration", feature_code="FINANCE_INCOME_DECLARATIONS")
 def income_declaration_list(request):
@@ -696,6 +713,25 @@ def income_declaration_detail(request, pk):
 
 
 @login_required
+@wpg_permission_required(
+    "finance.view_incomedeclaration",
+    feature_code="FINANCE_INCOME_DECLARATIONS",
+)
+def income_declaration_document(request, pk):
+    declaration = get_object_or_404(
+        IncomeDeclaration.objects.select_related("department"),
+        pk=pk,
+    )
+    if not _can_access_unit_record(
+        request.user,
+        declaration.recorded_by_id,
+        declaration.department,
+    ):
+        raise PermissionDenied
+    return _protected_file_response(declaration.proof_document)
+
+
+@login_required
 @wpg_permission_required("finance.add_incomedeclaration", feature_code="FINANCE_INCOME_DECLARATIONS", action="add")
 def income_declaration_submit(request, pk):
     obj = get_object_or_404(IncomeDeclaration, pk=pk)
@@ -763,9 +799,29 @@ def income_list(request):
 def income_create(request):
     form = IncomeForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        income = form.save()
-        messages.success(request, f"Income {income} was recorded successfully.")
-        return redirect("finance:income_list")
+        data = form.cleaned_data
+        try:
+            result = IncomeService.create_income(
+                account=data["account"],
+                business_unit=data.get("business_unit") or "SHARED",
+                title=data["title"],
+                income_type=data["income_type"],
+                amount=data["amount"],
+                income_date=data["date"],
+                sale=data.get("sale"),
+                received_from=data.get("received_from"),
+                reference=data.get("reference", ""),
+                notes=data.get("notes", ""),
+                actor=request.user,
+            )
+        except ValidationError as error:
+            form.add_error(None, _validation_message(error))
+        else:
+            messages.success(
+                request,
+                f"Income {result['income']} was recorded successfully.",
+            )
+            return redirect("finance:income_list")
     return render(
         request,
         "finance/incomes/income_form.html",
@@ -814,9 +870,28 @@ def expense_list(request):
 def expense_create(request):
     form = ExpenseForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        expense = form.save()
-        messages.success(request, f"Expense {expense} was recorded successfully.")
-        return redirect("finance:expense_list")
+        data = form.cleaned_data
+        try:
+            result = ExpenseService.create_expense(
+                account=data["account"],
+                business_unit=data.get("business_unit") or "SHARED",
+                title=data["title"],
+                expense_type=data["expense_type"],
+                amount=data["amount"],
+                expense_date=data["date"],
+                paid_to=data.get("paid_to"),
+                reference=data.get("reference", ""),
+                notes=data.get("notes", ""),
+                actor=request.user,
+            )
+        except ValidationError as error:
+            form.add_error(None, _validation_message(error))
+        else:
+            messages.success(
+                request,
+                f"Expense {result['expense']} was recorded successfully.",
+            )
+            return redirect("finance:expense_list")
     return render(
         request,
         "finance/expenses/expense_form.html",
@@ -936,6 +1011,31 @@ def expense_request_detail(request, pk):
             or (expense_request.status == "FINAL_APPROVED" and can_pay)
         ),
     })
+
+
+@login_required
+@wpg_permission_required(
+    "finance.view_expenserequest",
+    feature_code="FINANCE_EXPENSE_REQUESTS",
+)
+def expense_request_document(request, pk, kind):
+    expense_request = get_object_or_404(
+        ExpenseRequest.objects.select_related("department"),
+        pk=pk,
+    )
+    if not _can_access_unit_record(
+        request.user,
+        expense_request.requested_by_id,
+        expense_request.department,
+    ):
+        raise PermissionDenied
+    fields = {
+        "supporting": expense_request.supporting_document,
+        "accountability": expense_request.accountability_document,
+    }
+    if kind not in fields:
+        raise Http404("Unknown document type.")
+    return _protected_file_response(fields[kind])
 
 
 def _run_workflow_action(

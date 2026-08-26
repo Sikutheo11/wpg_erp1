@@ -1,7 +1,9 @@
 from urllib.parse import urlencode
+from pathlib import Path
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.http import FileResponse, Http404
 from django.db import transaction
 from django.db.models import Q
 from django.views.decorators.http import require_POST
@@ -844,6 +846,33 @@ def order_detail(request, pk):
         request,
         "orders/order_detail.html",
         context,
+    )
+
+
+@login_required
+@wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
+def order_item_attachment(request, pk, kind):
+    item = get_object_or_404(
+        OrderItem.objects.select_related("order"),
+        pk=pk,
+    )
+    fields = {
+        "reference": item.reference_image,
+        "design": item.design_attachment,
+    }
+    if kind not in fields:
+        raise Http404("Unknown attachment type.")
+    field_file = fields[kind]
+    if not field_file or not field_file.name:
+        raise Http404("Attachment not found.")
+    try:
+        stream = field_file.storage.open(field_file.name, "rb")
+    except (FileNotFoundError, OSError):
+        raise Http404("Attachment not found.")
+    return FileResponse(
+        stream,
+        as_attachment=True,
+        filename=Path(field_file.name).name,
     )
 
 

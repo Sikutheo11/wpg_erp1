@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import F
+from django.utils import timezone
 
 from core.event_engine import EventEngine
 
@@ -485,6 +486,7 @@ class AccountService:
         transaction_date=None,
         actor=None,
         create_transaction=True,
+        posting_key=None,
     ):
         cls.validate_account(
             account
@@ -504,6 +506,23 @@ class AccountService:
             .select_for_update()
             .get(pk=account.pk)
         )
+
+        posting_key = (posting_key or "").strip() or None
+        if posting_key:
+            existing = Transaction.objects.filter(
+                posting_key=posting_key,
+            ).first()
+            if existing:
+                if (
+                    existing.account_id != locked_account.pk
+                    or cls._decimal(existing.amount) != amount
+                    or existing.transaction_type
+                    != cls._resolve_transaction_type(direction="IN")
+                ):
+                    raise ValidationError(
+                        "Posting key is already used by a different transaction."
+                    )
+                return {"account": locked_account, "transaction": existing}
 
         locked_account.balance = (
             cls._decimal(
@@ -533,7 +552,8 @@ class AccountService:
                     description=(
                         description or ""
                     ).strip(),
-                    date=transaction_date,
+                    date=transaction_date or timezone.localdate(),
+                    posting_key=posting_key,
                 )
             )
 
@@ -589,6 +609,7 @@ class AccountService:
         actor=None,
         allow_negative=False,
         create_transaction=True,
+        posting_key=None,
     ):
         cls.validate_account(
             account
@@ -608,6 +629,23 @@ class AccountService:
             .select_for_update()
             .get(pk=account.pk)
         )
+
+        posting_key = (posting_key or "").strip() or None
+        if posting_key:
+            existing = Transaction.objects.filter(
+                posting_key=posting_key,
+            ).first()
+            if existing:
+                if (
+                    existing.account_id != locked_account.pk
+                    or cls._decimal(existing.amount) != amount
+                    or existing.transaction_type
+                    != cls._resolve_transaction_type(direction="OUT")
+                ):
+                    raise ValidationError(
+                        "Posting key is already used by a different transaction."
+                    )
+                return {"account": locked_account, "transaction": existing}
 
         current_balance = cls._decimal(
             locked_account.balance
@@ -651,7 +689,8 @@ class AccountService:
                     description=(
                         description or ""
                     ).strip(),
-                    date=transaction_date,
+                    date=transaction_date or timezone.localdate(),
+                    posting_key=posting_key,
                 )
             )
 

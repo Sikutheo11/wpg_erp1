@@ -67,6 +67,14 @@ class AccountForm(forms.ModelForm):
             ),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields["balance"].disabled = True
+            self.fields["balance"].help_text = (
+                "Balance changes must be posted through a Finance transaction."
+            )
+
     def clean_account_number(self):
         account_number = (
             self.cleaned_data.get("account_number") or ""

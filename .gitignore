@@ -1,18 +1,19 @@
 __pycache__/
 *.py[cod]
-.env
 venv/
-*.sqlite3
-# User-uploaded Django media
-media/
 
-# User-uploaded Django media
-media/
-staticfiles/
-# Local environment secrets
+# Local databases, credentials and runtime data
+*.sqlite3
 .env
 .env.*
 !.env.example
-# Python generated cache
-__pycache__/
-*.py[cod]
+*.pem
+*.key
+*.p12
+*.pfx
+*.dump
+
+# User-uploaded and generated files
+media/
+staticfiles/
+backups/

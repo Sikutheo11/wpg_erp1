@@ -73,6 +73,11 @@ urlpatterns = [
         views.remove_order_item,
         name="remove_order_item",
     ),
+    path(
+        "items/<int:pk>/attachments/<str:kind>/",
+        views.order_item_attachment,
+        name="order_item_attachment",
+    ),
 
     # ======================================================
     # ORDER WORKFLOW

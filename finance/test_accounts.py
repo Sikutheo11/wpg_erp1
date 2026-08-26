@@ -42,6 +42,7 @@ class AccountManagementTests(TestCase):
         self.assertRedirects(response, reverse("finance:account_list"))
         account.refresh_from_db()
         self.assertEqual(account.name, "Main Cash")
+        self.assertEqual(account.balance, Decimal("0.00"))
 
     def test_account_delete_requires_post(self):
         account = Account.objects.create(name="Temporary", account_type="cash")

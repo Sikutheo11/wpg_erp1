@@ -489,13 +489,13 @@ Order Detail
                                         {% endif %}
 
                                         {% if item.reference_image %}
-                                            <a class="small d-block mt-1" href="{{ item.reference_image.url }}" target="_blank" rel="noopener">
+                                            <a class="small d-block mt-1" href="{% url 'orders:order_item_attachment' item.pk 'reference' %}">
                                                 <i class="bi bi-image me-1"></i>Reference photo
                                             </a>
                                         {% endif %}
 
                                         {% if item.design_attachment %}
-                                            <a class="small d-block" href="{{ item.design_attachment.url }}" target="_blank" rel="noopener">
+                                            <a class="small d-block" href="{% url 'orders:order_item_attachment' item.pk 'design' %}">
                                                 <i class="bi bi-paperclip me-1"></i>Design attachment
                                             </a>
                                         {% endif %}
