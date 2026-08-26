@@ -177,6 +177,17 @@ class OrderForm(forms.ModelForm):
 
         # Customer-specific furniture
         elif self.order_type == "CUSTOM_FURNITURE":
+            self._remove_fields(
+                [
+                    "province",
+                    "district",
+                    "sector",
+                    "cell",
+                    "village",
+                    "discount",
+                    "tax",
+                ]
+            )
             self._set_required(
                 "customer_name",
                 "customer_phone",
@@ -239,7 +250,9 @@ class OrderForm(forms.ModelForm):
         # Internal stock replenishment
         elif self.order_type == "RESTOCK":
             self._remove_fields(
-                customer_fields + delivery_fields
+                customer_fields
+                + delivery_fields
+                + ["discount", "tax"]
             )
 
             self.fields["notes"].label = (
@@ -249,7 +262,9 @@ class OrderForm(forms.ModelForm):
         # Internal prototype or product development
         elif self.order_type == "NEW_PRODUCT":
             self._remove_fields(
-                customer_fields + delivery_fields
+                customer_fields
+                + delivery_fields
+                + ["discount", "tax"]
             )
 
             self.fields["notes"].required = True

@@ -403,6 +403,7 @@ def order_create(request):
         if form.is_valid() and item_form.is_valid():
             data = form.cleaned_data
             item_data = item_form.cleaned_data
+            next_route = None
 
             try:
                 with transaction.atomic():
@@ -443,6 +444,38 @@ def order_create(request):
                         actor=request.user,
                     )
 
+                    if (
+                        business_unit == "FURNITURE"
+                        and order_type in {
+                            "CUSTOM_FURNITURE",
+                            "RESTOCK",
+                            "NEW_PRODUCT",
+                        }
+                    ):
+                        OrderService.submit(
+                            order=order,
+                            actor=request.user,
+                        )
+
+                        if order_type == "CUSTOM_FURNITURE":
+                            from sales.services.quotation_service import (
+                                QuotationService as SalesQuotationService,
+                            )
+
+                            quotation = SalesQuotationService.create_from_order(
+                                order=order,
+                                actor=request.user,
+                            )
+                            next_route = (
+                                "sales:quotation_detail",
+                                {"pk": quotation.pk},
+                            )
+                        else:
+                            next_route = (
+                                "furniture:create_order_costing",
+                                {"order_id": order.pk},
+                            )
+
             except ValidationError as error:
                 form.add_error(
                     None,
@@ -450,13 +483,34 @@ def order_create(request):
                 )
 
             else:
-                messages.success(
-                    request,
-                    (
-                        f"Order {order.order_number} "
-                        "created successfully."
-                    ),
-                )
+                if order_type == "CUSTOM_FURNITURE":
+                    messages.success(
+                        request,
+                        (
+                            f"Order {order.order_number} was created and routed "
+                            "to the Customer Quotation Engine. Add prices and submit "
+                            "the quotation to the customer."
+                        ),
+                    )
+                elif order_type in {"RESTOCK", "NEW_PRODUCT"}:
+                    messages.success(
+                        request,
+                        (
+                            f"Order {order.order_number} was created and routed "
+                            "to internal production costing."
+                        ),
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f"Order {order.order_number} created successfully.",
+                    )
+
+                if next_route:
+                    return redirect(
+                        next_route[0],
+                        **next_route[1],
+                    )
 
                 return redirect(
                     "orders:order_detail",
@@ -492,6 +546,14 @@ def order_create(request):
             ).get(
                 order_type,
                 order_type,
+            ),
+            "production_quotation_flow": (
+                business_unit == "FURNITURE"
+                and order_type in {
+                    "CUSTOM_FURNITURE",
+                    "RESTOCK",
+                    "NEW_PRODUCT",
+                }
             ),
         },
     )

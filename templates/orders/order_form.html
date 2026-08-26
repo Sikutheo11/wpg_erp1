@@ -54,8 +54,14 @@ Create Order
 
                         <i class="bi bi-info-circle me-1"></i>
 
-                        Enter the customer/order information and its first item below.
-                        More items can be added after the order is created.
+                        {% if production_quotation_flow %}
+                            Enter the request, quantity, specifications and attachments.
+                            Saving sends this Furniture request directly to quotation/costing review;
+                            prices, discount and tax are entered there.
+                        {% else %}
+                            Enter the customer/order information and its first item below.
+                            More items can be added after the order is created.
+                        {% endif %}
 
                     </div>
 
@@ -182,7 +188,13 @@ Create Order
                                     class="btn btn-success">
 
                                 <i class="bi bi-check-circle me-1"></i>
-                                Create Order
+                                {% if order_type == "CUSTOM_FURNITURE" %}
+                                    Create &amp; Continue to Quotation
+                                {% elif order_type == "RESTOCK" or order_type == "NEW_PRODUCT" %}
+                                    Create &amp; Continue to Costing
+                                {% else %}
+                                    Create Order
+                                {% endif %}
 
                             </button>
 
