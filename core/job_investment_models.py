@@ -454,6 +454,35 @@ class JobInvestorContribution(models.Model):
         if self.status == "RECEIVED" and not self.received_date:
             errors["received_date"] = "Received date is required."
 
+        if self.status == "RECEIVED":
+            declaration = self.finance_income_declaration
+            if declaration is None:
+                errors["finance_income_declaration"] = (
+                    "Finance confirmation is required before investor capital "
+                    "can be marked as received."
+                )
+            else:
+                if declaration.status != "FINANCE_CONFIRMED":
+                    errors["finance_income_declaration"] = (
+                        "The linked Finance income declaration is not confirmed."
+                    )
+                if declaration.source_type != "INVESTMENT":
+                    errors["finance_income_declaration"] = (
+                        "Investor capital must use an INVESTMENT income declaration."
+                    )
+                if declaration.business_unit != self.job_investment.order.business_unit:
+                    errors["finance_income_declaration"] = (
+                        "Finance declaration business unit must match the job."
+                    )
+                if declaration.received_from_id != self.agreement.investor_id:
+                    errors["finance_income_declaration"] = (
+                        "Finance declaration payer must be this investor."
+                    )
+                if Decimal(str(declaration.amount)) != Decimal(str(self.amount)):
+                    errors["finance_income_declaration"] = (
+                        "Contribution amount must equal the confirmed Finance amount."
+                    )
+
         if errors:
             raise ValidationError(errors)
 

@@ -701,12 +701,6 @@ class StockReservationForm(forms.ModelForm):
 
 class ProductionOutputForm(forms.ModelForm):
 
-    warehouse = forms.ModelChoiceField(
-        queryset=Warehouse.objects.none(),
-        widget=forms.Select(attrs={"class": "form-select"}),
-        help_text="Finished-goods warehouse that will receive this output.",
-    )
-
     class Meta:
         model = ProductionOutput
 
@@ -734,10 +728,6 @@ class ProductionOutputForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.production_job = kwargs.pop("production_job", None)
         super().__init__(*args, **kwargs)
-        self.fields["warehouse"].queryset = Warehouse.objects.filter(
-            is_active=True,
-            warehouse_type__in={"FINISHED_GOODS", "MAIN"},
-        ).order_by("warehouse_type", "name")
         if self.production_job is not None:
             produced = (
                 self.production_job.outputs.aggregate(total=Sum("quantity_produced"))["total"]

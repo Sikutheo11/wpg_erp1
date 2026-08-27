@@ -1,0 +1,30 @@
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div><h5 class="mb-1">Production Lifecycle Control Center</h5><small class="text-muted">Enterprise workflow from design to financial closure</small></div>
+      <div class="text-end"><small class="text-muted d-block">Current Stage</small><span class="badge bg-primary fs-6">{{ lifecycle_control.current_label }}</span></div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="row g-2 mb-4">
+      {% for stage in lifecycle_control.stages %}
+      <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+        <div class="border rounded p-2 h-100 {% if stage.state == 'CURRENT' %}border-primary bg-light{% elif stage.state == 'COMPLETED' %}border-success{% elif stage.state == 'CANCELLED' %}border-danger{% endif %}">
+          <div class="d-flex align-items-start gap-2">
+            {% if stage.state == "COMPLETED" %}<i class="bi bi-check-circle-fill text-success"></i>
+            {% elif stage.state == "CURRENT" %}<i class="bi bi-arrow-right-circle-fill text-primary"></i>
+            {% elif stage.state == "CANCELLED" %}<i class="bi bi-x-circle-fill text-danger"></i>
+            {% else %}<i class="bi bi-circle text-muted"></i>{% endif %}
+            <div><div class="small fw-semibold">{{ stage.label }}</div><small class="text-muted">{{ stage.state|title }}</small></div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="border rounded p-3 bg-light">
+      <small class="text-muted d-block mb-1">Next Required Action</small>
+      <h5 class="fw-bold mb-1">{{ lifecycle_control.next_action.title }}</h5>
+      <div class="text-muted">{{ lifecycle_control.next_action.description }}</div>
+    </div>
+  </div>
+</div>

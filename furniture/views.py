@@ -16,6 +16,12 @@ from orders.models import Order as EnterpriseOrder
 from .dashboard import FurnitureDashboard
 from django.shortcuts import redirect, render
 from .models import ProductionSettings
+from .lifecycle_service import FurnitureProductionLifecycleService
+from .finished_goods_forms import FinishedGoodsReleaseForm
+from .lifecycle_control import ProductionJobLifecycleControl
+from .lifecycle_evidence import ProductionJobLifecycleEvidence
+from .lifecycle_actions import ProductionJobLifecycleActions
+from .lifecycle_closure_service import ProductionJobClosureService
 from .forms import (
     AssignWorkerForm,
     OrderForm,
@@ -314,6 +320,20 @@ def production_job_detail(request, pk):
     except ObjectDoesNotExist:
         job_quotation = None
 
+    lifecycle_control = ProductionJobLifecycleControl.build(
+        job=job,
+        quotation=job_quotation,
+        inspection=inspection,
+    )
+
+    lifecycle_evidence = ProductionJobLifecycleEvidence.build(job)
+
+    lifecycle_actions = ProductionJobLifecycleActions.build(
+        job=job,
+        evidence=lifecycle_evidence,
+        inspection=inspection,
+    )
+
     return render(
         request,
         "furniture/production_job_detail.html",
@@ -325,6 +345,9 @@ def production_job_detail(request, pk):
             "inspection": inspection,
             "first_task": first_task,
             "job_quotation": job_quotation,
+            "lifecycle_control": lifecycle_control,
+            "lifecycle_evidence": lifecycle_evidence,
+            "lifecycle_actions": lifecycle_actions,
             "can_create_reinspection": job.rework_orders.filter(
                 status__in={"COMPLETED", "VERIFIED"},
             ).exists(),
@@ -783,13 +806,11 @@ def add_output(request, pk):
 
         if form.is_valid():
             try:
-                ProductionService.record_output(
+                FurnitureProductionLifecycleService.record_output(
                     production_job=production_job,
                     product=production_job.product,
                     quantity_produced=form.cleaned_data["quantity_produced"],
-                    warehouse=form.cleaned_data["warehouse"],
                     produced_by=employee,
-                    actor=request.user,
                     image=form.cleaned_data.get("image"),
                 )
             except ValidationError as error:
@@ -797,7 +818,7 @@ def add_output(request, pk):
             else:
                 messages.success(
                     request,
-                    "Production output recorded and received into stock successfully.",
+                    "Production output recorded. Inventory release waits for final quality approval.",
                 )
 
                 return redirect(
@@ -2445,6 +2466,8 @@ def quality_inspection_approve(request, pk):
             ),
         )
 
+        FurnitureProductionLifecycleService.mark_ready_for_finished_goods(inspection)
+
         messages.success(
             request,
             "Finished goods approved successfully.",
@@ -2481,3 +2504,100 @@ def production_schedule(request, pk):
         "furniture:production_job_detail",
         pk=job.pk,
     )
+
+
+@login_required
+@require_POST
+@wpg_permission_required("furniture.change_productionjob", feature_code="FURNITURE_OUTPUTS", action="change")
+def release_finished_goods(request, pk):
+    job=get_object_or_404(ProductionJob.objects.select_related("product"),pk=pk)
+    form=FinishedGoodsReleaseForm(request.POST)
+    if not form.is_valid():
+        messages.error(request,"Select a valid Furniture finished-goods warehouse.")
+        return redirect("furniture:production_job_detail",pk=job.pk)
+    try:
+        released=FurnitureProductionLifecycleService.release_to_finished_goods(production_job=job,warehouse=form.cleaned_data["warehouse"],actor=request.user)
+    except ValidationError as error:
+        messages.error(request,_validation_message(error))
+    else:
+        qty=sum(item.quantity_produced for item in released)
+        messages.success(request,f"{qty} finished unit(s) released to Inventory after quality approval.")
+    return redirect("furniture:production_job_detail",pk=job.pk)
+
+
+@login_required
+@require_POST
+@wpg_permission_required(
+    "furniture.change_productionjob",
+    feature_code="FURNITURE_PRODUCTION_JOBS",
+    action="change",
+)
+def production_job_confirm_delivery(request, pk):
+    job = get_object_or_404(ProductionJob, pk=pk)
+    try:
+        employee = request.user.employee
+    except (AttributeError, ObjectDoesNotExist):
+        employee = None
+    try:
+        ProductionJobClosureService.confirm_delivery_from_order(
+            job,
+            performed_by=employee,
+            note=request.POST.get("note", ""),
+        )
+    except ValidationError as error:
+        messages.error(request, _validation_message(error))
+    else:
+        messages.success(request, "Order delivery confirmed on the Production Job.")
+    return redirect("furniture:production_job_detail", pk=job.pk)
+
+
+@login_required
+@require_POST
+@wpg_permission_required(
+    "furniture.change_productionjob",
+    feature_code="FURNITURE_PRODUCTION_JOBS",
+    action="change",
+)
+def production_job_move_to_finance(request, pk):
+    job = get_object_or_404(ProductionJob, pk=pk)
+    try:
+        employee = request.user.employee
+    except (AttributeError, ObjectDoesNotExist):
+        employee = None
+    try:
+        ProductionJobClosureService.move_to_finance(
+            job,
+            performed_by=employee,
+            note=request.POST.get("note", ""),
+        )
+    except ValidationError as error:
+        messages.error(request, _validation_message(error))
+    else:
+        messages.success(request, "Production Job moved to Finance / Profit review.")
+    return redirect("furniture:production_job_detail", pk=job.pk)
+
+
+@login_required
+@require_POST
+@wpg_permission_required(
+    "furniture.change_productionjob",
+    feature_code="FURNITURE_PRODUCTION_JOBS",
+    action="change",
+)
+def production_job_close(request, pk):
+    job = get_object_or_404(ProductionJob, pk=pk)
+    try:
+        employee = request.user.employee
+    except (AttributeError, ObjectDoesNotExist):
+        employee = None
+    try:
+        ProductionJobClosureService.close_job(
+            job,
+            performed_by=employee,
+            note=request.POST.get("note", ""),
+        )
+    except ValidationError as error:
+        messages.error(request, _validation_message(error))
+    else:
+        messages.success(request, "Production Job lifecycle closed successfully.")
+    return redirect("furniture:production_job_detail", pk=job.pk)

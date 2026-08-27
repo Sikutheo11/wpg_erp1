@@ -1,0 +1,91 @@
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white">
+    <h5 class="mb-1">Lifecycle Evidence</h5>
+    <small class="text-muted">Live state from Order, Planner, Funding, Materials, Inventory, Delivery and Finance.</small>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-xl-3 col-md-6"><div class="border rounded p-3 h-100">
+        <small class="text-muted">Order Authorization</small>
+        <div class="fw-semibold mt-1">
+          {% if lifecycle_evidence.order.authorized %}<span class="text-success">Ready</span>
+          {% elif lifecycle_evidence.order.exists %}<span class="text-warning">Waiting</span>
+          {% else %}<span class="text-muted">No linked order</span>{% endif %}
+        </div>
+        {% if lifecycle_evidence.order.number %}<small>{{ lifecycle_evidence.order.number }} · {{ lifecycle_evidence.order.status }}</small>{% endif %}
+      </div></div>
+
+      <div class="col-xl-3 col-md-6"><div class="border rounded p-3 h-100">
+        <small class="text-muted">Production Plan</small>
+        <div class="fw-semibold mt-1">
+          {% if lifecycle_evidence.plan.approved %}<span class="text-success">Approved</span>
+          {% elif lifecycle_evidence.plan.calculated %}<span class="text-warning">Calculated / Review</span>
+          {% elif lifecycle_evidence.plan.exists %}<span class="text-warning">Draft</span>
+          {% else %}<span class="text-danger">Not created</span>{% endif %}
+        </div>
+        <small>{{ lifecycle_evidence.plan.count }} plan(s)</small>
+      </div></div>
+
+      <div class="col-xl-3 col-md-6"><div class="border rounded p-3 h-100">
+        <small class="text-muted">Funding Check</small>
+        <div class="fw-semibold mt-1">
+          {% if lifecycle_evidence.funding.ready %}<span class="text-success">Ready</span>
+          {% else %}<span class="text-danger">Blocked</span>{% endif %}
+        </div>
+        {% if lifecycle_evidence.funding.exists %}
+          <small>Funded {{ lifecycle_evidence.funding.funded_amount|floatformat:0 }} / {{ lifecycle_evidence.funding.estimated_cost|floatformat:0 }} RWF</small>
+        {% else %}<small>External funding not opened</small>{% endif %}
+      </div></div>
+
+      <div class="col-xl-3 col-md-6"><div class="border rounded p-3 h-100">
+        <small class="text-muted">Material Reservation</small>
+        <div class="fw-semibold mt-1">
+          {% if lifecycle_evidence.materials.ready %}<span class="text-success">Reserved / In use</span>
+          {% else %}<span class="text-warning">No reservation</span>{% endif %}
+        </div>
+        <small>{{ lifecycle_evidence.materials.reserved_count }} reserved · {{ lifecycle_evidence.materials.used_count }} used</small>
+      </div></div>
+
+      <div class="col-xl-3 col-md-6"><div class="border rounded p-3 h-100">
+        <small class="text-muted">Production Output</small>
+        <div class="fw-semibold mt-1">{{ lifecycle_evidence.production.output_quantity }} / {{ lifecycle_evidence.production.target_quantity }}</div>
+        <small>{% if lifecycle_evidence.production.output_complete %}Complete{% else %}Incomplete{% endif %}</small>
+      </div></div>
+
+      <div class="col-xl-3 col-md-6"><div class="border rounded p-3 h-100">
+        <small class="text-muted">Inventory Release</small>
+        <div class="fw-semibold mt-1">
+          {% if lifecycle_evidence.inventory.all_output_released %}<span class="text-success">Released</span>
+          {% else %}<span class="text-warning">Not fully released</span>{% endif %}
+        </div>
+        <small>{{ lifecycle_evidence.inventory.released_quantity }} finished unit(s)</small>
+      </div></div>
+
+      <div class="col-xl-3 col-md-6"><div class="border rounded p-3 h-100">
+        <small class="text-muted">Delivery</small>
+        <div class="fw-semibold mt-1">
+          {% if lifecycle_evidence.delivery.complete %}<span class="text-success">Delivered</span>
+          {% else %}<span class="text-warning">Pending</span>{% endif %}
+        </div>
+        <small>{{ lifecycle_evidence.delivery.status|default:"-" }}</small>
+      </div></div>
+
+      <div class="col-xl-3 col-md-6"><div class="border rounded p-3 h-100">
+        <small class="text-muted">Finance</small>
+        <div class="fw-semibold mt-1">
+          {% if lifecycle_evidence.finance.payment_complete %}<span class="text-success">Customer paid</span>
+          {% else %}<span class="text-warning">{{ lifecycle_evidence.finance.payment_status|default:"Not reconciled" }}</span>{% endif %}
+        </div>
+        {% if lifecycle_evidence.funding.exists %}
+          <small>Revenue {{ lifecycle_evidence.finance.actual_revenue|floatformat:0 }} · Cost {{ lifecycle_evidence.finance.actual_cost|floatformat:0 }}</small>
+        {% endif %}
+      </div></div>
+    </div>
+
+    {% if lifecycle_evidence.funding.exists and not lifecycle_evidence.funding.ready %}
+      <div class="alert alert-danger mt-3 mb-0">
+        <strong>Funding blocked:</strong> {{ lifecycle_evidence.funding.message }}
+      </div>
+    {% endif %}
+  </div>
+</div>

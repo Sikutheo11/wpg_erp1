@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
@@ -83,14 +84,22 @@ class ProductionJob(models.Model):
     )
 
     STATUS = (
+        ("DRAFT", "Draft / Design"),
+        ("DESIGN", "Design"),
+        ("COSTING", "Costing / BOM"),
         ("QUOTATION", "Quotation"),
         ("APPROVED", "Approved"),
         ("ORDER_CONFIRMED", "Order Confirmed"),
+        ("PRODUCTION_PLAN", "Production Plan"),
+        ("FUNDING_CHECK", "Funding Check"),
         ("MATERIAL_RESERVED", "Material Reserved"),
         ("IN_PRODUCTION", "In Production"),
         ("QUALITY_CHECK", "Quality Check"),
+        ("READY_FOR_FINISHED_GOODS", "Ready for Finished Goods"),
         ("FINISHED_GOODS", "Finished Goods"),
         ("DELIVERED", "Delivered"),
+        ("FINANCE", "Finance / Profit Review"),
+        ("CLOSED", "Closed"),
         ("CANCELLED", "Cancelled"),
     )
 
@@ -163,6 +172,7 @@ class ProductionJob(models.Model):
             status__in=[
                 "FINISHED_GOODS",
                 "DELIVERED",
+                "CLOSED",
                 "CANCELLED",
             ]
         ).count()
@@ -171,7 +181,7 @@ class ProductionJob(models.Model):
     @staticmethod
     def completed_jobs():
         return ProductionJob.objects.filter(
-            status__in=["FINISHED_GOODS", "DELIVERED"]
+            status__in=["FINISHED_GOODS", "DELIVERED", "CLOSED"]
         ).count()
 
 
@@ -796,6 +806,14 @@ class ProductionOutput(models.Model):
 
     produced_at = models.DateTimeField(
         auto_now_add=True,
+    )
+
+    inventory_movement = models.OneToOneField(
+        "inventory.StockMovement", on_delete=models.SET_NULL, null=True, blank=True, related_name="furniture_finished_output",
+    )
+    inventory_released_at = models.DateTimeField(null=True, blank=True)
+    inventory_released_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="furniture_outputs_released_to_inventory",
     )
 
     class Meta:

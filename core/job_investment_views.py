@@ -14,6 +14,12 @@ from .job_investment_forms import (
     JobInvestorContributionForm,
 )
 from .job_investment_models import JobInvestment, JobInvestorAgreement
+from .job_investment_finance_forms import (
+    JobFinanceExpenseLinkForm,
+    JobFinanceIncomeLinkForm,
+)
+from .job_investment_finance_service import JobInvestmentFinanceService
+from .job_investment_repayment_service import JobInvestorRepaymentService
 from .permissions import wpg_permission_required
 from .job_investment_service import JobInvestmentService
 
@@ -98,6 +104,9 @@ def job_investment_detail(request, pk):
             "investor_agreements__investor",
             "investor_agreements__contributions",
             "investor_contributions__agreement__investor",
+            "finance_income_links__income_declaration",
+            "finance_expense_links__expense_request",
+            "investor_agreements__settlement__finance_debt_record",
         ),
         pk=pk,
     )
@@ -118,6 +127,8 @@ def job_investment_detail(request, pk):
                     "actual_cost": investment.actual_cost_snapshot,
                 }
             ),
+            "finance_income_form": JobFinanceIncomeLinkForm(job_investment=investment),
+            "finance_expense_form": JobFinanceExpenseLinkForm(job_investment=investment),
         },
     )
 
@@ -278,3 +289,105 @@ def job_investment_prepare_settlement(request, agreement_pk):
         "core:job_investment_detail",
         pk=agreement.job_investment_id,
     )
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.manage_job_investment")
+def job_investment_link_income(request, pk):
+    investment = get_object_or_404(JobInvestment, pk=pk)
+    form = JobFinanceIncomeLinkForm(request.POST, job_investment=investment)
+    if form.is_valid():
+        try:
+            JobInvestmentFinanceService.link_income(
+                investment, form.cleaned_data["income_declaration"]
+            )
+            messages.success(request, "Finance-confirmed revenue linked.")
+        except ValidationError as exc:
+            messages.error(request, _error_text(exc))
+    else:
+        messages.error(request, "Select an eligible Finance-confirmed revenue record.")
+    return redirect("core:job_investment_detail", pk=pk)
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.manage_job_investment")
+def job_investment_link_expense(request, pk):
+    investment = get_object_or_404(JobInvestment, pk=pk)
+    form = JobFinanceExpenseLinkForm(request.POST, job_investment=investment)
+    if form.is_valid():
+        try:
+            JobInvestmentFinanceService.link_expense(
+                investment, form.cleaned_data["expense_request"]
+            )
+            messages.success(request, "Paid Finance expense linked.")
+        except ValidationError as exc:
+            messages.error(request, _error_text(exc))
+    else:
+        messages.error(request, "Select an eligible paid Finance expense.")
+    return redirect("core:job_investment_detail", pk=pk)
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.manage_job_investment")
+def job_investment_sync_finance(request, pk):
+    investment = get_object_or_404(JobInvestment, pk=pk)
+    JobInvestmentFinanceService.sync_actuals(investment)
+    messages.success(request, "Actual revenue, cost and profit synced from Finance.")
+    return redirect("core:job_investment_detail", pk=pk)
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.settle_job_investor")
+def job_investment_post_settlement(request, agreement_pk):
+    agreement = get_object_or_404(
+        JobInvestorAgreement.objects.select_related("job_investment", "investor"),
+        pk=agreement_pk,
+    )
+    try:
+        settlement = JobInvestmentFinanceService.post_settlement_to_finance(
+            agreement, actor=request.user
+        )
+        messages.success(
+            request,
+            f"Investor settlement posted to Finance as {settlement.finance_debt_record.reference}.",
+        )
+    except ValidationError as exc:
+        messages.error(request, _error_text(exc))
+    return redirect("core:job_investment_detail", pk=agreement.job_investment_id)
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.settle_job_investor")
+def job_investment_sync_repayment(request, settlement_pk):
+    from .job_investment_models import JobInvestorSettlement
+
+    settlement = get_object_or_404(
+        JobInvestorSettlement.objects.select_related("agreement__job_investment"),
+        pk=settlement_pk,
+    )
+    investment_id = settlement.agreement.job_investment_id
+    try:
+        settlement = JobInvestorRepaymentService.sync_settlement_from_finance(settlement)
+        messages.success(
+            request,
+            f"Repayment synced: {settlement.amount_paid:,.0f} RWF paid; "
+            f"{settlement.balance_due:,.0f} RWF balance.",
+        )
+    except ValidationError as exc:
+        messages.error(request, _error_text(exc))
+    return redirect("core:job_investment_detail", pk=investment_id)
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.settle_job_investor")
+def job_investment_sync_all_repayments(request, pk):
+    investment = get_object_or_404(JobInvestment, pk=pk)
+    synced = JobInvestorRepaymentService.sync_all_for_investment(investment)
+    messages.success(request, f"Synced {len(synced)} repayment record(s) from Finance.")
+    return redirect("core:job_investment_detail", pk=pk)

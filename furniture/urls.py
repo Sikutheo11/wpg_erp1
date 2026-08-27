@@ -1,12 +1,33 @@
 from django.urls import include, path
 
 from . import views
+from . import product_views
 
 
 app_name = "furniture"
 
 
 urlpatterns = [
+    path(
+        "production-jobs/<int:pk>/confirm-delivery/",
+        views.production_job_confirm_delivery,
+        name="production_job_confirm_delivery",
+    ),
+    path(
+        "production-jobs/<int:pk>/move-to-finance/",
+        views.production_job_move_to_finance,
+        name="production_job_move_to_finance",
+    ),
+    path(
+        "production-jobs/<int:pk>/close/",
+        views.production_job_close,
+        name="production_job_close",
+    ),
+    path(
+        "products/<int:pk>/",
+        product_views.furniture_product_detail,
+        name="furniture_product_detail",
+    ),
 
     # PRE-PRODUCTION PLANNER / ESTIMATED COSTING
     path("planning/", include("furniture.planner_urls")),
@@ -61,6 +82,12 @@ urlpatterns = [
         "production-jobs/<int:pk>/output/add/",
         views.add_output,
         name="add_output",
+    ),
+
+    path(
+        "production-jobs/<int:pk>/release-finished-goods/",
+        views.release_finished_goods,
+        name="release_finished_goods",
     ),
 
     # =====================================================

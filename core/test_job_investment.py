@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from core.job_investment_models import (
@@ -8,7 +9,7 @@ from core.job_investment_models import (
     JobInvestorContribution,
     JobInvestorSettlement,
 )
-from finance.models import Counterparty
+from finance.models import Counterparty, IncomeDeclaration
 from orders.models import Order
 
 
@@ -47,17 +48,47 @@ class SingleJobInvestmentTests(TestCase):
             status="ACTIVE",
         )
 
+    def _finance_test_user(self):
+        if not hasattr(self, "_finance_user"):
+            User = get_user_model()
+            self._finance_user = User.objects.create_user(
+                username="job-finance-recorder",
+                password="StrongPass123!",
+                email="job-finance@example.com",
+                first_name="Finance",
+                last_name="Recorder",
+            )
+        return self._finance_user
+
+    def _confirmed_investment_income(self, amount, reference):
+        return IncomeDeclaration.objects.create(
+            recorded_by=self._finance_test_user(),
+            business_unit="FURNITURE",
+            title=f"Investor funding {reference}",
+            source_type="INVESTMENT",
+            amount=amount,
+            received_from=self.investor,
+            receipt_method="bank",
+            receipt_date="2026-08-27",
+            reference=reference,
+            status="FINANCE_CONFIRMED",
+        )
+
     def test_funding_gap_uses_only_received_investor_money(self):
         self.assertEqual(
             self.investment.funding_gap,
             Decimal("30000000.00"),
         )
 
+        declaration = self._confirmed_investment_income(
+            Decimal("30000000.00"), "TEST-FUNDING-30M"
+        )
         JobInvestorContribution.objects.create(
             agreement=self.agreement,
             amount=Decimal("30000000.00"),
             status="RECEIVED",
             received_date="2026-08-27",
+            finance_income_declaration=declaration,
         )
 
         self.assertEqual(
@@ -74,19 +105,27 @@ class SingleJobInvestmentTests(TestCase):
         )
 
     def test_contributions_cannot_exceed_agreed_capital(self):
+        first_declaration = self._confirmed_investment_income(
+            Decimal("25000000.00"), "TEST-FUNDING-25M"
+        )
         JobInvestorContribution.objects.create(
             agreement=self.agreement,
             amount=Decimal("25000000.00"),
             status="RECEIVED",
             received_date="2026-08-27",
+            finance_income_declaration=first_declaration,
         )
 
+        second_declaration = self._confirmed_investment_income(
+            Decimal("6000000.00"), "TEST-FUNDING-6M"
+        )
         with self.assertRaises(Exception):
             JobInvestorContribution.objects.create(
                 agreement=self.agreement,
                 amount=Decimal("6000000.00"),
                 status="RECEIVED",
                 received_date="2026-08-28",
+                finance_income_declaration=second_declaration,
             )
 
     def test_profit_share_uses_positive_actual_job_profit(self):
