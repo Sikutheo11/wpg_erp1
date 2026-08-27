@@ -9,15 +9,17 @@
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <h3 class="h6 fw-bold mt-4">Request</h3>
         <div class="row g-3">
-          {% for field in form %}
-          <div class="{% if field.name == 'purpose' or field.name == 'supporting_document' %}col-12{% else %}col-md-6{% endif %}">
-            <label class="form-label fw-semibold">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
-          </div>
-          {% endfor %}
+          {% for field in form %}{% if field.name == 'business_unit' or field.name == 'request_type' or field.name == 'title' or field.name == 'expense_type' or field.name == 'purpose' or field.name == 'payee' %}
+          <div class="{% if field.name == 'purpose' %}col-12{% else %}col-md-6{% endif %}"{% if field.name == 'payee' %} id="payee-field"{% endif %}><label class="form-label fw-semibold">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+          {% endif %}{% endfor %}
+        </div>
+        <h3 class="h6 fw-bold mt-4">Amount and deadline</h3>
+        <div class="row g-3">
+          {% for field in form %}{% if field.name == 'amount_requested' or field.name == 'needed_by' or field.name == 'urgency' or field.name == 'supporting_document' %}
+          <div class="{% if field.name == 'supporting_document' %}col-12{% else %}col-md-4{% endif %}"><label class="form-label fw-semibold">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+          {% endif %}{% endfor %}
         </div>
         <div class="d-flex gap-2 mt-4">
           <button class="btn btn-primary"><i class="bi bi-save me-1"></i> Save Draft</button>
@@ -27,4 +29,19 @@
     </div>
   </div>
 </div>
+<script>
+(() => {
+  const requestType = document.getElementById('id_request_type');
+  const payeeField = document.getElementById('payee-field');
+  if (!requestType || !payeeField) return;
+  const updatePayee = () => {
+    const directPayment = requestType.value === 'DIRECT_PAYMENT';
+    payeeField.hidden = !directPayment;
+    const input = payeeField.querySelector('select');
+    if (input) input.required = directPayment;
+  };
+  requestType.addEventListener('change', updatePayee);
+  updatePayee();
+})();
+</script>
 {% endblock %}

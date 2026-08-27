@@ -100,7 +100,7 @@ Record Receivable Payment
                             </span>
 
                             <strong class="text-end">
-                                {{ receivable.customer.get_full_name|default:receivable.customer.username }}
+                                {{ receivable.customer.full_name|default:receivable.customer.username }}
                             </strong>
                         </div>
 

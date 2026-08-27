@@ -448,7 +448,7 @@
 
                                             {% if transition.moved_by %}
 
-                                                {{ transition.moved_by.get_full_name|default:transition.moved_by }}
+                                                {{ transition.moved_by.full_name|default:transition.moved_by }}
 
                                             {% else %}
 

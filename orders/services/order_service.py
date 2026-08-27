@@ -62,6 +62,37 @@ class OrderService:
 
         return getattr(actor, "employee", None)
 
+    @classmethod
+    def _ensure_new_product_catalog_entry(cls, *, order, costing):
+        """Create and link one unpublished catalogue product idempotently."""
+        if order.order_type != "NEW_PRODUCT":
+            return None
+
+        item = order.items.order_by("id").first()
+        if item is None:
+            raise ValidationError("New Product Development requires an order item.")
+        if item.product_id:
+            return item.product
+
+        from inventory.models import Product
+
+        product = Product.objects.create(
+            business_unit=order.business_unit,
+            product_type="FINISHED_GOOD",
+            name=(item.product_name or "New Product").strip(),
+            description=(item.specifications or order.notes or "").strip(),
+            unit="pcs",
+            selling_price=costing.expected_selling_price,
+            standard_cost=costing.total_cost,
+            track_inventory=True,
+            is_active=False,
+            is_published=False,
+            image=item.reference_image if item.reference_image else None,
+        )
+        item.product = product
+        item.save(update_fields=["product"])
+        return product
+
     @staticmethod
     def _choice_values(model, field_name):
         """
@@ -342,6 +373,10 @@ class OrderService:
             if production_costing is None or production_costing.status != "APPROVED":
                 raise ValidationError("The internal production costing must be approved first.")
             order.production_costing = production_costing
+            cls._ensure_new_product_catalog_entry(
+                order=order,
+                costing=production_costing,
+            )
 
         else:
             raise ValidationError("This order type does not require a Furniture production authorization.")

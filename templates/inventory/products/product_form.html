@@ -1,18 +1,34 @@
 {% extends "base_dashboard.html" %}
 
-{% block title %}Add Product - Inventory{% endblock %}
+{% block title %}{% if product %}Edit Product{% else %}Add Product{% endif %} - Inventory{% endblock %}
 
 {% block content %}
-<h2>Add Product</h2>
+<h2>{% if product %}Edit {{ product.name }}{% else %}Add Product{% endif %}</h2>
+<p class="text-muted">Save the internal product record first. Publish it only after its cost, selling price and customer information are ready.</p>
 
 <div class="card shadow p-4">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-success">Save Product</button>
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <h3 class="h6 fw-bold">Product identity</h3>
+        <div class="row g-3">
+        {% for field in form %}{% if field.name == 'business_unit' or field.name == 'product_type' or field.name == 'category' or field.name == 'preferred_supplier' or field.name == 'product_code' or field.name == 'name' or field.name == 'description' or field.name == 'unit' or field.name == 'image' %}
+          <div class="{% if field.name == 'description' or field.name == 'image' %}col-12{% else %}col-md-6{% endif %}"><label class="form-label fw-semibold">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+        {% endif %}{% endfor %}
+        </div>
+        <h3 class="h6 fw-bold mt-4">Cost and selling</h3>
+        <div class="row g-3">
+        {% for field in form %}{% if field.name == 'standard_cost' or field.name == 'selling_price' %}<div class="col-md-6"><label class="form-label fw-semibold">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endif %}{% endfor %}
+        </div>
+        <details class="mt-4"><summary class="fw-semibold text-primary">Stock and catalogue settings</summary><div class="row g-3 mt-1">
+        {% for field in form %}{% if field.name == 'reorder_level' or field.name == 'reorder_quantity' or field.name == 'valuation_method' or field.name == 'track_inventory' or field.name == 'allow_negative_stock' or field.name == 'is_active' or field.name == 'is_published' or field.name == 'is_featured' %}<div class="{% if field.name == 'track_inventory' or field.name == 'allow_negative_stock' or field.name == 'is_active' or field.name == 'is_published' or field.name == 'is_featured' %}col-md-4 form-check pt-4{% else %}col-md-4{% endif %}">{% if field.name == 'track_inventory' or field.name == 'allow_negative_stock' or field.name == 'is_active' or field.name == 'is_published' or field.name == 'is_featured' %}{{ field }} <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{% else %}<label class="form-label fw-semibold">{{ field.label }}</label>{{ field }}{% endif %}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endif %}{% endfor %}
+        </div></details>
+        <div class="mt-4">
+        <button type="submit" class="btn btn-success">{% if product %}Save Changes{% else %}Save Product{% endif %}</button>
         <a href="{% url 'inventory:product_list' %}" class="btn btn-secondary">
             Cancel
         </a>
+        </div>
     </form>
 </div>
 {% endblock %}

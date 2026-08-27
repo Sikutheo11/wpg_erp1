@@ -35,6 +35,14 @@ class FurnitureOrderItemFormTests(TestCase):
                 self.assertNotIn("discount", form.fields)
                 self.assertNotIn("tax", form.fields)
 
+        for order_type in ("CUSTOM_ORDER", "PROJECT", "MAINTENANCE"):
+            with self.subTest(order_type=order_type):
+                header = OrderForm(order_type=order_type)
+                item = OrderItemForm(order_type=order_type)
+                self.assertNotIn("discount", header.fields)
+                self.assertNotIn("tax", header.fields)
+                self.assertNotIn("price", item.fields)
+
     def test_ecommerce_only_uses_catalogue_product_fields(self):
         form = OrderItemForm(order_type="ECOMMERCE", business_unit="FURNITURE")
         self.assertEqual(set(form.fields), {"product", "quantity", "specifications"})

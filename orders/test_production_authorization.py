@@ -39,6 +39,12 @@ class FurnitureProductionAuthorizationTests(TestCase):
         )
         return order
 
+    def test_production_job_form_only_asks_for_order_and_planning_details(self):
+        self.assertEqual(
+            set(ProductionJobForm().fields),
+            {"order", "assigned_to", "description", "expected_end_date"},
+        )
+
     def test_furniture_requests_wait_for_quotation_or_costing(self):
         for order_type in ("CUSTOM_FURNITURE", "RESTOCK", "NEW_PRODUCT"):
             order = self.make_order(order_type)
@@ -76,6 +82,38 @@ class FurnitureProductionAuthorizationTests(TestCase):
         self.assertEqual(order.production_costing, costing)
         self.assertIsNotNone(order.production_authorized_at)
         self.assertIn(order, ProductionJobForm().fields["order"].queryset)
+
+    def test_new_product_costing_creates_unpublished_catalogue_product_once(self):
+        order = self.make_order("NEW_PRODUCT")
+        OrderService.submit(order=order, actor=self.user)
+        costing = Quotation.objects.create(
+            status="APPROVED",
+            material_cost=60000,
+            labour_cost=30000,
+            selling_price=125000,
+        )
+
+        OrderService.authorize_for_production(
+            order=order,
+            actor=self.user,
+            production_costing=costing,
+        )
+
+        item = order.items.select_related("product").get()
+        product = item.product
+        self.assertIsNotNone(product)
+        self.assertEqual(product.name, item.product_name)
+        self.assertEqual(product.standard_cost, 90000)
+        self.assertEqual(product.selling_price, 125000)
+        self.assertFalse(product.is_active)
+        self.assertFalse(product.is_published)
+
+        OrderService.authorize_for_production(
+            order=order,
+            actor=self.user,
+            production_costing=costing,
+        )
+        self.assertEqual(order.items.get().product_id, product.pk)
 
     def test_production_job_page_lists_approved_order_engine_order(self):
         order = self.make_order("RESTOCK")

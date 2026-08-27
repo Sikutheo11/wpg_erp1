@@ -724,6 +724,11 @@ class ProductionTaskService:
                 "Cancelled tasks cannot be completed."
             )
 
+        if task.status not in {"IN_PROGRESS", "PAUSED", "BLOCKED"}:
+            raise ValidationError(
+                "Only an active, paused or blocked task can be completed."
+            )
+
         cls._ensure_required_checklist_complete(task)
 
         if hours_worked is None:
@@ -736,9 +741,6 @@ class ProductionTaskService:
             raise ValidationError(
                 "Hours worked cannot be negative."
             )
-
-        if progress_percentage == 100:
-            cls._ensure_required_checklist_complete(task)
 
         previous_status = task.status
         task.status = "COMPLETED"

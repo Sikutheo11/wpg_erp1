@@ -236,7 +236,7 @@ class FurnitureInventoryService:
     ):
         reservations = StockReservation.objects.filter(
             raw_material=raw_material,
-            status="reserved",
+            status="RESERVED",
         )
 
         if exclude_job is not None:
@@ -437,7 +437,7 @@ class FurnitureInventoryService:
 
         StockReservation.objects.filter(
             production_job=production_job,
-            status="reserved",
+            status="RESERVED",
         ).delete()
 
         reservations = []
@@ -447,7 +447,7 @@ class FurnitureInventoryService:
                 production_job=production_job,
                 raw_material=item["raw_material"],
                 quantity=item["quantity_required"],
-                status="reserved",
+                status="RESERVED",
             )
 
             reservations.append(reservation)
@@ -508,11 +508,11 @@ class FurnitureInventoryService:
     ):
         reservations = StockReservation.objects.filter(
             production_job=production_job,
-            status="reserved",
+            status="RESERVED",
         )
 
         released_count = reservations.update(
-            status="released"
+            status="RELEASED"
         )
 
         cls._add_timeline(
@@ -569,7 +569,7 @@ class FurnitureInventoryService:
             StockReservation.objects.select_for_update()
             .filter(
                 production_job=production_job,
-                status="reserved",
+                status="RESERVED",
             )
             .select_related("raw_material")
         )
@@ -617,7 +617,7 @@ class FurnitureInventoryService:
                 unit_cost=reservation.raw_material.unit_cost,
             )
 
-            reservation.status = "issued"
+            reservation.status = "USED"
             reservation.save(
                 update_fields=["status"]
             )

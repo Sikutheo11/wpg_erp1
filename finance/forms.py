@@ -240,6 +240,13 @@ class IncomeDeclarationForm(forms.ModelForm):
         self.fields["received_from"].queryset = Counterparty.objects.filter(is_active=True).order_by("name")
         self.fields["received_from"].required = False
         self.fields["related_sale"].required = False
+        self.fields["related_sale"].label = "Related sale"
+        self.fields["related_sale"].help_text = (
+            "Required only when the income source is Sale."
+        )
+        self.fields["reference"].help_text = (
+            "Receipt, bank, Mobile Money or other transaction reference."
+        )
         self.fields["proof_document"].help_text = "Attach receipt, bank slip or Mobile Money confirmation."
         _lock_business_unit_to_employee(self, user)
 
@@ -363,6 +370,13 @@ class ExpenseRequestForm(forms.ModelForm):
         self.fields["needed_by"].input_formats = ["%Y-%m-%d"]
         self.fields["payee"].queryset = Counterparty.objects.filter(is_active=True).order_by("name")
         self.fields["payee"].label = "Paid to (person or company)"
+        self.fields["payee"].required = False
+        self.fields["payee"].help_text = (
+            "Required only for a direct payment."
+        )
+        self.fields["supporting_document"].help_text = (
+            "Optional quotation, invoice, receipt or other supporting document."
+        )
         _lock_business_unit_to_employee(self, user)
 
     def clean_amount_requested(self):

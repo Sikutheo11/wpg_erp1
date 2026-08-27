@@ -41,7 +41,7 @@ Quotation Approval
                             </label>
 
                             <div class="fw-bold">
-                                {{ quotation.production_job|default:quotation.source_order_request }}
+                                {{ quotation.production_job|default:source_order }}
                             </div>
 
                         </div>
@@ -57,7 +57,7 @@ Quotation Approval
                                 {% if quotation.production_job %}
                                     {{ quotation.production_job.product }}
                                 {% else %}
-                                    {{ quotation.source_order_request.get_order_type_display }}
+                                    {{ source_order.get_order_type_display|default:"No linked order" }}
                                 {% endif %}
 
                             </div>

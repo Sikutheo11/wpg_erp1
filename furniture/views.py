@@ -60,6 +60,7 @@ from .services import (
     ProductionTaskService,
     QuotationService,
     ProductionCostService,
+    FurnitureInventoryService,
     QualityService,
     PlanningService
 )
@@ -275,12 +276,13 @@ def production_job_detail(request, pk):
     completed_tasks_count = active_tasks.filter(
         status="COMPLETED"
     ).count()
+    settings_object = ProductionSettings.get_settings()
     cost_summary = ProductionCostService.job_cost_summary(
         production_job=job,
-        overhead_rate=Decimal("10.00"),
-        wastage_rate=Decimal("5.00"),
-        transport_cost=Decimal("5000.00"),
-        other_cost=Decimal("1000.00"),
+        overhead_rate=settings_object.overhead_rate,
+        wastage_rate=settings_object.wastage_rate,
+        transport_cost=settings_object.default_transport_cost,
+        other_cost=settings_object.default_other_cost,
     )
 
     if total_tasks:
@@ -306,6 +308,12 @@ def production_job_detail(request, pk):
         .first()
     )
 
+    first_task = job.tasks.order_by("sequence", "id").first()
+    try:
+        job_quotation = job.quotation
+    except ObjectDoesNotExist:
+        job_quotation = None
+
     return render(
         request,
         "furniture/production_job_detail.html",
@@ -314,7 +322,12 @@ def production_job_detail(request, pk):
             "overall_progress": overall_progress,
             "completed_tasks_count": completed_tasks_count,
             "cost_summary": cost_summary,
-            "inspection" :inspection
+            "inspection": inspection,
+            "first_task": first_task,
+            "job_quotation": job_quotation,
+            "can_create_reinspection": job.rework_orders.filter(
+                status__in={"COMPLETED", "VERIFIED"},
+            ).exists(),
         },
     )
 
@@ -356,6 +369,20 @@ def production_job_create(request):
 
         if form.is_valid():
             data = form.cleaned_data
+            order = data["order"]
+            first_item = (
+                order.items
+                .select_related("product")
+                .order_by("id")
+                .first()
+            )
+            product = first_item.product if first_item else None
+            quantity = first_item.quantity if first_item else 1
+            job_types = {
+                "CUSTOM_FURNITURE": "CUSTOMER_CUSTOM",
+                "RESTOCK": "RESTOCK",
+                "NEW_PRODUCT": "NEW_PRODUCT",
+            }
 
             employee = _employee_for_user(
                 request.user
@@ -363,26 +390,22 @@ def production_job_create(request):
 
             try:
                 job = ProductionService.create_job(
-                    order=data.get("order"),
-                    product=data.get("product"),
-                    job_type=data.get(
-                        "job_type",
-                        "RESTOCK",
-                    ),
-                    quantity_to_produce=data.get(
-                        "quantity_to_produce",
-                        1,
-                    ),
+                    order=order,
+                    product=product,
+                    job_type=job_types.get(order.order_type, "CUSTOMER_CUSTOM"),
+                    quantity_to_produce=quantity,
                     assigned_to=data.get(
                         "assigned_to"
                     ),
                     created_by=employee,
-                    description=data.get(
-                        "description",
-                        "",
+                    description=(
+                        data.get("description")
+                        or order.notes
+                        or (first_item.specifications if first_item else "")
                     ),
-                    expected_end_date=data.get(
-                        "expected_end_date"
+                    expected_end_date=(
+                        data.get("expected_end_date")
+                        or order.expected_delivery_date
                     ),
                 )
 
@@ -554,7 +577,6 @@ def quotation_list(request):
 
 @login_required
 @wpg_permission_required("furniture.approve_quotation", feature_code="FURNITURE_QUOTATIONS", action="approve")
-@require_POST
 def approve_quotation(request, pk):
     quotation = get_object_or_404(
         Quotation.objects.select_related(
@@ -564,6 +586,10 @@ def approve_quotation(request, pk):
         ),
         pk=pk,
     )
+    try:
+        source_order = quotation.source_order_request
+    except ObjectDoesNotExist:
+        source_order = None
 
     if request.method == "POST":
         action = request.POST.get(
@@ -619,6 +645,7 @@ def approve_quotation(request, pk):
         "furniture/approve_quotation.html",
         {
             "quotation": quotation,
+            "source_order": source_order,
         },
     )
 
@@ -633,6 +660,9 @@ def add_material(request, pk):
         ProductionJob,
         pk=pk,
     )
+    if production_job.status != "IN_PRODUCTION":
+        messages.error(request, "Materials can be consumed only while the job is in production.")
+        return redirect("furniture:production_job_detail", pk=production_job.pk)
 
     if request.method == "POST":
         form = ProductionMaterialForm(
@@ -640,28 +670,19 @@ def add_material(request, pk):
         )
 
         if form.is_valid():
-            material = form.save(
-                commit=False
-            )
-
-            material.production_job = production_job
-
-            if not material.unit_cost:
-                material.unit_cost = (
-                    material.raw_material.unit_cost
+            try:
+                FurnitureInventoryService.record_material_usage(
+                    production_job=production_job,
+                    raw_material=form.cleaned_data["raw_material"],
+                    quantity=form.cleaned_data["quantity_used"],
+                    warehouse=form.cleaned_data["warehouse"],
+                    performed_by=request.user,
                 )
-
-            material.save()
-
-            messages.success(
-                request,
-                "Material usage added successfully.",
-            )
-
-            return redirect(
-                "furniture:production_job_detail",
-                pk=production_job.pk,
-            )
+            except ValidationError as error:
+                form.add_error(None, "; ".join(error.messages))
+            else:
+                messages.success(request, "Material issued and consumption recorded successfully.")
+                return redirect("furniture:production_job_detail", pk=production_job.pk)
 
     else:
         form = ProductionMaterialForm()
@@ -680,14 +701,27 @@ def add_material(request, pk):
 @wpg_permission_required("furniture.add_productionlabour", feature_code="FURNITURE_LABOUR", action="add")
 def add_labour(request, pk):
     production_job = get_object_or_404(ProductionJob, pk=pk)
+    if production_job.status != "IN_PRODUCTION":
+        messages.error(request, "Labour can be recorded only while the job is in production.")
+        return redirect("furniture:production_job_detail", pk=production_job.pk)
     form = ProductionLabourForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
         labour = form.save(commit=False)
         labour.production_job = production_job
-        labour.save()
-        messages.success(request, "Labour usage added successfully.")
-        return redirect("furniture:production_job_detail", pk=pk)
+        labour.hourly_rate = (
+            labour.employee.hourly_rate
+            or ProductionSettings.get_settings().default_labour_hourly_rate
+        )
+        if labour.hourly_rate <= 0:
+            form.add_error(
+                None,
+                "Configure the employee hourly rate or the default labour hourly rate before recording labour.",
+            )
+        else:
+            labour.save()
+            messages.success(request, "Labour usage added successfully.")
+            return redirect("furniture:production_job_detail", pk=pk)
 
     return render(
         request,
@@ -700,14 +734,24 @@ def add_labour(request, pk):
 @wpg_permission_required("furniture.add_productionmachine", feature_code="FURNITURE_MACHINES", action="add")
 def add_machine(request, pk):
     production_job = get_object_or_404(ProductionJob, pk=pk)
+    if production_job.status != "IN_PRODUCTION":
+        messages.error(request, "Machine usage can be recorded only while the job is in production.")
+        return redirect("furniture:production_job_detail", pk=production_job.pk)
     form = ProductionMachineForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
         machine = form.save(commit=False)
         machine.production_job = production_job
-        machine.save()
-        messages.success(request, "Machine usage added successfully.")
-        return redirect("furniture:production_job_detail", pk=pk)
+        machine.hourly_cost = ProductionSettings.get_settings().default_machine_hourly_cost
+        if machine.hourly_cost <= 0:
+            form.add_error(
+                None,
+                "Configure the default machine hourly cost before recording machine usage.",
+            )
+        else:
+            machine.save()
+            messages.success(request, "Machine usage added successfully.")
+            return redirect("furniture:production_job_detail", pk=pk)
 
     return render(
         request,
@@ -734,37 +778,36 @@ def add_output(request, pk):
         form = ProductionOutputForm(
             request.POST,
             request.FILES,
+            production_job=production_job,
         )
 
         if form.is_valid():
-            output = form.save(
-                commit=False
-            )
+            try:
+                ProductionService.record_output(
+                    production_job=production_job,
+                    product=production_job.product,
+                    quantity_produced=form.cleaned_data["quantity_produced"],
+                    warehouse=form.cleaned_data["warehouse"],
+                    produced_by=employee,
+                    actor=request.user,
+                    image=form.cleaned_data.get("image"),
+                )
+            except ValidationError as error:
+                form.add_error(None, _validation_message(error))
+            else:
+                messages.success(
+                    request,
+                    "Production output recorded and received into stock successfully.",
+                )
 
-            output.production_job = (
-                production_job
-            )
-
-            if employee:
-                output.produced_by = employee
-
-            output.save()
-
-            messages.success(
-                request,
-                "Production output recorded successfully.",
-            )
-
-            return redirect(
-                "furniture:production_job_detail",
-                pk=production_job.pk,
-            )
+                return redirect(
+                    "furniture:production_job_detail",
+                    pk=production_job.pk,
+                )
 
     else:
         form = ProductionOutputForm(
-            initial={
-                "product": production_job.product,
-            }
+            production_job=production_job,
         )
 
     return render(
@@ -1345,6 +1388,9 @@ def production_task_progress(request, pk):
 @wpg_permission_required("furniture.change_productiontask", feature_code="FURNITURE_TASKS", action="change")
 def production_task_checklist(request, pk):
     task = get_object_or_404(ProductionTask, pk=pk)
+    if task.status in {"COMPLETED", "CANCELLED"}:
+        messages.error(request, "Checklist cannot be changed after the task is closed.")
+        return redirect("furniture:production_task_detail", pk=task.pk)
     form = ProductionChecklistForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
@@ -1370,6 +1416,10 @@ def production_checklist_toggle(request, pk):
         pk=pk,
     )
     employee = _employee_for_user(request.user)
+
+    if item.task.status in {"COMPLETED", "CANCELLED"}:
+        messages.error(request, "Checklist cannot be changed after the task is closed.")
+        return redirect("furniture:production_task_detail", pk=item.task_id)
 
     if item.is_completed:
         item.is_completed = False
@@ -1900,6 +1950,7 @@ def production_defect_create(request, inspection_pk):
         form = ProductionDefectForm(
             request.POST,
             request.FILES,
+            inspection=inspection,
         )
 
         if form.is_valid():
@@ -1958,7 +2009,7 @@ def production_defect_create(request, inspection_pk):
                     error.messages,
                 )
     else:
-        form = ProductionDefectForm()
+        form = ProductionDefectForm(inspection=inspection)
 
     return render(
         request,
@@ -2038,6 +2089,9 @@ def production_defect_detail(request, pk):
         {
             "defect": defect,
             "job": defect.production_job,
+            "has_active_rework": defect.rework_orders.exclude(
+                status__in={"VERIFIED", "CANCELLED"},
+            ).exists(),
         },
     )
 
@@ -2211,7 +2265,6 @@ def rework_order_start(request, pk):
 
 @login_required
 @wpg_permission_required("furniture.change_reworkorder", feature_code="FURNITURE_REWORK", action="change")
-@require_POST
 def rework_order_complete(request, pk):
     rework = get_object_or_404(
         ReworkOrder,
@@ -2292,7 +2345,6 @@ def rework_order_complete(request, pk):
 
 @login_required
 @wpg_permission_required("furniture.verify_reworkorder", feature_code="FURNITURE_REWORK", action="approve")
-@require_POST
 def rework_order_verify(request, pk):
     rework = get_object_or_404(
         ReworkOrder,
@@ -2416,11 +2468,15 @@ def production_schedule(request, pk):
         ProductionJob,
         pk=pk,
     )
-    PlanningService.schedule_job(job)
-    messages.success(
-        request,
-        "Production schedule generated successfully.",
-    )
+    try:
+        PlanningService.schedule_job(job)
+    except ValidationError as error:
+        messages.error(request, _validation_message(error))
+    else:
+        messages.success(
+            request,
+            "Production schedule generated successfully.",
+        )
     return redirect(
         "furniture:production_job_detail",
         pk=job.pk,

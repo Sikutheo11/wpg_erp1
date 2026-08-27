@@ -72,13 +72,13 @@ class FurnitureGroupPermissionTests(TestCase):
             )
         )
 
-    def test_quotation_approval_requires_custom_permission_and_post(self):
+    def test_quotation_review_requires_custom_permission_and_allows_get(self):
         self._grant("approve_quotation")
         self.client.force_login(self.user)
         response = self.client.get(
             reverse("furniture:approve_quotation", kwargs={"pk": 999999})
         )
-        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.status_code, 404)
 
     def test_permission_aware_action_templates_compile(self):
         for template_name in (

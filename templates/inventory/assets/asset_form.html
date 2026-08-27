@@ -5,9 +5,8 @@
 {% block content %}
 
 
-<h2>
-Add Asset
-</h2>
+<h2>{% if asset %}Edit {{ asset.name }}{% else %}Add Asset{% endif %}</h2>
+<p class="text-muted">Record an owned machine, vehicle, computer, tool or other long-term asset.</p>
 
 
 
@@ -20,15 +19,11 @@ Add Asset
 {% csrf_token %}
 
 
-{{form.as_p}}
+{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}<div class="row g-3">{% for field in form %}<div class="{% if field.name == 'name' %}col-12{% else %}col-md-6{% endif %}"><label class="form-label fw-semibold">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}</div>
 
 
 
-<button class="btn btn-success">
-
-Save Asset
-
-</button>
+<div class="mt-4"><button class="btn btn-success">{% if asset %}Save Changes{% else %}Save Asset{% endif %}</button> <a href="{% url 'inventory:asset_list' %}" class="btn btn-outline-secondary">Cancel</a></div>
 
 
 </form>

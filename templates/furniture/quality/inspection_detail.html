@@ -1,4 +1,5 @@
 {% extends "base_dashboard.html" %}
+{% load permission_tags %}
 
 {% block title %}Inspection #{{ inspection.pk }}{% endblock %}
 {% block page_title %}Quality Inspection Detail{% endblock %}
@@ -7,9 +8,9 @@
   <div class="d-flex justify-content-between align-items-start mb-4">
     <div><h3 class="fw-bold">Inspection #{{ inspection.pk }}</h3><p class="text-muted">{{ inspection.production_job }}</p></div>
     <div class="d-flex gap-2">
-      {% if inspection.result == "PENDING" %}<a href="{% url 'furniture:quality_inspection_result' inspection.pk %}" class="btn btn-primary">Record Result</a>{% endif %}
-      {% if inspection.result == "FAILED" or inspection.result == "CONDITIONAL" %}<a href="{% url 'furniture:production_defect_create' inspection.pk %}" class="btn btn-danger">Add Defect</a>{% endif %}
-      {% if inspection.result == "PASSED" and not inspection.approved_at %}<form method="post" action="{% url 'furniture:quality_inspection_approve' inspection.pk %}">{% csrf_token %}<button class="btn btn-success">Approve Finished Goods</button></form>{% endif %}
+      {% if request.user|can_edit:"FURNITURE_QUALITY" and inspection.result == "PENDING" %}<a href="{% url 'furniture:quality_inspection_result' inspection.pk %}" class="btn btn-primary">Record Result</a>{% endif %}
+      {% if request.user|can_add:"FURNITURE_QUALITY" and inspection.result == "FAILED" or request.user|can_add:"FURNITURE_QUALITY" and inspection.result == "CONDITIONAL" %}<a href="{% url 'furniture:production_defect_create' inspection.pk %}" class="btn btn-danger">Add Defect</a>{% endif %}
+      {% if request.user|can_approve:"FURNITURE_QUALITY" and inspection.result == "PASSED" and not inspection.approved_at and inspection.inspection_type != "IN_PROCESS" %}<form method="post" action="{% url 'furniture:quality_inspection_approve' inspection.pk %}">{% csrf_token %}<button class="btn btn-success">Approve Finished Goods</button></form>{% endif %}
     </div>
   </div>
   <div class="row g-4">

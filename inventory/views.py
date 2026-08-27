@@ -6,6 +6,7 @@ from django.shortcuts import (
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 
 from core.permissions import wpg_permission_required
 
@@ -36,6 +37,7 @@ from .forms import (
 
 # Dashboard logic separated
 from .dashboard import get_inventory_dashboard
+from .services import StockService
 
 
 
@@ -299,31 +301,35 @@ def material_list(request):
     action="add",
 )
 def material_create(request):
-
-    form = RawMaterialForm(
-        request.POST or None
-    )
-
-    if form.is_valid():
-
+    form = RawMaterialForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
         form.save()
-
-        messages.success(
-            request,
-            "Material created successfully"
-        )
-
-        return redirect(
-            "inventory:material_list"
-        )
-
-
+        messages.success(request, "Material created successfully")
+        return redirect("inventory:material_list")
     return render(
         request,
         "inventory/materials/material_form.html",
-        {
-            "form": form
-        }
+        {"form": form, "material": None},
+    )
+
+
+@login_required
+@wpg_permission_required(
+    "inventory.change_rawmaterial",
+    feature_code="INVENTORY_RAW_MATERIALS",
+    action="edit",
+)
+def material_update(request, pk):
+    material = get_object_or_404(RawMaterial, pk=pk)
+    form = RawMaterialForm(request.POST or None, instance=material)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Material updated successfully.")
+        return redirect("inventory:material_list")
+    return render(
+        request,
+        "inventory/materials/material_form.html",
+        {"form": form, "material": material},
     )
 
 
@@ -389,7 +395,8 @@ def product_list(request):
 def product_create(request):
 
     form = ProductForm(
-        request.POST or None
+        request.POST or None,
+        request.FILES or None,
     )
 
 
@@ -412,8 +419,33 @@ def product_create(request):
         request,
         "inventory/products/product_form.html",
         {
-            "form": form
+            "form": form,
+            "product": None,
         }
+    )
+
+
+@login_required
+@wpg_permission_required(
+    "inventory.change_product",
+    feature_code="INVENTORY_PRODUCTS",
+    action="edit",
+)
+def product_update(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    form = ProductForm(
+        request.POST or None,
+        request.FILES or None,
+        instance=product,
+    )
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Product updated successfully.")
+        return redirect("inventory:product_list")
+    return render(
+        request,
+        "inventory/products/product_form.html",
+        {"form": form, "product": product},
     )
 
 
@@ -474,8 +506,29 @@ def asset_create(request):
         request,
         "inventory/assets/asset_form.html",
         {
-            "form":form
+            "form":form,
+            "asset": None,
         }
+    )
+
+
+@login_required
+@wpg_permission_required(
+    "inventory.change_asset",
+    feature_code="ASSET_LIST",
+    action="edit",
+)
+def asset_update(request, pk):
+    asset = get_object_or_404(Asset, pk=pk)
+    form = AssetForm(request.POST or None, instance=asset)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Asset updated successfully.")
+        return redirect("inventory:asset_list")
+    return render(
+        request,
+        "inventory/assets/asset_form.html",
+        {"form": form, "asset": asset},
     )
 
 
@@ -490,10 +543,9 @@ def asset_create(request):
     feature_code="INVENTORY_STOCK_MOVEMENTS",
 )
 def movement_list(request):
-
-    movements = StockMovement.objects.order_by(
-        "-created_at"
-    )
+    movements = StockMovement.objects.select_related(
+        "product", "warehouse", "created_by"
+    ).order_by("-created_at")
 
 
     return render(
@@ -513,33 +565,42 @@ def movement_list(request):
     action="add",
 )
 def stock_create(request):
-
-    form = StockMovementForm(
-        request.POST or None
-    )
-
-
-    if form.is_valid():
-
-        movement = form.save(
-            commit=False
-        )
-
-
-        movement.created_by = request.user
-
-        movement.save()
-
-
-        messages.success(
-            request,
-            "Stock movement recorded"
-        )
-
-
-        return redirect(
-            "inventory:movement_list"
-        )
+    form = StockMovementForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        movement_type = data["movement_type"]
+        common = {
+            "product": data["product"],
+            "warehouse": data["warehouse"],
+            "quantity": data["quantity"],
+            "unit_cost": data.get("unit_cost") or None,
+            "business_unit": data["product"].business_unit,
+            "reference_type": data["reference_type"],
+            "reference_no": data.get("reference_no", ""),
+            "notes": data.get("notes", ""),
+            "actor": request.user,
+        }
+        try:
+            if movement_type in {"IN", "RETURN_IN"}:
+                StockService.receive_stock(
+                    **common,
+                    movement_type=movement_type,
+                )
+            elif movement_type in {"OUT", "RETURN_OUT"}:
+                StockService.issue_stock(
+                    **common,
+                    movement_type=movement_type,
+                )
+            else:
+                StockService.adjust_stock(
+                    **common,
+                    direction="IN" if movement_type == "ADJUSTMENT_IN" else "OUT",
+                )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            messages.success(request, "Stock movement recorded successfully.")
+            return redirect("inventory:movement_list")
 
 
     return render(

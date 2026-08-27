@@ -1,41 +1,49 @@
-{% extends 'base_dashboard.html' %}
+{% extends "base_dashboard.html" %}
 
+{% block title %}Record Production Output{% endblock %}
+{% block page_title %}Record Production Output{% endblock %}
 
 {% block content %}
-
-
-<div class="container">
-
-
-<h3>
-Production Output
-</h3>
-
-
-
-<form method="POST">
-
-
-{% csrf_token %}
-
-
-{{form.as_p}}
-
-
-
-<button class="btn btn-success">
-
-Finish Production
-
-</button>
-
-
-
-</form>
-
-
-
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+          <h4 class="mb-1">Finished Output</h4>
+          <small class="text-muted">
+            Job #{{ production_job.pk }} · {{ production_job.product|default:"No product" }} · Planned: {{ production_job.quantity_to_produce }}
+          </small>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-info">
+            Saving this form records the output and receives it into the selected finished-goods warehouse.
+          </div>
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+            {% for field in form %}
+              <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                  {{ field.label }}{% if field.field.required %}<span class="text-danger"> *</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.help_text %}<small class="text-muted d-block mt-1">{{ field.help_text }}</small>{% endif %}
+                {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+              </div>
+            {% endfor %}
+            <hr>
+            <div class="d-flex justify-content-between">
+              <a href="{% url 'furniture:production_job_detail' production_job.pk %}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-box-arrow-in-down me-1"></i> Record Output & Receive Stock
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-
-
 {% endblock %}

@@ -6,9 +6,8 @@
 
 
 
-<h2>
-Stock Movement
-</h2>
+<h2>Record Stock Movement</h2>
+<p class="text-muted">Use this form for receipts, issues, returns and approved adjustments. Warehouse transfers must use the transfer workflow.</p>
 
 
 
@@ -22,15 +21,11 @@ Stock Movement
 
 
 
-{{form.as_p}}
+{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}<div class="row g-3">{% for field in form %}<div class="{% if field.name == 'notes' %}col-12{% else %}col-md-6{% endif %}"><label class="form-label fw-semibold">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}</div>
 
 
 
-<button class="btn btn-success">
-
-Save Movement
-
-</button>
+<div class="mt-4"><button class="btn btn-success">Post Movement</button> <a href="{% url 'inventory:movement_list' %}" class="btn btn-outline-secondary">Cancel</a></div>
 
 
 

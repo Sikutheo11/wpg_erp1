@@ -1,4 +1,5 @@
 {% extends "base_dashboard.html" %}
+{% load permission_tags %}
 
 {% block title %}
 Production Job Detail
@@ -52,55 +53,60 @@ Production Job
 
         <div class="d-flex flex-wrap gap-2">
 
-            <a href="{% url 'furniture:production_task_create' %}?production_job={{ job.id }}"
+            {% if request.user|can_add:"FURNITURE_TASKS" and job.status != "FINISHED_GOODS" and job.status != "DELIVERED" and job.status != "CANCELLED" %}
+            <a href="{% url 'furniture:production_task_create' %}?job={{ job.id }}"
                class="btn btn-primary">
                 <i class="bi bi-plus-circle me-1"></i>
                 Add Task
             </a>
+            {% endif %}
 
+            {% if request.user|can_add:"FURNITURE_QUOTATIONS" %}
             <a href="{% url 'furniture:production_job_quotation' job.id %}"
                class="btn btn-outline-warning">
                 <i class="bi bi-file-earmark-text me-1"></i>
                 Quotation
             </a>
+            {% endif %}
 
+            {% if request.user|can_add:"FURNITURE_MATERIALS" and job.status == "IN_PRODUCTION" %}
             <a href="{% url 'furniture:add_material' job.id %}"
                class="btn btn-outline-success">
                 <i class="bi bi-tree me-1"></i>
                 Add Material
             </a>
+            {% endif %}
 
+            {% if request.user|can_add:"FURNITURE_LABOUR" and job.status == "IN_PRODUCTION" %}
             <a href="{% url 'furniture:add_labour' job.id %}"
                class="btn btn-outline-info">
                 <i class="bi bi-people me-1"></i>
                 Add Labour
             </a>
+            {% endif %}
 
+            {% if request.user|can_add:"FURNITURE_MACHINES" and job.status == "IN_PRODUCTION" %}
             <a href="{% url 'furniture:add_machine' job.id %}"
                class="btn btn-outline-secondary">
                 <i class="bi bi-gear-wide-connected me-1"></i>
                 Add Machine
             </a>
+            {% endif %}
 
+            {% if request.user|can_add:"FURNITURE_OUTPUTS" and job.status == "IN_PRODUCTION" or request.user|can_add:"FURNITURE_OUTPUTS" and job.status == "QUALITY_CHECK" or request.user|can_add:"FURNITURE_OUTPUTS" and job.status == "FINISHED_GOODS" %}
             <a href="{% url 'furniture:add_output' job.id %}"
                class="btn btn-outline-dark">
                 <i class="bi bi-box-seam me-1"></i>
                 Record Output
             </a>
+            {% endif %}
+            {% if request.user|can_view:"FURNITURE_REPORTS" %}
             <a href="{% url 'furniture:production_job_cost_report' job.id %}"
                class="btn btn-outline-dark">
             <i class="fas fa-calculator"></i>
             Cost Report
             </a>
-            <form method="post"
-                action="{% url 'furniture:production_schedule' job.id %}"
-                class="d-inline">
-                {% csrf_token %}
-                <button class="btn btn-outline-primary">
-                    <i class="bi bi-calendar-check me-1"></i>
-                    Generate Schedule
-                </button>
-            </form>
+            {% endif %}
         </div>
 
     </div>
@@ -212,6 +218,7 @@ Production Job
                 </small>
             </div>
 
+            {% if request.user|can_edit:"FURNITURE_PRODUCTION_JOBS" and job.status != "FINISHED_GOODS" and job.status != "DELIVERED" and job.status != "CANCELLED" %}
             <form method="post"
                   action="{% url 'furniture:production_schedule' job.id %}"
                   class="d-inline">
@@ -221,6 +228,7 @@ Production Job
                     Generate Schedule
                 </button>
             </form>
+            {% endif %}
         </div>
 
         <div class="card-body">
@@ -242,7 +250,7 @@ Production Job
                 <div class="col-md-4">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block">Schedule Status</small>
-                        {% if job.tasks.first.planned_start %}
+                        {% if first_task and first_task.planned_start %}
                             <span class="badge bg-success mt-1">Generated</span>
                         {% else %}
                             <span class="badge bg-warning text-dark mt-1">Not Generated</span>
@@ -392,15 +400,15 @@ Production Job
 
             <div class="d-flex flex-wrap gap-2">
 
-                <a href="{% url 'furniture:quality_inspection_list' %}"
+                {% if request.user|can_view:"FURNITURE_QUALITY" %}<a href="{% url 'furniture:quality_inspection_list' %}"
                    class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-list-check me-1"></i>
                     All Inspections
-                </a>
+                </a>{% endif %}
 
                 {% if not inspection %}
 
-                    {% if job.status == "IN_PRODUCTION" or job.status == "QUALITY_CHECK" %}
+                    {% if request.user|can_add:"FURNITURE_QUALITY" and job.status == "IN_PRODUCTION" or request.user|can_add:"FURNITURE_QUALITY" and job.status == "QUALITY_CHECK" %}
                     <a href="{% url 'furniture:quality_inspection_create' job.pk %}"
                        class="btn btn-sm btn-primary">
                         <i class="bi bi-shield-plus me-1"></i>
@@ -410,11 +418,11 @@ Production Job
 
                 {% elif inspection.result == "PENDING" %}
 
-                    <a href="{% url 'furniture:quality_inspection_result' inspection.pk %}"
+                    {% if request.user|can_edit:"FURNITURE_QUALITY" %}<a href="{% url 'furniture:quality_inspection_result' inspection.pk %}"
                        class="btn btn-sm btn-warning">
                         <i class="bi bi-clipboard-check me-1"></i>
                         Record Result
-                    </a>
+                    </a>{% endif %}
 
                     <a href="{% url 'furniture:quality_inspection_detail' inspection.pk %}"
                        class="btn btn-sm btn-outline-primary">
@@ -429,11 +437,15 @@ Production Job
                         View Inspection
                     </a>
 
-                    <a href="{% url 'furniture:production_defect_create' inspection.pk %}"
+                    {% if request.user|can_add:"FURNITURE_QUALITY" %}<a href="{% url 'furniture:production_defect_create' inspection.pk %}"
                        class="btn btn-sm btn-danger">
                         <i class="bi bi-plus-circle me-1"></i>
                         Add Defect
-                    </a>
+                    </a>{% endif %}
+
+                    {% if request.user|can_add:"FURNITURE_QUALITY" and can_create_reinspection %}
+                    <a href="{% url 'furniture:quality_inspection_create' job.pk %}" class="btn btn-sm btn-warning">Create Re-inspection</a>
+                    {% endif %}
 
                 {% elif inspection.result == "PASSED" and not inspection.approved_at %}
 
@@ -442,7 +454,7 @@ Production Job
                         View Inspection
                     </a>
 
-                    <form method="post"
+                    {% if request.user|can_approve:"FURNITURE_QUALITY" and inspection.inspection_type != "IN_PROCESS" %}<form method="post"
                           action="{% url 'furniture:quality_inspection_approve' inspection.pk %}"
                           class="d-inline">
                         {% csrf_token %}
@@ -452,7 +464,7 @@ Production Job
                             <i class="bi bi-check-circle me-1"></i>
                             Approve Finished Goods
                         </button>
-                    </form>
+                    </form>{% endif %}
 
                 {% elif inspection.result == "PASSED" and inspection.approved_at %}
 
@@ -482,7 +494,7 @@ Production Job
                         A final inspection must be completed before the job can be approved as finished goods.
                     </p>
 
-                    {% if job.status == "IN_PRODUCTION" or job.status == "QUALITY_CHECK" %}
+                    {% if request.user|can_add:"FURNITURE_QUALITY" and job.status == "IN_PRODUCTION" or request.user|can_add:"FURNITURE_QUALITY" and job.status == "QUALITY_CHECK" %}
                     <a href="{% url 'furniture:quality_inspection_create' job.pk %}"
                        class="btn btn-primary">
                         <i class="bi bi-shield-plus me-1"></i>
@@ -649,11 +661,13 @@ Production Job
                 </small>
             </div>
 
-            <a href="{% url 'furniture:production_task_create' %}?production_job={{ job.id }}"
+            {% if request.user|can_add:"FURNITURE_TASKS" and job.status != "FINISHED_GOODS" and job.status != "DELIVERED" and job.status != "CANCELLED" %}
+            <a href="{% url 'furniture:production_task_create' %}?job={{ job.id }}"
                class="btn btn-sm btn-primary">
                 <i class="bi bi-plus-circle me-1"></i>
                 New Task
             </a>
+            {% endif %}
 
         </div>
 
@@ -776,7 +790,7 @@ Production Job
                                     Open
                                 </a>
 
-                                {% if task.status != "COMPLETED" and task.status != "CANCELLED" %}
+                                {% if request.user|can_edit:"FURNITURE_TASKS" and task.status != "COMPLETED" and task.status != "CANCELLED" %}
                                     <a href="{% url 'furniture:production_task_progress' task.id %}"
                                        class="btn btn-sm btn-primary">
                                         Update
@@ -799,10 +813,12 @@ Production Job
 
                             <div class="mt-3">
 
-                                <a href="{% url 'furniture:production_task_create' %}?production_job={{ job.id }}"
+                                {% if request.user|can_add:"FURNITURE_TASKS" and job.status != "FINISHED_GOODS" and job.status != "DELIVERED" and job.status != "CANCELLED" %}
+                                <a href="{% url 'furniture:production_task_create' %}?job={{ job.id }}"
                                    class="btn btn-primary btn-sm">
                                     Create First Task
                                 </a>
+                                {% endif %}
 
                             </div>
 
@@ -833,10 +849,10 @@ Production Job
                 <div class="card-header bg-white d-flex justify-content-between">
                     <strong>Materials Used</strong>
 
-                    <a href="{% url 'furniture:add_material' job.id %}"
+                    {% if request.user|can_add:"FURNITURE_MATERIALS" and job.status == "IN_PRODUCTION" %}<a href="{% url 'furniture:add_material' job.id %}"
                        class="btn btn-sm btn-outline-success">
                         Add
-                    </a>
+                    </a>{% endif %}
                 </div>
 
                 <div class="card-body">
@@ -885,10 +901,10 @@ Production Job
                 <div class="card-header bg-white d-flex justify-content-between">
                     <strong>Labour</strong>
 
-                    <a href="{% url 'furniture:add_labour' job.id %}"
+                    {% if request.user|can_add:"FURNITURE_LABOUR" and job.status == "IN_PRODUCTION" %}<a href="{% url 'furniture:add_labour' job.id %}"
                        class="btn btn-sm btn-outline-info">
                         Add
-                    </a>
+                    </a>{% endif %}
                 </div>
 
                 <div class="card-body">
@@ -937,10 +953,10 @@ Production Job
                 <div class="card-header bg-white d-flex justify-content-between">
                     <strong>Machines</strong>
 
-                    <a href="{% url 'furniture:add_machine' job.id %}"
+                    {% if request.user|can_add:"FURNITURE_MACHINES" and job.status == "IN_PRODUCTION" %}<a href="{% url 'furniture:add_machine' job.id %}"
                        class="btn btn-sm btn-outline-secondary">
                         Add
-                    </a>
+                    </a>{% endif %}
                 </div>
 
                 <div class="card-body">
@@ -996,7 +1012,7 @@ Production Job
 
                 <div class="card-body">
 
-                    {% if job.quotation %}
+                    {% if job_quotation %}
 
                         <div class="row g-3">
 
@@ -1005,7 +1021,7 @@ Production Job
                                     Material Cost
                                 </small>
                                 <strong>
-                                    {{ job.quotation.material_cost|floatformat:0 }} RWF
+                                    {{ job_quotation.material_cost|floatformat:0 }} RWF
                                 </strong>
                             </div>
 
@@ -1014,7 +1030,7 @@ Production Job
                                     Labour Cost
                                 </small>
                                 <strong>
-                                    {{ job.quotation.labour_cost|floatformat:0 }} RWF
+                                    {{ job_quotation.labour_cost|floatformat:0 }} RWF
                                 </strong>
                             </div>
 
@@ -1023,7 +1039,7 @@ Production Job
                                     Machine Cost
                                 </small>
                                 <strong>
-                                    {{ job.quotation.machine_cost|floatformat:0 }} RWF
+                                    {{ job_quotation.machine_cost|floatformat:0 }} RWF
                                 </strong>
                             </div>
 
@@ -1032,13 +1048,13 @@ Production Job
                                     Selling Price
                                 </small>
                                 <strong>
-                                    {{ job.quotation.selling_price|floatformat:0 }} RWF
+                                    {{ job_quotation.selling_price|floatformat:0 }} RWF
                                 </strong>
                             </div>
 
                             <div class="col-12">
                                 <span class="badge bg-secondary">
-                                    {{ job.quotation.get_status_display }}
+                                    {{ job_quotation.get_status_display }}
                                 </span>
                             </div>
 
@@ -1075,10 +1091,10 @@ Production Job
                 <div class="card-header bg-white d-flex justify-content-between">
                     <strong>Production Outputs</strong>
 
-                    <a href="{% url 'furniture:add_output' job.id %}"
+                    {% if request.user|can_add:"FURNITURE_OUTPUTS" and job.status == "IN_PRODUCTION" or request.user|can_add:"FURNITURE_OUTPUTS" and job.status == "QUALITY_CHECK" or request.user|can_add:"FURNITURE_OUTPUTS" and job.status == "FINISHED_GOODS" %}<a href="{% url 'furniture:add_output' job.id %}"
                        class="btn btn-sm btn-outline-dark">
                         Record Output
-                    </a>
+                    </a>{% endif %}
                 </div>
 
                 <div class="card-body">

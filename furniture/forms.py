@@ -1,6 +1,8 @@
 from django.db import models
 from django import forms
+from django.db.models import Sum
 from Employee.models import Employee
+from inventory.models import Asset, RawMaterial, Warehouse
 from .models import (
     Order,
     ProductionJob,
@@ -33,6 +35,7 @@ def employee_queryset():
             "user",
             "department",
         )
+        .filter(is_active=True)
         .order_by(
             "user__first_name",
             "user__last_name",
@@ -127,9 +130,6 @@ class ProductionJobForm(forms.ModelForm):
 
         fields = [
             "order",
-            "product",
-            "job_type",
-            "quantity_to_produce",
             "assigned_to",
             "description",
             "expected_end_date",
@@ -139,22 +139,6 @@ class ProductionJobForm(forms.ModelForm):
             "order": forms.Select(
                 attrs={
                     "class": "form-select",
-                }
-            ),
-            "product": forms.Select(
-                attrs={
-                    "class": "form-select",
-                }
-            ),
-            "job_type": forms.Select(
-                attrs={
-                    "class": "form-select",
-                }
-            ),
-            "quantity_to_produce": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "min": 1,
                 }
             ),
             "assigned_to": forms.Select(
@@ -186,11 +170,7 @@ class ProductionJobForm(forms.ModelForm):
         )
 
         self.fields["assigned_to"].required = False
-        self.fields["order"].required = False
-        self.fields["product"].required = False
-        self.fields["product"].help_text = (
-            "Use an existing product for restock or product-based production."
-        )
+        self.fields["order"].required = True
 
         self.fields["expected_end_date"].input_formats = [
             "%Y-%m-%d",
@@ -280,29 +260,10 @@ class ProductionJobForm(forms.ModelForm):
             "Select approved Order Engine order"
         )
 
-    def clean_quantity_to_produce(self):
-        quantity = self.cleaned_data.get(
-            "quantity_to_produce"
-        )
-
-        if quantity is None or quantity < 1:
-            raise forms.ValidationError(
-                "Quantity to produce must be at least one."
-            )
-
-        return quantity
-
     def clean(self):
         cleaned_data = super().clean()
 
         order = cleaned_data.get("order")
-        product = cleaned_data.get("product")
-        job_type = cleaned_data.get("job_type")
-
-        if not order and not product:
-            raise forms.ValidationError(
-                "Select either a customer order or a product."
-            )
 
         if order:
             if not order.is_production_authorized:
@@ -329,63 +290,6 @@ class ProductionJobForm(forms.ModelForm):
                         "This customer order already has "
                         "a production job."
                     ),
-                )
-
-        if (
-            job_type
-            in {
-                "CUSTOMER_CUSTOM",
-                "BACKORDER",
-            }
-            and not order
-        ):
-            self.add_error(
-                "order",
-                (
-                    "This job type requires "
-                    "a customer order."
-                ),
-            )
-
-        if (
-            job_type
-            in {
-                "RESTOCK",
-                "NEW_PRODUCT",
-            }
-            and not product
-        ):
-            self.add_error(
-                "product",
-                (
-                    "This job type requires "
-                    "a product."
-                ),
-            )
-
-        if order:
-            first_item = order.items.select_related("product").order_by("id").first()
-            expected_job_type = {
-                "CUSTOM_FURNITURE": "CUSTOMER_CUSTOM",
-                "RESTOCK": "RESTOCK",
-                "NEW_PRODUCT": "NEW_PRODUCT",
-            }.get(order.order_type)
-
-            if expected_job_type and job_type != expected_job_type:
-                self.add_error(
-                    "job_type",
-                    f"This order requires the {expected_job_type.replace('_', ' ').title()} job type.",
-                )
-
-            if not product and first_item and first_item.product_id:
-                cleaned_data["product"] = first_item.product
-
-            if order.order_type in {"RESTOCK", "NEW_PRODUCT"} and not (
-                product or (first_item and first_item.product_id)
-            ):
-                self.add_error(
-                    "product",
-                    "Restock and new product jobs require a catalogue product on the order.",
                 )
 
         return cleaned_data
@@ -609,6 +513,12 @@ class BillOfMaterialForm(forms.ModelForm):
 
 class ProductionMaterialForm(forms.ModelForm):
 
+    warehouse = forms.ModelChoiceField(
+        queryset=Warehouse.objects.none(),
+        widget=forms.Select(attrs={"class": "form-select"}),
+        help_text="Warehouse from which this material is physically issued.",
+    )
+
     class Meta:
         model = ProductionMaterial
 
@@ -644,6 +554,16 @@ class ProductionMaterialForm(forms.ModelForm):
 
         return quantity
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["raw_material"].queryset = RawMaterial.objects.filter(
+            status="active",
+        ).order_by("name")
+        self.fields["warehouse"].queryset = Warehouse.objects.filter(
+            is_active=True,
+            warehouse_type__in={"MAIN", "RAW_MATERIAL"},
+        ).order_by("warehouse_type", "name")
+
 
 # ======================================================
 # LABOUR FORM
@@ -657,7 +577,6 @@ class ProductionLabourForm(forms.ModelForm):
         fields = [
             "employee",
             "hours_worked",
-            "hourly_rate",
         ]
 
         widgets = {
@@ -671,19 +590,15 @@ class ProductionLabourForm(forms.ModelForm):
                     "step": "0.25",
                 }
             ),
-            "hourly_rate": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "min": 0,
-                    "step": "0.01",
-                }
-            ),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.fields["employee"].queryset = employee_queryset()
+        self.fields["hours_worked"].help_text = (
+            "Record actual hours worked on this production job. Labour cost is calculated automatically."
+        )
 
     def clean_hours_worked(self):
         hours = self.cleaned_data["hours_worked"]
@@ -694,17 +609,6 @@ class ProductionLabourForm(forms.ModelForm):
             )
 
         return hours
-
-    def clean_hourly_rate(self):
-        rate = self.cleaned_data["hourly_rate"]
-
-        if rate < 0:
-            raise forms.ValidationError(
-                "Hourly rate cannot be negative."
-            )
-
-        return rate
-
 
 # ======================================================
 # MACHINE USAGE FORM
@@ -718,7 +622,6 @@ class ProductionMachineForm(forms.ModelForm):
         fields = [
             "asset",
             "hours_used",
-            "hourly_cost",
         ]
 
         widgets = {
@@ -732,14 +635,17 @@ class ProductionMachineForm(forms.ModelForm):
                     "step": "0.25",
                 }
             ),
-            "hourly_cost": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "min": 0,
-                    "step": "0.01",
-                }
-            ),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["asset"].queryset = Asset.objects.filter(
+            status="active",
+            asset_type__in={"machine", "tool"},
+        ).order_by("asset_type", "name")
+        self.fields["hours_used"].help_text = (
+            "Record actual machine hours. The configured machine hourly cost is applied automatically."
+        )
 
     def clean_hours_used(self):
         hours = self.cleaned_data["hours_used"]
@@ -750,17 +656,6 @@ class ProductionMachineForm(forms.ModelForm):
             )
 
         return hours
-
-    def clean_hourly_cost(self):
-        cost = self.cleaned_data["hourly_cost"]
-
-        if cost < 0:
-            raise forms.ValidationError(
-                "Hourly machine cost cannot be negative."
-            )
-
-        return cost
-
 
 # ======================================================
 # STOCK RESERVATION FORM
@@ -806,19 +701,21 @@ class StockReservationForm(forms.ModelForm):
 
 class ProductionOutputForm(forms.ModelForm):
 
+    warehouse = forms.ModelChoiceField(
+        queryset=Warehouse.objects.none(),
+        widget=forms.Select(attrs={"class": "form-select"}),
+        help_text="Finished-goods warehouse that will receive this output.",
+    )
+
     class Meta:
         model = ProductionOutput
 
         fields = [
-            "product",
             "quantity_produced",
             "image",
         ]
 
         widgets = {
-            "product": forms.Select(
-                attrs={"class": "form-select"}
-            ),
             "quantity_produced": forms.NumberInput(
                 attrs={
                     "class": "form-control",
@@ -834,6 +731,23 @@ class ProductionOutputForm(forms.ModelForm):
             ),
         }
 
+    def __init__(self, *args, **kwargs):
+        self.production_job = kwargs.pop("production_job", None)
+        super().__init__(*args, **kwargs)
+        self.fields["warehouse"].queryset = Warehouse.objects.filter(
+            is_active=True,
+            warehouse_type__in={"FINISHED_GOODS", "MAIN"},
+        ).order_by("warehouse_type", "name")
+        if self.production_job is not None:
+            produced = (
+                self.production_job.outputs.aggregate(total=Sum("quantity_produced"))["total"]
+                or 0
+            )
+            remaining = max(self.production_job.quantity_to_produce - produced, 0)
+            self.fields["quantity_produced"].help_text = (
+                f"Remaining quantity for this job: {remaining}."
+            )
+
     def clean_quantity_produced(self):
         quantity = self.cleaned_data["quantity_produced"]
 
@@ -841,6 +755,17 @@ class ProductionOutputForm(forms.ModelForm):
             raise forms.ValidationError(
                 "Produced quantity must be at least one."
             )
+
+        if self.production_job is not None:
+            produced = (
+                self.production_job.outputs.aggregate(total=Sum("quantity_produced"))["total"]
+                or 0
+            )
+            remaining = self.production_job.quantity_to_produce - produced
+            if quantity > remaining:
+                raise forms.ValidationError(
+                    f"Quantity cannot exceed the remaining job quantity ({max(remaining, 0)})."
+                )
 
         return quantity
 
@@ -929,6 +854,18 @@ class ProductionTaskForm(forms.ModelForm):
 
         self.fields["assigned_to"].queryset = employee_queryset()
         self.fields["assigned_to"].required = False
+        self.fields["production_job"].queryset = ProductionJob.objects.exclude(
+            status__in={"FINISHED_GOODS", "DELIVERED", "CANCELLED"},
+        ).order_by("-created_at")
+
+        if self.instance.pk:
+            self.fields["assigned_to"].disabled = True
+            self.fields["assigned_to"].help_text = (
+                "Use the Assign action on the task detail page to preserve assignment history."
+            )
+            if self.instance.status not in {"PENDING", "READY"}:
+                self.fields["production_job"].disabled = True
+                self.fields["sequence"].disabled = True
 
         self.fields["planned_start"].input_formats = [
             "%Y-%m-%dT%H:%M",
@@ -1005,6 +942,28 @@ class ProductionTaskForm(forms.ModelForm):
                 self.add_error(
                     "sequence",
                     "This task sequence is already used in this job.",
+                )
+
+        if production_job and production_job.status in {
+            "FINISHED_GOODS",
+            "DELIVERED",
+            "CANCELLED",
+        }:
+            self.add_error(
+                "production_job",
+                "Tasks cannot be added to a finished, delivered or cancelled job.",
+            )
+
+        if self.instance.pk and self.instance.status not in {"PENDING", "READY"}:
+            if production_job and production_job.pk != self.instance.production_job_id:
+                self.add_error(
+                    "production_job",
+                    "The production job cannot be changed after a task has started.",
+                )
+            if sequence and sequence != self.instance.sequence:
+                self.add_error(
+                    "sequence",
+                    "The sequence cannot be changed after a task has started.",
                 )
 
         return cleaned_data
@@ -1256,7 +1215,6 @@ class ProductionSettingsForm(forms.ModelForm):
             "vat_rate",
             "target_profit_margin",
             "currency",
-            "is_active",
         ]
 
         widgets = {
@@ -1322,12 +1280,15 @@ class ProductionSettingsForm(forms.ModelForm):
                     "placeholder": "RWF",
                 }
             ),
-            "is_active": forms.CheckboxInput(
-                attrs={
-                    "class": "form-check-input",
-                }
-            ),
         }
+
+    def clean_currency(self):
+        currency = (self.cleaned_data.get("currency") or "").strip().upper()
+        if not 3 <= len(currency) <= 5 or not currency.isalpha():
+            raise forms.ValidationError(
+                "Enter a valid alphabetic currency code, for example RWF or USD."
+            )
+        return currency
 
 # ======================================================
 # QUALITY INSPECTION FORM
@@ -1360,7 +1321,7 @@ class QualityInspectionForm(forms.ModelForm):
             "quantity_inspected": forms.NumberInput(
                 attrs={
                     "class": "form-control",
-                    "min": 0,
+                    "min": 1,
                 }
             ),
             "remarks": forms.Textarea(
@@ -1390,6 +1351,9 @@ class QualityInspectionForm(forms.ModelForm):
         self.fields["inspector"].queryset = (
             employee_queryset()
         )
+        self.fields["production_job"].queryset = ProductionJob.objects.filter(
+            status__in={"IN_PRODUCTION", "QUALITY_CHECK"},
+        ).order_by("-created_at")
 
         if production_job is not None:
             self.fields["production_job"].initial = (
@@ -1412,9 +1376,15 @@ class QualityInspectionForm(forms.ModelForm):
             "quantity_inspected"
         ]
 
-        if quantity < 0:
+        if quantity <= 0:
             raise forms.ValidationError(
-                "Quantity inspected cannot be negative."
+                "Quantity inspected must be greater than zero."
+            )
+
+        production_job = self.cleaned_data.get("production_job")
+        if production_job and quantity > production_job.quantity_to_produce:
+            raise forms.ValidationError(
+                f"Quantity inspected cannot exceed the job quantity ({production_job.quantity_to_produce})."
             )
 
         return quantity
@@ -1494,6 +1464,7 @@ class QualityInspectionResultForm(forms.ModelForm):
         self.fields["inspector"].queryset = (
             employee_queryset()
         )
+        self.fields["quantity_inspected"].disabled = True
 
     def clean(self):
         cleaned_data = super().clean()
@@ -1528,10 +1499,10 @@ class QualityInspectionResultForm(forms.ModelForm):
             inspected is not None
             and passed is not None
             and failed is not None
-            and passed + failed > inspected
+            and passed + failed != inspected
         ):
             raise forms.ValidationError(
-                "Passed and failed quantities cannot exceed inspected quantity."
+                "Passed and failed quantities must equal inspected quantity."
             )
 
         if (
@@ -1637,6 +1608,24 @@ class ProductionDefectForm(forms.ModelForm):
 
         return quantity
 
+    def __init__(self, *args, **kwargs):
+        self.inspection = kwargs.pop("inspection", None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        quantity = cleaned_data.get("affected_quantity")
+        if (
+            self.inspection is not None
+            and quantity is not None
+            and quantity > self.inspection.quantity_failed
+        ):
+            self.add_error(
+                "affected_quantity",
+                f"Affected quantity cannot exceed failed quantity ({self.inspection.quantity_failed}).",
+            )
+        return cleaned_data
+
 # ======================================================
 # REWORK ASSIGNMENT FORM
 # ======================================================
@@ -1666,7 +1655,7 @@ class ReworkOrderForm(forms.ModelForm):
             "estimated_hours": forms.NumberInput(
                 attrs={
                     "class": "form-control",
-                    "min": 0,
+                    "min": 0.25,
                     "step": "0.25",
                 }
             ),
@@ -1684,9 +1673,9 @@ class ReworkOrderForm(forms.ModelForm):
             "estimated_hours"
         ]
 
-        if hours < 0:
+        if hours <= 0:
             raise forms.ValidationError(
-                "Estimated hours cannot be negative."
+                "Estimated hours must be greater than zero."
             )
 
         return hours

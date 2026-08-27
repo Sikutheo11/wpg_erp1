@@ -147,6 +147,11 @@ class OrderForm(forms.ModelForm):
             self.fields["discount"].initial = 0
             self.fields["tax"].initial = 0
 
+        # Requests are priced later in Quotation/Costing. Only a direct
+        # Point of Sale order may collect commercial adjustments here.
+        if self.order_type != "POS":
+            self._remove_fields(["discount", "tax"])
+
         self.fields["expected_delivery_date"].input_formats = [
             "%Y-%m-%d",
         ]
@@ -578,6 +583,7 @@ class OrderItemForm(forms.ModelForm):
         elif self.order_type in custom_request_types:
             self.fields["product_name"].required = True
             self.fields["specifications"].required = True
+            self.fields.pop("price", None)
 
             self.fields["product"].label = (
                 "Related Existing Product / Service (Optional)"

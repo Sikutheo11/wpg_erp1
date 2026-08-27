@@ -40,6 +40,18 @@ urlpatterns=[
     name="material_create"
     ),
 
+    path(
+    "materials/<int:pk>/",
+    views.material_detail,
+    name="material_detail"
+    ),
+
+    path(
+    "materials/<int:pk>/edit/",
+    views.material_update,
+    name="material_update"
+    ),
+
 
     path(
     "products/",
@@ -54,6 +66,12 @@ urlpatterns=[
     name="product_create"
     ),
 
+    path(
+    "products/<int:pk>/edit/",
+    views.product_update,
+    name="product_update"
+    ),
+
 
     path(
     "assets/",
@@ -66,6 +84,12 @@ urlpatterns=[
     "assets/create/",
     views.asset_create,
     name="asset_create"
+    ),
+
+    path(
+    "assets/<int:pk>/edit/",
+    views.asset_update,
+    name="asset_update"
     ),
 
 

@@ -590,7 +590,7 @@ body{
                 <div class="text-start user-summary">
 
                     <strong>
-                        {{ request.user.get_full_name|default:request.user.username }}
+                        {{ request.user.full_name|default:request.user.username }}
                     </strong>
 
                     <br>

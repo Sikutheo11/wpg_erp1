@@ -33,7 +33,7 @@ class="btn btn-primary">
 <div class="card shadow mt-3">
 
 
-<table class="table table-bordered">
+<div class="table-responsive"><table class="table table-bordered align-middle">
 
 
 <tr>
@@ -41,7 +41,10 @@ class="btn btn-primary">
 <th>Item</th>
 <th>Type</th>
 <th>Quantity</th>
+<th>Warehouse</th>
+<th>Unit Cost</th>
 <th>Reference</th>
+<th>Status</th>
 <th>Date</th>
 
 </tr>
@@ -116,13 +119,18 @@ class="btn btn-primary">
 
 </td>
 
+<td>{{ movement.warehouse|default:"—" }}</td>
+<td>{{ movement.unit_cost|floatformat:0 }} RWF</td>
+
 
 
 <td>
 
-{{movement.reference_no}}
+{{movement.reference_no|default:"—"}}
 
 </td>
+
+<td><span class="badge {% if movement.status == 'POSTED' %}bg-success{% else %}bg-secondary{% endif %}">{{ movement.get_status_display }}</span></td>
 
 
 
@@ -139,7 +147,7 @@ class="btn btn-primary">
 {% endfor %}
 
 
-</table>
+</table></div>
 
 
 </div>

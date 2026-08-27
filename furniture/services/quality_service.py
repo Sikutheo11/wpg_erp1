@@ -142,13 +142,18 @@ class QualityService:
         if quantity_inspected is None:
             quantity_inspected = 0
 
-        if quantity_inspected < 0:
+        if quantity_inspected <= 0:
             raise ValidationError(
                 {
                     "quantity_inspected": (
-                        "Quantity inspected cannot be negative."
+                        "Quantity inspected must be greater than zero."
                     )
                 }
+            )
+
+        if quantity_inspected > production_job.quantity_to_produce:
+            raise ValidationError(
+                "Quantity inspected cannot exceed the production job quantity."
             )
 
         # =====================================================
@@ -340,6 +345,11 @@ class QualityService:
             "CONDITIONAL",
         }
 
+        if inspection.result != "PENDING":
+            raise ValidationError(
+                "A recorded inspection result cannot be changed. Create a re-inspection instead."
+            )
+
         if result not in allowed_results:
             raise ValidationError(
                 "Inspection result must be PASSED, FAILED or CONDITIONAL."
@@ -355,6 +365,11 @@ class QualityService:
             quantity_passed,
             quantity_failed,
         )
+
+        if quantity_passed + quantity_failed != quantity_inspected:
+            raise ValidationError(
+                "Passed and failed quantities must equal inspected quantity."
+            )
 
         if result == "PASSED" and quantity_failed > 0:
             raise ValidationError(
@@ -450,6 +465,16 @@ class QualityService:
                 "Affected quantity must be greater than zero."
             )
 
+        if inspection.result not in {"FAILED", "CONDITIONAL"}:
+            raise ValidationError(
+                "Defects can only be recorded for a failed or conditional inspection."
+            )
+
+        if affected_quantity > inspection.quantity_failed:
+            raise ValidationError(
+                "Affected quantity cannot exceed the inspection failed quantity."
+            )
+
         status = (
             "REWORK_REQUIRED"
             if rework_required
@@ -543,6 +568,13 @@ class QualityService:
         if estimated_hours < 0:
             raise ValidationError(
                 "Estimated hours cannot be negative."
+            )
+
+        if defect.rework_orders.exclude(
+            status__in={"VERIFIED", "CANCELLED"},
+        ).exists():
+            raise ValidationError(
+                "This defect already has an active rework order."
             )
 
         rework = ReworkOrder.objects.create(
@@ -745,11 +777,13 @@ class QualityService:
             rework.status = "ASSIGNED"
             rework.completed_at = None
             rework.verified_at = None
+            rework.completed_by = None
             rework.save(
                 update_fields=[
                     "status",
                     "completed_at",
                     "verified_at",
+                    "completed_by",
                     "updated_at",
                 ]
             )
@@ -833,6 +867,19 @@ class QualityService:
         if inspection.result != "PASSED":
             raise ValidationError(
                 "Only passed inspections can receive final approval."
+            )
+
+        if inspection.inspection_type not in {"FINAL", "RE_INSPECTION"}:
+            raise ValidationError(
+                "Only a final inspection or re-inspection can approve finished goods."
+            )
+
+        if inspection.approved_at is not None:
+            raise ValidationError("This inspection is already approved.")
+
+        if inspection.production_job.status != "QUALITY_CHECK":
+            raise ValidationError(
+                "The production job must be in quality check before final approval."
             )
 
         unresolved_defects = inspection.production_job.quality_defects.exclude(

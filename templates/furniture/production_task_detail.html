@@ -7,9 +7,11 @@
   <div class="d-flex justify-content-between align-items-start mb-4">
     <div><h3 class="fw-bold mb-1">{{ task.sequence }}. {{ task.name }}</h3><p class="text-muted mb-0">{{ task.production_job }}</p></div>
     <div class="d-flex gap-2">
-      <a href="{% url 'furniture:production_task_update' task.pk %}" class="btn btn-outline-secondary">Edit</a>
-      <a href="{% url 'furniture:production_task_assign' task.pk %}" class="btn btn-outline-primary">Assign</a>
-      <a href="{% url 'furniture:production_task_progress' task.pk %}" class="btn btn-primary">Update Progress</a>
+      {% if request.user|can_edit:"FURNITURE_TASKS" and task.status != "COMPLETED" and task.status != "CANCELLED" %}
+        <a href="{% url 'furniture:production_task_update' task.pk %}" class="btn btn-outline-secondary">Edit</a>
+        <a href="{% url 'furniture:production_task_assign' task.pk %}" class="btn btn-outline-primary">Assign</a>
+        <a href="{% url 'furniture:production_task_progress' task.pk %}" class="btn btn-primary">Update Progress</a>
+      {% endif %}
     </div>
   </div>
   <div class="row g-4">
@@ -56,8 +58,10 @@
         {% if task.status == "PENDING" or task.status == "READY" %}<form method="post" action="{% url 'furniture:production_task_start' task.pk %}">{% csrf_token %}<button class="btn btn-success w-100">Start</button></form>{% endif %}
         {% if task.status == "IN_PROGRESS" %}<form method="post" action="{% url 'furniture:production_task_pause' task.pk %}">{% csrf_token %}<button class="btn btn-warning w-100">Pause</button></form>{% endif %}
         {% if task.status == "PAUSED" %}<form method="post" action="{% url 'furniture:production_task_resume' task.pk %}">{% csrf_token %}<button class="btn btn-success w-100">Resume</button></form>{% endif %}
-        {% if task.status != "COMPLETED" and task.status != "CANCELLED" %}
+        {% if task.status != "COMPLETED" and task.status != "CANCELLED" and task.status != "BLOCKED" %}
           <form method="post" action="{% url 'furniture:production_task_block' task.pk %}">{% csrf_token %}<button class="btn btn-outline-danger w-100">Block</button></form>
+        {% endif %}
+        {% if task.status == "IN_PROGRESS" or task.status == "PAUSED" or task.status == "BLOCKED" %}
           <form method="post" action="{% url 'furniture:production_task_complete' task.pk %}">{% csrf_token %}<button class="btn btn-outline-success w-100">Complete</button></form>
         {% endif %}
         {% endif %}

@@ -11,15 +11,15 @@
                 <div class="card-header bg-white">
                     <h3 class="mb-1">Create Production Job</h3>
                     <p class="text-muted mb-0">
-                        Plan internal production from an enterprise order or an existing product.
+                        Select an approved Order Engine order and assign its production work.
                     </p>
                 </div>
 
                 <div class="card-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-1"></i>
-                        This form creates production work. Customer orders must first be
-                        recorded in the shared Order Engine.
+                        Product, job type and quantity come from the approved order.
+                        Add only the worker, internal instructions or a revised production deadline.
                     </div>
 
                     {% if eligible_order_count %}

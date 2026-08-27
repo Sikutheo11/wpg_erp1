@@ -57,8 +57,7 @@ class="btn btn-primary">
 <td>
 {{material.status}}
 </td>
-<td><a href="{% url 'inventory:material_detail' material.id %}"
-class="btn btn-sm btn-outline-primary">View</a></td>
+<td><a href="{% url 'inventory:material_detail' material.id %}" class="btn btn-sm btn-outline-primary">View</a>{% if request.user|can_edit:"INVENTORY_RAW_MATERIALS" %} <a href="{% url 'inventory:material_update' material.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>{% endif %}</td>
 </tr>
 {% endfor %}
 </table>

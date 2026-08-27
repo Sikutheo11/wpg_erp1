@@ -115,9 +115,9 @@ Order Detail
             <small class="text-muted">
                 Created {{ order.created_at|date:"d M Y, H:i"|default:"-" }}
                 {% if order.created_by %}
-                    by {{ order.created_by.get_full_name|default:order.created_by }}
+                    by {{ order.created_by.full_name|default:order.created_by }}
                 {% elif order.user %}
-                    by {{ order.user.get_full_name|default:order.user }}
+                    by {{ order.user.full_name|default:order.user }}
                 {% endif %}
             </small>
         </div>

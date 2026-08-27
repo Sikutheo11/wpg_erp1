@@ -69,7 +69,7 @@ class="btn btn-primary">
 {{asset.status}}
 </span>
 </td>
-<td><span class="text-muted small">No action</span></td>
+<td>{% if request.user|can_edit:"ASSET_LIST" %}<a href="{% url 'inventory:asset_update' asset.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>{% else %}<span class="text-muted small">View only</span>{% endif %}</td>
 </tr>
 {% empty %}
 <tr>

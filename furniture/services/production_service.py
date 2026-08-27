@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from core.event_engine import EventEngine
+from inventory.services import StockService
 from furniture.models import (
     ProductionJob,
     ProductionOutput,
@@ -458,7 +459,9 @@ class ProductionService:
         production_job,
         product,
         quantity_produced,
+        warehouse,
         produced_by=None,
+        actor=None,
         image=None,
     ):
         if production_job.status not in [
@@ -470,12 +473,42 @@ class ProductionService:
                 "Output can only be recorded during production or after quality check."
             )
 
+        if product is None or production_job.product_id != product.id:
+            raise ValidationError(
+                "Output product must match the production job product."
+            )
+
+        if quantity_produced is None or quantity_produced <= 0:
+            raise ValidationError("Output quantity must be greater than zero.")
+
+        produced_quantity = sum(
+            production_job.outputs.values_list("quantity_produced", flat=True)
+        )
+        remaining_quantity = production_job.quantity_to_produce - produced_quantity
+        if quantity_produced > remaining_quantity:
+            raise ValidationError(
+                f"Output cannot exceed the remaining job quantity ({max(remaining_quantity, 0)})."
+            )
+
         output = ProductionOutput.objects.create(
             production_job=production_job,
             product=product,
             quantity_produced=quantity_produced,
             produced_by=produced_by,
             image=image,
+        )
+
+        StockService.receive_stock(
+            product=product,
+            warehouse=warehouse,
+            quantity=quantity_produced,
+            unit_cost=product.standard_cost,
+            business_unit=product.business_unit or "FURNITURE",
+            reference_type="PRODUCTION_JOB",
+            reference_id=str(production_job.pk),
+            reference_no=f"FURN-JOB-{production_job.pk}-OUTPUT-{output.pk}",
+            notes="Furniture production output received into finished-goods stock.",
+            actor=actor,
         )
 
         ProductionService.add_timeline(
@@ -591,4 +624,3 @@ class ProductionService:
         )
 
         return production_job
-

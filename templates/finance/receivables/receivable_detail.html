@@ -218,7 +218,7 @@ Receivable Detail
                             {% elif receivable.customer %}
 
                                 <strong>
-                                    {{ receivable.customer.get_full_name|default:receivable.customer.username }}
+                                    {{ receivable.customer.full_name|default:receivable.customer.username }}
                                 </strong>
 
                                 <small class="text-muted d-block">

@@ -4,9 +4,8 @@
 {% block content %}
 
 
-<h2>
-Add Raw Material
-</h2>
+<h2>{% if material %}Edit {{ material.name }}{% else %}Add Raw Material{% endif %}</h2>
+<p class="text-muted">Record the material identity, unit, cost and minimum stock needed for restocking alerts.</p>
 
 
 
@@ -17,15 +16,12 @@ class="card p-4 shadow">
 {% csrf_token %}
 
 
-{{form.as_p}}
+{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+<div class="row g-3">{% for field in form %}<div class="{% if field.name == 'supplier' or field.name == 'category' or field.name == 'name' or field.name == 'code' %}col-md-6{% else %}col-md-4{% endif %}"><label class="form-label fw-semibold">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}</div>
 
 
 
-<button class="btn btn-success">
-
-Save Material
-
-</button>
+<div class="mt-4"><button class="btn btn-success">{% if material %}Save Changes{% else %}Save Material{% endif %}</button> <a href="{% url 'inventory:material_list' %}" class="btn btn-outline-secondary">Cancel</a></div>
 
 
 </form>
