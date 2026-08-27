@@ -728,6 +728,7 @@ def order_detail(request, pk):
             "source_sales_quotation",
             "customer_quotation",
             "production_costing",
+            "job_investment",
         ).prefetch_related(
             "items__product",
         ),
@@ -823,8 +824,11 @@ def order_detail(request, pk):
         }
     )
 
+    job_investment = getattr(order, "job_investment", None)
+
     context = {
         "order": order,
+        "job_investment": job_investment,
         "items": items,
         "reservations": reservations,
         "fulfilment": fulfilment,

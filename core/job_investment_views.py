@@ -1,0 +1,280 @@
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from orders.models import Order
+
+from .job_investment_forms import (
+    JobActualResultForm,
+    JobInvestmentOpenForm,
+    JobInvestorAgreementForm,
+    JobInvestorContributionForm,
+)
+from .job_investment_models import JobInvestment, JobInvestorAgreement
+from .permissions import wpg_permission_required
+from .job_investment_service import JobInvestmentService
+
+
+def _error_text(exc):
+    if getattr(exc, "message_dict", None):
+        parts = []
+        for field, msgs in exc.message_dict.items():
+            parts.extend(f"{field}: {msg}" for msg in msgs)
+        return "; ".join(parts)
+    if getattr(exc, "messages", None):
+        return "; ".join(exc.messages)
+    return str(exc)
+
+
+@login_required
+@wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
+def job_investment_open(request, order_pk):
+    order = get_object_or_404(
+        Order.objects.select_related("customer_quotation").prefetch_related(
+            "furniture_production_plans"
+        ),
+        pk=order_pk,
+    )
+
+    existing = getattr(order, "job_investment", None)
+    if existing is not None:
+        return redirect("core:job_investment_detail", pk=existing.pk)
+
+    plans = order.furniture_production_plans.all()
+    estimated_cost_preview = sum(
+        (
+            plan.estimated_total_cost
+            for plan in plans
+            if plan.status in {"CALCULATED", "APPROVED"}
+        ),
+        0,
+    )
+    contract_value_preview = (
+        order.customer_quotation.total_amount
+        if order.customer_quotation_id
+        else order.total_amount
+    )
+
+    form = JobInvestmentOpenForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            investment = JobInvestmentService.create_or_refresh_from_order(
+                order,
+                wpg_capital_committed=form.cleaned_data["wpg_capital_committed"],
+                actor=request.user,
+            )
+            investment.notes = form.cleaned_data["notes"]
+            investment.save(update_fields=["notes", "updated_at"])
+            messages.success(request, "Job funding record opened successfully.")
+            return redirect("core:job_investment_detail", pk=investment.pk)
+        except ValidationError as exc:
+            messages.error(request, _error_text(exc))
+
+    return render(
+        request,
+        "core/job_investment/open.html",
+        {
+            "order": order,
+            "form": form,
+            "estimated_cost_preview": estimated_cost_preview,
+            "contract_value_preview": contract_value_preview,
+            "plans": plans,
+        },
+    )
+
+
+@login_required
+@wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
+def job_investment_detail(request, pk):
+    investment = get_object_or_404(
+        JobInvestment.objects.select_related(
+            "order",
+            "order__customer_quotation",
+            "opened_by",
+        ).prefetch_related(
+            "investor_agreements__investor",
+            "investor_agreements__contributions",
+            "investor_contributions__agreement__investor",
+        ),
+        pk=pk,
+    )
+
+    return render(
+        request,
+        "core/job_investment/detail.html",
+        {
+            "investment": investment,
+            "order": investment.order,
+            "agreement_form": JobInvestorAgreementForm(),
+            "contribution_form": JobInvestorContributionForm(
+                job_investment=investment
+            ),
+            "actual_result_form": JobActualResultForm(
+                initial={
+                    "actual_revenue": investment.actual_revenue_snapshot,
+                    "actual_cost": investment.actual_cost_snapshot,
+                }
+            ),
+        },
+    )
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.manage_job_investment")
+def job_investment_refresh(request, pk):
+    investment = get_object_or_404(
+        JobInvestment.objects.select_related("order"),
+        pk=pk,
+    )
+    try:
+        JobInvestmentService.create_or_refresh_from_order(
+            investment.order,
+            wpg_capital_committed=investment.wpg_capital_committed,
+            actor=request.user,
+        )
+        messages.success(request, "Contract value and estimated job cost refreshed.")
+    except ValidationError as exc:
+        messages.error(request, _error_text(exc))
+    return redirect("core:job_investment_detail", pk=pk)
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.manage_job_investment")
+def job_investment_update_wpg_capital(request, pk):
+    investment = get_object_or_404(JobInvestment, pk=pk)
+    form = JobInvestmentOpenForm(request.POST)
+    if form.is_valid():
+        try:
+            JobInvestmentService.create_or_refresh_from_order(
+                investment.order,
+                wpg_capital_committed=form.cleaned_data["wpg_capital_committed"],
+                actor=request.user,
+            )
+            investment.refresh_from_db()
+            investment.notes = form.cleaned_data["notes"]
+            investment.save(update_fields=["notes", "updated_at"])
+            messages.success(request, "WPG committed capital updated.")
+        except ValidationError as exc:
+            messages.error(request, _error_text(exc))
+    else:
+        messages.error(request, "Enter a valid WPG capital amount.")
+    return redirect("core:job_investment_detail", pk=pk)
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.manage_job_investment")
+def job_investment_add_agreement(request, pk):
+    investment = get_object_or_404(JobInvestment, pk=pk)
+    form = JobInvestorAgreementForm(request.POST)
+    if form.is_valid():
+        agreement = form.save(commit=False)
+        agreement.job_investment = investment
+        agreement.created_by = request.user
+        try:
+            agreement.save()
+            messages.success(request, "Investor agreement added.")
+        except ValidationError as exc:
+            messages.error(request, _error_text(exc))
+    else:
+        messages.error(request, "Correct the investor agreement details.")
+    return redirect("core:job_investment_detail", pk=pk)
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.approve_investor_agreement")
+def job_investment_approve_agreement(request, agreement_pk):
+    agreement = get_object_or_404(JobInvestorAgreement, pk=agreement_pk)
+    if agreement.status != "DRAFT":
+        messages.error(request, "Only a draft agreement can be activated.")
+    else:
+        agreement.status = "ACTIVE"
+        agreement.approved_by = request.user
+        agreement.approved_at = timezone.now()
+        agreement.save(
+            update_fields=[
+                "status",
+                "approved_by",
+                "approved_at",
+                "updated_at",
+            ]
+        )
+        messages.success(request, "Investor agreement activated.")
+    return redirect(
+        "core:job_investment_detail",
+        pk=agreement.job_investment_id,
+    )
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.manage_job_investment")
+def job_investment_add_contribution(request, pk):
+    investment = get_object_or_404(JobInvestment, pk=pk)
+    form = JobInvestorContributionForm(
+        request.POST,
+        job_investment=investment,
+    )
+    if form.is_valid():
+        contribution = form.save(commit=False)
+        contribution.recorded_by = request.user
+        try:
+            contribution.save()
+            messages.success(request, "Investor contribution recorded.")
+        except ValidationError as exc:
+            messages.error(request, _error_text(exc))
+    else:
+        messages.error(request, "Correct the contribution details.")
+    return redirect("core:job_investment_detail", pk=pk)
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.manage_job_investment")
+def job_investment_update_actual_result(request, pk):
+    investment = get_object_or_404(JobInvestment, pk=pk)
+    form = JobActualResultForm(request.POST)
+    if form.is_valid():
+        investment.actual_revenue_snapshot = form.cleaned_data["actual_revenue"]
+        investment.actual_cost_snapshot = form.cleaned_data["actual_cost"]
+        investment.save(
+            update_fields=[
+                "actual_revenue_snapshot",
+                "actual_cost_snapshot",
+                "updated_at",
+            ]
+        )
+        messages.success(request, "Verified actual result updated.")
+    else:
+        messages.error(request, "Enter valid revenue and cost values.")
+    return redirect("core:job_investment_detail", pk=pk)
+
+
+@login_required
+@require_POST
+@wpg_permission_required("core.settle_job_investor")
+def job_investment_prepare_settlement(request, agreement_pk):
+    agreement = get_object_or_404(
+        JobInvestorAgreement.objects.select_related("job_investment"),
+        pk=agreement_pk,
+    )
+    try:
+        settlement = JobInvestmentService.prepare_investor_settlement(
+            agreement
+        )
+        messages.success(
+            request,
+            f"Settlement prepared: {settlement.total_due:,.0f} RWF due.",
+        )
+    except ValidationError as exc:
+        messages.error(request, _error_text(exc))
+    return redirect(
+        "core:job_investment_detail",
+        pk=agreement.job_investment_id,
+    )

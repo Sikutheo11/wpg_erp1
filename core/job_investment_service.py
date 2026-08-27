@@ -92,9 +92,23 @@ class JobInvestmentService:
                 wpg_capital_committed
             )
 
+        received_capital = (
+            investment.investor_capital_received
+            if investment.pk
+            else cls.ZERO
+        )
+        total_capital = (
+            cls.money(investment.wpg_capital_committed)
+            + cls.money(received_capital)
+        )
+        funding_gap = max(
+            cls.money(investment.estimated_job_cost)
+            - total_capital,
+            cls.ZERO,
+        )
         investment.status = (
             "FUNDED"
-            if investment.funding_gap <= 0
+            if funding_gap <= 0
             else "FUNDING"
         )
         investment.save()
