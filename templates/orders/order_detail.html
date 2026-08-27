@@ -132,6 +132,20 @@ Order Detail
             </a>
 
             {% if order.business_unit == "FURNITURE" %}
+                {% if job_investment %}
+                    <a href="{% url 'core:job_investment_detail' job_investment.pk %}"
+                       class="btn btn-outline-success">
+                        <i class="bi bi-piggy-bank me-1"></i>
+                        Job Funding
+                    </a>
+                {% else %}
+                    <a href="{% url 'core:job_investment_open' order.pk %}"
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-piggy-bank me-1"></i>
+                        Open Job Funding
+                    </a>
+                {% endif %}
+
 
                 {% if order.production_job %}
 

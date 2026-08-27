@@ -11,3 +11,5 @@ class CoreConfig(AppConfig):
     def ready(self):
         import core.reports
         import furniture.providers
+        import core.job_investment_models  # noqa: F401
+        import core.job_investment_finance_models  # noqa: F401

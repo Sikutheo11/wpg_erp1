@@ -1,0 +1,215 @@
+{% extends "base_dashboard.html" %}
+{% load permission_tags %}
+
+{% block title %}Furniture Product{% endblock %}
+{% block page_title %}Furniture Product{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">{{ product.name }}</h3>
+            <div class="text-muted">
+                {{ product.product_code }}
+                · {{ product.get_product_type_display }}
+                · {{ product.unit }}
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            {% if request.user|can_add:"FURNITURE_PRODUCTION_JOBS" %}
+            <a href="{% url 'furniture:production_job_create' %}"
+               class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>
+                Start Production Workflow
+            </a>
+            {% endif %}
+
+            <a href="{% url 'inventory:product_update' product.pk %}"
+               class="btn btn-outline-secondary">
+                Edit Product
+            </a>
+        </div>
+    </div>
+
+    <div class="alert alert-info border-0 shadow-sm">
+        <strong>Production control:</strong>
+        a Production Job starts only after the related Furniture Order
+        has completed costing/quotation and received production authorization.
+        This prevents production from bypassing commercial and funding controls.
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted">Current Stock</small>
+                    <h3 class="fw-bold mt-2">
+                        {{ product.current_stock }} {{ product.unit }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted">Selling Price</small>
+                    <h4 class="fw-bold mt-2">
+                        {{ product.selling_price }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted">BOM Material Cost</small>
+                    <h4 class="fw-bold mt-2">
+                        {{ bom_cost|floatformat:2 }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted">Active Production Jobs</small>
+                    <h3 class="fw-bold mt-2">
+                        {{ active_jobs.count }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Bill of Materials</h5>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>Material</th>
+                    <th>Quantity</th>
+                    <th>Unit Cost</th>
+                    <th>Total</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for item in bom_items %}
+                <tr>
+                    <td>{{ item.raw_material.name }}</td>
+                    <td>{{ item.quantity_required }}</td>
+                    <td>{{ item.unit_cost|floatformat:2 }}</td>
+                    <td>{{ item.total_cost|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">
+                        No Bill of Materials configured for this product.
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Production Jobs</h5>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>Job</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>Stage</th>
+                    <th>Order</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>#{{ job.pk }}</td>
+                    <td>{{ job.get_job_type_display }}</td>
+                    <td>{{ job.quantity_to_produce }}</td>
+                    <td>{{ job.get_status_display }}</td>
+                    <td>
+                        {% if job.order %}
+                            {{ job.order }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'furniture:production_job_detail' job.pk %}"
+                           class="btn btn-sm btn-outline-primary">
+                            Open Control Center
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        No production history for this product.
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Recent Inventory Movements</h5>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>Movement</th>
+                    <th>Warehouse</th>
+                    <th>Quantity</th>
+                    <th>Reference</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for movement in stock_movements %}
+                <tr>
+                    <td>{{ movement.get_movement_type_display }}</td>
+                    <td>{{ movement.warehouse }}</td>
+                    <td>{{ movement.quantity }}</td>
+                    <td>
+                        {{ movement.reference_type }}
+                        {% if movement.reference_id %}
+                            #{{ movement.reference_id }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">
+                        This product has not yet entered Inventory.
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

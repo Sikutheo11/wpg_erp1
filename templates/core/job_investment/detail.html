@@ -1,0 +1,90 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Job Investment{% endblock %}
+{% block page_title %}Job Investment{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h3 class="fw-bold mb-1">{{ investment.reference }}</h3>
+      <p class="text-muted mb-0">{{ order.order_number }} · {{ order.customer_name }} · {{ investment.get_status_display }}</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'orders:order_detail' order.pk %}" class="btn btn-outline-secondary">Back to Order</a>
+      <form method="post" action="{% url 'core:job_investment_refresh' investment.pk %}">{% csrf_token %}<button class="btn btn-outline-primary">Refresh Costing</button></form>
+      <form method="post" action="{% url 'core:job_investment_sync_finance' investment.pk %}">{% csrf_token %}<button class="btn btn-outline-success">Sync Finance</button></form>
+      <form method="post" action="{% url 'core:job_investment_sync_all_repayments' investment.pk %}">{% csrf_token %}<button class="btn btn-outline-dark">Sync Repayments</button></form>
+    </div>
+  </div>
+
+  {% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}{% endif %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-2"><div class="card border-0 shadow-sm"><div class="card-body"><small class="text-muted">Contract</small><h5>{{ investment.contract_value|floatformat:0 }}</h5><small>RWF</small></div></div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm"><div class="card-body"><small class="text-muted">Estimated Cost</small><h5>{{ investment.estimated_job_cost|floatformat:0 }}</h5><small>RWF</small></div></div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm"><div class="card-body"><small class="text-muted">WPG Capital</small><h5>{{ investment.wpg_capital_committed|floatformat:0 }}</h5><small>RWF</small></div></div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm"><div class="card-body"><small class="text-muted">Investor Received</small><h5>{{ investment.investor_capital_received|floatformat:0 }}</h5><small>RWF</small></div></div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm"><div class="card-body"><small class="text-muted">Funding Gap</small><h5>{{ investment.funding_gap|floatformat:0 }}</h5><small>RWF</small></div></div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm"><div class="card-body"><small class="text-muted">Actual Profit</small><h5>{{ investment.actual_profit_snapshot|floatformat:0 }}</h5><small>RWF</small></div></div></div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white"><strong>Finance-backed Actual Result</strong><div class="text-muted small">Finance-confirmed revenue and paid expenses only.</div></div>
+    <div class="card-body">
+      <div class="row g-3 mb-3">
+        <div class="col-md-4"><small class="text-muted">Actual Revenue</small><h4>{{ investment.actual_revenue_snapshot|floatformat:0 }} RWF</h4></div>
+        <div class="col-md-4"><small class="text-muted">Actual Cost</small><h4>{{ investment.actual_cost_snapshot|floatformat:0 }} RWF</h4></div>
+        <div class="col-md-4"><small class="text-muted">Actual Profit/Loss</small><h4>{{ investment.actual_profit_snapshot|floatformat:0 }} RWF</h4></div>
+      </div>
+      <div class="row g-4">
+        <div class="col-md-6">
+          <form method="post" action="{% url 'core:job_investment_link_income' investment.pk %}">{% csrf_token %}
+            <label class="form-label">{{ finance_income_form.income_declaration.label }}</label>{{ finance_income_form.income_declaration }}
+            <button class="btn btn-outline-success mt-2">Link Revenue</button>
+          </form>
+          {% for link in investment.finance_income_links.all %}<div class="d-flex justify-content-between border-bottom py-2 small"><span>{{ link.income_declaration.declaration_number }} · {{ link.income_declaration.title }}</span><strong>{{ link.amount_snapshot|floatformat:0 }} RWF</strong></div>{% empty %}<div class="text-muted small mt-2">No linked revenue.</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+          <form method="post" action="{% url 'core:job_investment_link_expense' investment.pk %}">{% csrf_token %}
+            <label class="form-label">{{ finance_expense_form.expense_request.label }}</label>{{ finance_expense_form.expense_request }}
+            <button class="btn btn-outline-danger mt-2">Link Cost</button>
+          </form>
+          {% for link in investment.finance_expense_links.all %}<div class="d-flex justify-content-between border-bottom py-2 small"><span>{{ link.expense_request.request_number }} · {{ link.expense_request.title }}</span><strong>{{ link.amount_snapshot|floatformat:0 }} RWF</strong></div>{% empty %}<div class="text-muted small mt-2">No linked expense.</div>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white"><strong>Investor Agreements & Settlement</strong></div>
+        <div class="table-responsive"><table class="table align-middle mb-0">
+          <thead><tr><th>Investor</th><th>Committed</th><th>Received</th><th>Status</th><th>Settlement / Finance</th><th></th></tr></thead>
+          <tbody>
+          {% for agreement in investment.investor_agreements.all %}
+            <tr>
+              <td>{{ agreement.investor.name }}</td><td>{{ agreement.committed_capital|floatformat:0 }}</td><td>{{ agreement.capital_received|floatformat:0 }}</td><td>{{ agreement.get_status_display }}</td>
+              <td>{% if agreement.settlement %}<strong>{{ agreement.settlement.total_due|floatformat:0 }} RWF due</strong><small class="d-block text-muted">Paid {{ agreement.settlement.amount_paid|floatformat:0 }} · Balance {{ agreement.settlement.balance_due|floatformat:0 }}</small><small class="d-block">Settlement: {{ agreement.settlement.get_status_display }}</small>{% if agreement.settlement.finance_debt_record %}<small class="d-block text-success">Finance: {{ agreement.settlement.finance_debt_record.reference }} · {{ agreement.settlement.finance_debt_record.get_status_display }}</small>{% else %}<small class="d-block text-warning">Not posted to Finance</small>{% endif %}{% else %}<span class="text-muted">Not prepared</span>{% endif %}</td>
+              <td class="text-end">
+                {% if agreement.status == "DRAFT" %}<form method="post" action="{% url 'core:job_investment_approve_agreement' agreement.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-outline-success">Activate</button></form>{% endif %}
+                {% if agreement.status == "ACTIVE" or agreement.status == "APPROVED" or agreement.status == "SETTLEMENT_DUE" %}<form method="post" action="{% url 'core:job_investment_prepare_settlement' agreement.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-outline-primary">Prepare</button></form>{% endif %}
+                {% if agreement.settlement and not agreement.settlement.finance_debt_record %}<form method="post" action="{% url 'core:job_investment_post_settlement' agreement.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-dark">Post to Finance</button></form>{% endif %}
+                {% if agreement.settlement and agreement.settlement.finance_debt_record %}<form method="post" action="{% url 'core:job_investment_sync_repayment' agreement.settlement.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-outline-dark">Sync Repayment</button></form>{% endif %}
+              </td>
+            </tr>
+          {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No investor agreement yet.</td></tr>{% endfor %}
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="card border-0 shadow-sm"><div class="card-header bg-white"><strong>Investor Capital Received</strong></div><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Date</th><th>Investor</th><th>Amount</th><th>Status</th><th>Finance Confirmation</th></tr></thead><tbody>{% for contribution in investment.investor_contributions.all %}<tr><td>{{ contribution.received_date|date:"d M Y"|default:"-" }}</td><td>{{ contribution.agreement.investor.name }}</td><td>{{ contribution.amount|floatformat:0 }} RWF</td><td>{{ contribution.get_status_display }}</td><td>{% if contribution.finance_income_declaration %}{{ contribution.finance_income_declaration.declaration_number }}{% else %}-{% endif %}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No investor funds recorded.</td></tr>{% endfor %}</tbody></table></div></div>
+    </div>
+
+    <div class="col-xl-4">
+      <div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white"><strong>WPG Capital</strong></div><div class="card-body"><form method="post" action="{% url 'core:job_investment_update_wpg_capital' investment.pk %}">{% csrf_token %}<div class="mb-3"><label class="form-label">WPG capital committed</label><input class="form-control" type="number" step="0.01" min="0" name="wpg_capital_committed" value="{{ investment.wpg_capital_committed }}"></div><div class="mb-3"><label class="form-label">Notes</label><textarea class="form-control" name="notes" rows="2">{{ investment.notes }}</textarea></div><button class="btn btn-outline-primary w-100">Update WPG Capital</button></form></div></div>
+      <div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white"><strong>Add Investor Agreement</strong></div><div class="card-body"><form method="post" action="{% url 'core:job_investment_add_agreement' investment.pk %}">{% csrf_token %}{% for field in agreement_form %}<div class="mb-3"><label class="form-label">{{ field.label }}</label>{{ field }}</div>{% endfor %}<button class="btn btn-primary w-100">Add Agreement</button></form></div></div>
+      <div class="card border-0 shadow-sm"><div class="card-header bg-white"><strong>Record Investor Capital</strong><div class="text-muted small">RECEIVED requires Finance-confirmed INVESTMENT income.</div></div><div class="card-body"><form method="post" action="{% url 'core:job_investment_add_contribution' investment.pk %}">{% csrf_token %}{% for field in contribution_form %}<div class="mb-3"><label class="form-label">{{ field.label }}</label>{{ field }}</div>{% endfor %}<button class="btn btn-success w-100">Record Contribution</button></form></div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white">
+    <h5 class="mb-1">Workflow Actions</h5>
+    <small class="text-muted">Continue the job in the system that owns each step.</small>
+  </div>
+  <div class="card-body">
+    <div class="d-flex flex-wrap gap-2">
+      {% for action in lifecycle_actions %}
+        {% if action.enabled %}
+          {% if action.code == "SYNC_DELIVERY" or action.code == "ENTER_FINANCE" or action.code == "CLOSE_JOB" %}
+            <form method="post" action="{{ action.url }}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-{{ action.style }}" title="{{ action.note }}">
+                {{ action.label }}
+              </button>
+            </form>
+          {% else %}
+            <a href="{{ action.url }}" class="btn btn-{{ action.style }}" title="{{ action.note }}">
+              {{ action.label }}
+            </a>
+          {% endif %}
+        {% else %}
+          <button type="button" class="btn btn-outline-secondary" disabled title="{{ action.note }}">
+            {{ action.label }}
+          </button>
+        {% endif %}
+      {% empty %}
+        <span class="text-muted">No workflow action is available.</span>
+      {% endfor %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,126 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Open Job Funding{% endblock %}
+{% block page_title %}Open Job Funding{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h3 class="fw-bold mb-1">Fund {{ order.order_number }}</h3>
+      <p class="text-muted mb-0">
+        Define WPG's own contribution first, then add one or more external partners/investors.
+      </p>
+    </div>
+    <a href="{% url 'orders:order_detail' order.pk %}" class="btn btn-outline-secondary">Back to Order</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white"><strong>Automatic Funding Preview</strong></div>
+        <div class="card-body">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <small class="text-muted d-block">Contract / quotation value</small>
+              <h4>{{ contract_value_preview|floatformat:0 }} RWF</h4>
+            </div>
+            <div class="col-md-6">
+              <small class="text-muted d-block">Estimated job cost</small>
+              <h4>{{ estimated_cost_preview|floatformat:0 }} RWF</h4>
+            </div>
+          </div>
+
+          <h6>Production plans used</h6>
+          {% for plan in plans %}
+            <div class="d-flex justify-content-between border-bottom py-2">
+              <span>{{ plan.name }} × {{ plan.quantity }}</span>
+              <span>{{ plan.estimated_total_cost|floatformat:0 }} RWF</span>
+            </div>
+          {% empty %}
+            <div class="alert alert-warning mb-0">
+              Create and calculate the Production Plan first.
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+          <strong>External Partners / Investors</strong>
+        </div>
+        <div class="card-body">
+          <p class="mb-3">
+            After opening this funding record, you can add multiple partners or investors
+            to finance the remaining funding gap.
+          </p>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="border rounded p-3 h-100">
+                <strong class="d-block mb-1">1. Add Partner</strong>
+                <small class="text-muted">
+                  Create a separate agreement for each investor.
+                </small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="border rounded p-3 h-100">
+                <strong class="d-block mb-1">2. Set Investment Terms</strong>
+                <small class="text-muted">
+                  Record committed capital and the agreed return model.
+                </small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="border rounded p-3 h-100">
+                <strong class="d-block mb-1">3. Record Contributions</strong>
+                <small class="text-muted">
+                  One partner may contribute in several installments, all tracked separately.
+                </small>
+              </div>
+            </div>
+          </div>
+          <div class="alert alert-info mt-3 mb-0">
+            Partner contributions are recorded after this Job Funding record is opened.
+            Finance confirmation remains the source of truth for money actually received.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white"><strong>WPG Contribution</strong></div>
+        <div class="card-body">
+          <p class="text-muted small">
+            Enter only the amount WPG can finance itself. External partners are added on the next page.
+          </p>
+          <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+              <div class="mb-3">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}
+                  <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endfor %}
+            <button class="btn btn-primary w-100">
+              Open Funding &amp; Add Partners
+            </button>
+          </form>
+          <div class="text-muted small mt-3">
+            Opening funding does not receive investor money automatically.
+            Each partner and contribution will be recorded separately.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

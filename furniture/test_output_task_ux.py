@@ -1,6 +1,4 @@
-from datetime import date
 from decimal import Decimal
-from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -8,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from Employee.models import Employee
-from inventory.models import Product, Warehouse
+from inventory.models import Product, StockMovement, Warehouse
 
 from .forms import ProductionOutputForm, ProductionTaskForm
 from .models import ProductionJob, ProductionOutput, ProductionTask
@@ -25,35 +23,54 @@ class FurnitureOutputTaskUxTests(TestCase):
             password="Strong-Test-Password-2026!",
         )
         self.client.force_login(self.user)
+
         self.employee = Employee.objects.create(
             user=self.user,
             national_id="OUTPUT-TASK-001",
             emergency_contact="0788000010",
         )
+
         self.product = Product.objects.create(
             name="Finished Desk",
             product_code="FIN-DESK-001",
             business_unit="FURNITURE",
             standard_cost=Decimal("45000.00"),
         )
+
         self.job = ProductionJob.objects.create(
             product=self.product,
             status="IN_PRODUCTION",
             quantity_to_produce=10,
             created_by=self.employee,
         )
+
         self.warehouse = Warehouse.objects.create(
             name="Finished Goods Store",
             warehouse_type="FINISHED_GOODS",
             business_unit="FURNITURE",
         )
 
-    def test_output_form_uses_job_product_and_requests_warehouse(self):
-        form = ProductionOutputForm(production_job=self.job)
-        self.assertNotIn("product", form.fields)
+    def test_output_form_uses_job_product_without_inventory_warehouse(self):
+        form = ProductionOutputForm(
+            production_job=self.job
+        )
+
+        self.assertNotIn(
+            "product",
+            form.fields,
+        )
+
+        self.assertNotIn(
+            "warehouse",
+            form.fields,
+        )
+
         self.assertEqual(
             set(form.fields),
-            {"quantity_produced", "image", "warehouse"},
+            {
+                "quantity_produced",
+                "image",
+            },
         )
 
     def test_output_cannot_exceed_remaining_job_quantity(self):
@@ -63,28 +80,106 @@ class FurnitureOutputTaskUxTests(TestCase):
             quantity_produced=8,
             produced_by=self.employee,
         )
+
         form = ProductionOutputForm(
-            data={"quantity_produced": 3, "warehouse": self.warehouse.pk},
+            data={
+                "quantity_produced": 3,
+            },
             production_job=self.job,
         )
-        self.assertFalse(form.is_valid())
-        self.assertIn("quantity_produced", form.errors)
 
-    @patch("furniture.services.production_service.StockService.receive_stock")
-    def test_output_posts_through_service_and_receives_stock(self, receive_stock):
-        response = self.client.post(
-            reverse("furniture:add_output", args=[self.job.pk]),
-            {"quantity_produced": 4, "warehouse": self.warehouse.pk},
+        self.assertFalse(
+            form.is_valid()
         )
-        self.assertEqual(response.status_code, 302)
-        output = ProductionOutput.objects.get(production_job=self.job)
-        self.assertEqual(output.quantity_produced, 4)
-        receive_stock.assert_called_once()
-        call = receive_stock.call_args.kwargs
-        self.assertEqual(call["product"], self.product)
-        self.assertEqual(call["warehouse"], self.warehouse)
-        self.assertEqual(call["quantity"], 4)
-        self.assertEqual(call["reference_type"], "PRODUCTION_JOB")
+
+        self.assertIn(
+            "quantity_produced",
+            form.errors,
+        )
+
+    def test_output_is_recorded_without_receiving_inventory_stock(self):
+        response = self.client.post(
+            reverse(
+                "furniture:add_output",
+                args=[self.job.pk],
+            ),
+            {
+                "quantity_produced": 4,
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        output = ProductionOutput.objects.get(
+            production_job=self.job
+        )
+
+        self.assertEqual(
+            output.quantity_produced,
+            4,
+        )
+
+        self.assertIsNone(
+            output.inventory_movement_id
+        )
+
+        self.assertEqual(
+            StockMovement.objects.filter(
+                product=self.product,
+                reference_type="PRODUCTION_JOB",
+                reference_id=str(self.job.pk),
+            ).count(),
+            0,
+        )
+
+        self.job.refresh_from_db()
+
+        self.assertEqual(
+            self.job.status,
+            "IN_PRODUCTION",
+        )
+
+    def test_full_output_moves_job_to_quality_check_without_stock_receipt(self):
+        response = self.client.post(
+            reverse(
+                "furniture:add_output",
+                args=[self.job.pk],
+            ),
+            {
+                "quantity_produced": 10,
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.job.refresh_from_db()
+
+        output = ProductionOutput.objects.get(
+            production_job=self.job
+        )
+
+        self.assertEqual(
+            self.job.status,
+            "QUALITY_CHECK",
+        )
+
+        self.assertIsNone(
+            output.inventory_movement_id
+        )
+
+        self.assertFalse(
+            StockMovement.objects.filter(
+                product=self.product,
+                reference_type="PRODUCTION_JOB",
+                reference_id=str(self.job.pk),
+            ).exists()
+        )
 
     def test_started_task_locks_job_sequence_and_assignment_in_edit_form(self):
         task = ProductionTask.objects.create(
@@ -94,10 +189,22 @@ class FurnitureOutputTaskUxTests(TestCase):
             status="IN_PROGRESS",
             assigned_to=self.employee,
         )
-        form = ProductionTaskForm(instance=task)
-        self.assertTrue(form.fields["production_job"].disabled)
-        self.assertTrue(form.fields["sequence"].disabled)
-        self.assertTrue(form.fields["assigned_to"].disabled)
+
+        form = ProductionTaskForm(
+            instance=task
+        )
+
+        self.assertTrue(
+            form.fields["production_job"].disabled
+        )
+
+        self.assertTrue(
+            form.fields["sequence"].disabled
+        )
+
+        self.assertTrue(
+            form.fields["assigned_to"].disabled
+        )
 
     def test_pending_task_cannot_be_completed_directly(self):
         task = ProductionTask.objects.create(
@@ -106,11 +213,15 @@ class FurnitureOutputTaskUxTests(TestCase):
             sequence=1,
             status="PENDING",
         )
+
         with self.assertRaisesMessage(
             ValidationError,
             "Only an active, paused or blocked task can be completed.",
         ):
-            ProductionTaskService.complete_task(task, employee=self.employee)
+            ProductionTaskService.complete_task(
+                task,
+                employee=self.employee,
+            )
 
     def test_active_task_completes_without_name_error(self):
         task = ProductionTask.objects.create(
@@ -119,7 +230,20 @@ class FurnitureOutputTaskUxTests(TestCase):
             sequence=1,
             status="IN_PROGRESS",
         )
-        ProductionTaskService.complete_task(task, employee=self.employee)
+
+        ProductionTaskService.complete_task(
+            task,
+            employee=self.employee,
+        )
+
         task.refresh_from_db()
-        self.assertEqual(task.status, "COMPLETED")
-        self.assertEqual(task.progress_percentage, 100)
+
+        self.assertEqual(
+            task.status,
+            "COMPLETED",
+        )
+
+        self.assertEqual(
+            task.progress_percentage,
+            100,
+        )

@@ -16,7 +16,7 @@
         </div>
         <div class="card-body">
           <div class="alert alert-info">
-            Saving this form records the output and receives it into the selected finished-goods warehouse.
+            Saving this form records production output only. Inventory receipt happens later, after final quality inspection is passed and formally approved.
           </div>
           <form method="post" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
@@ -37,7 +37,7 @@
             <div class="d-flex justify-content-between">
               <a href="{% url 'furniture:production_job_detail' production_job.pk %}" class="btn btn-outline-secondary">Cancel</a>
               <button type="submit" class="btn btn-success">
-                <i class="bi bi-box-arrow-in-down me-1"></i> Record Output & Receive Stock
+                <i class="bi bi-box-arrow-in-down me-1"></i> Record Production Output
               </button>
             </div>
           </form>

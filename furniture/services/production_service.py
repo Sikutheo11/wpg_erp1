@@ -3,6 +3,7 @@ from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from core.event_engine import EventEngine
 from inventory.services import StockService
+from furniture.lifecycle_guards import ProductionJobTransitionGuard
 from furniture.models import (
     ProductionJob,
     ProductionOutput,
@@ -333,6 +334,9 @@ class ProductionService:
     @staticmethod
     @transaction.atomic
     def start_production(production_job, performed_by=None, note=""):
+        ProductionJobTransitionGuard.assert_can_start_production(
+            production_job
+        )
         if production_job.status not in [
             "ORDER_CONFIRMED",
             "MATERIAL_RESERVED",
@@ -417,6 +421,9 @@ class ProductionService:
     @staticmethod
     @transaction.atomic
     def mark_finished_goods(production_job, performed_by=None, note=""):
+        ProductionJobTransitionGuard.assert_legacy_finished_goods_transition_disabled(
+            production_job
+        )
         if production_job.status != "QUALITY_CHECK":
             raise ValidationError(
                 "Only jobs in quality check can be marked as finished goods."
@@ -543,6 +550,9 @@ class ProductionService:
     @staticmethod
     @transaction.atomic
     def deliver(production_job, performed_by=None, note=""):
+        ProductionJobTransitionGuard.assert_can_mark_delivered(
+            production_job
+        )
         if production_job.status != "FINISHED_GOODS":
             raise ValidationError(
                 "Only finished goods can be delivered."
