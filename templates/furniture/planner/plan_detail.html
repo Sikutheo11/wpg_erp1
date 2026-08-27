@@ -1,0 +1,55 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Production Plan{% endblock %}
+{% block page_title %}Production Plan{% endblock %}
+{% block content %}
+<div class="container-fluid">
+<div class="d-flex justify-content-between align-items-start mb-3">
+<div><h3 class="mb-1">{{ plan.name }}</h3><div class="text-muted">Quantity {{ plan.quantity }} · {{ plan.get_status_display }}{% if plan.order %} · Order {{ plan.order.order_number }}{% endif %}</div></div>
+<div class="d-flex gap-2"><a class="btn btn-outline-secondary" href="{% url 'furniture:planner_edit' plan.pk %}">Edit</a>
+<form method="post" action="{% url 'furniture:planner_calculate' plan.pk %}">{% csrf_token %}<button class="btn btn-primary">Calculate / Recalculate</button></form></div>
+</div>
+
+<div class="row g-3 mb-4">
+<div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted small">Materials</div><div class="fs-4 fw-semibold">{{ plan.material_cost }}</div></div></div></div>
+<div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted small">Labour</div><div class="fs-4 fw-semibold">{{ plan.labour_cost }}</div></div></div></div>
+<div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted small">Machines</div><div class="fs-4 fw-semibold">{{ plan.machine_cost }}</div></div></div></div>
+<div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted small">Estimated Total</div><div class="fs-4 fw-semibold">{{ plan.estimated_total_cost }}</div><small>Per unit {{ plan.estimated_cost_per_unit }}</small></div></div></div>
+<div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted small">Recommended Price</div><div class="fs-4 fw-semibold">{{ plan.recommended_selling_price }}</div><small>Unit {{ plan.recommended_unit_price }}</small></div></div></div>
+<div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted small">Expected Profit</div><div class="fs-4 fw-semibold">{{ plan.expected_profit }}</div></div></div></div>
+</div>
+
+{% if plan.order %}
+<div class="card border-0 shadow-sm mb-3"><div class="card-header bg-white"><strong>Customer Quotation</strong></div><div class="card-body">
+{% if quotation %}<div class="alert alert-light border"><strong>{{ quotation.quotation_no }}</strong> · {{ quotation.get_status_display }} · Total {{ quotation.total_amount }}<br><small class="text-muted">Includes all calculated plans linked to this order.</small></div>{% endif %}
+<form method="post" action="{% url 'furniture:planner_generate_quotation' plan.pk %}">{% csrf_token %}
+<div class="row g-2">{% for field in quotation_form %}<div class="{% if field.name == 'notes' %}col-md-12{% else %}col-md-4{% endif %}"><label class="form-label">{{ field.label }}</label>{{ field }}</div>{% endfor %}</div>
+<button class="btn btn-success mt-3" type="submit">{% if quotation %}Refresh Customer Quotation{% else %}Prepare Customer Quotation{% endif %}</button>
+</form></div></div>
+{% endif %}
+
+<div class="card border-0 shadow-sm mb-3"><div class="card-header bg-white d-flex justify-content-between"><strong>Materials / BOM</strong>
+{% if plan.product_id %}<form method="post" action="{% url 'furniture:planner_import_bom' plan.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-primary">Import / Refresh BOM</button></form>{% endif %}</div>
+<div class="card-body">
+<div class="table-responsive mb-3"><table class="table table-sm"><thead><tr><th>Material</th><th>Qty/Unit</th><th>Waste %</th><th>Estimated Qty</th><th>Unit Cost Snapshot</th><th>Cost</th></tr></thead><tbody>
+{% for line in plan.materials.all %}<tr><td>{{ line.raw_material }}</td><td>{{ line.quantity_per_unit }}</td><td>{{ line.wastage_rate|default:plan.default_wastage_rate }}</td><td>{{ line.estimated_quantity }}</td><td>{{ line.unit_cost_snapshot }}</td><td>{{ line.estimated_cost }}</td></tr>
+{% empty %}<tr><td colspan="6" class="text-muted">No materials added.</td></tr>{% endfor %}</tbody></table></div>
+<form method="post" action="{% url 'furniture:planner_add_material' plan.pk %}" class="row g-2">{% csrf_token %}{% for field in material_form %}<div class="col-md-2"><label class="small">{{ field.label }}</label>{{ field }}</div>{% endfor %}<div class="col-md-2 align-self-end"><button class="btn btn-outline-primary w-100">Add Material</button></div></form>
+</div></div>
+
+<div class="row g-3">
+<div class="col-xl-6"><div class="card border-0 shadow-sm h-100"><div class="card-header bg-white"><strong>Labour</strong></div><div class="card-body">
+{% for line in plan.labour_lines.all %}<div class="border-bottom py-2">{{ line.role_name }} · {{ line.hours_per_unit }} h/unit · {{ line.hourly_rate }}/h <span class="float-end">{{ line.estimated_cost }}</span></div>{% empty %}<p class="text-muted">No labour lines.</p>{% endfor %}
+<hr><form method="post" action="{% url 'furniture:planner_add_labour' plan.pk %}">{% csrf_token %}{{ labour_form.as_p }}<button class="btn btn-sm btn-outline-primary">Add Labour</button></form>
+</div></div></div>
+<div class="col-xl-6"><div class="card border-0 shadow-sm h-100"><div class="card-header bg-white"><strong>Machines</strong></div><div class="card-body">
+{% for line in plan.machine_lines.all %}<div class="border-bottom py-2">{{ line.asset }} · {{ line.hours_per_unit }} h/unit · {{ line.hourly_cost }}/h <span class="float-end">{{ line.estimated_cost }}</span></div>{% empty %}<p class="text-muted">No machine lines.</p>{% endfor %}
+<hr><form method="post" action="{% url 'furniture:planner_add_machine' plan.pk %}">{% csrf_token %}{{ machine_form.as_p }}<button class="btn btn-sm btn-outline-primary">Add Machine</button></form>
+</div></div></div>
+</div>
+
+<div class="card border-0 shadow-sm mt-3"><div class="card-header bg-white"><strong>Other Direct Commercial Costs</strong></div><div class="card-body">
+{% for line in plan.additional_cost_lines.all %}<div class="border-bottom py-2">{{ line.get_cost_type_display }} — {{ line.description }} <span class="float-end">{{ line.amount }}</span></div>{% empty %}<p class="text-muted">No additional costs.</p>{% endfor %}
+<hr><form method="post" action="{% url 'furniture:planner_add_additional' plan.pk %}">{% csrf_token %}{{ additional_form.as_p }}<button class="btn btn-sm btn-outline-primary">Add Cost</button></form>
+</div></div>
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 
 from . import views
 
@@ -7,6 +7,10 @@ app_name = "furniture"
 
 
 urlpatterns = [
+
+    # PRE-PRODUCTION PLANNER / ESTIMATED COSTING
+    path("planning/", include("furniture.planner_urls")),
+
 
     # =====================================================
     # DASHBOARD
