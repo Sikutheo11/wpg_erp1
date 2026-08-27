@@ -106,16 +106,6 @@ urlpatterns = [
         name="valuation_report",
     ),
     path(
-        "farms/<int:farm_pk>/houses/new/",
-        views.house_create,
-        name="farm_house_create",
-    ),
-    path(
-        "houses/new/",
-        views.house_create,
-        name="house_create",
-    ),
-    path(
         "houses/<int:pk>/edit/",
         views.house_update,
         name="house_update",

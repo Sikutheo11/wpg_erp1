@@ -878,6 +878,14 @@ class Transaction(models.Model):
         ),
     )
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0),
+                name="finance_tx_amount_gt_zero",
+            ),
+        ]
+
 
     def __str__(self):
         return self.description
@@ -976,6 +984,14 @@ class Income(models.Model):
         related_name="income_record",
     )
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0),
+                name="finance_income_amount_gt_zero",
+            ),
+        ]
+
 
     def __str__(self):
         return self.title or "Income"
@@ -1049,6 +1065,12 @@ class IncomeDeclaration(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0),
+                name="finance_income_decl_amount_gt_zero",
+            ),
+        ]
 
     def save(self, *args, **kwargs):
         if not self.declaration_number:
@@ -1157,6 +1179,14 @@ class Expense(models.Model):
         editable=False,
         related_name="expense_record",
     )
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0),
+                name="finance_expense_amount_gt_zero",
+            ),
+        ]
 
 
 
@@ -1279,6 +1309,16 @@ class ExpenseRequest(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount_requested__gt=0),
+                name="finance_exp_req_requested_gt_zero",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(amount_paid__gte=0),
+                name="finance_exp_req_paid_nonnegative",
+            ),
+        ]
         permissions = (
             ("submit_expenserequest", "Can submit expense request"),
             ("manager_approve_expenserequest", "Can approve expense request as line manager"),
@@ -1433,6 +1473,22 @@ class Receivable(models.Model):
         auto_now_add=True,
     )
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(total_amount__gt=0),
+                name="finance_recv_total_gt_zero",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(amount_paid__gte=0),
+                name="finance_recv_paid_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(amount_paid__lte=models.F("total_amount")),
+                name="finance_recv_paid_lte_total",
+            ),
+        ]
+
     @property
     def balance(self):
         return self.total_amount - self.amount_paid
@@ -1524,6 +1580,22 @@ class Payable(models.Model):
     created_at=models.DateTimeField(
         auto_now_add=True
     )
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(total_amount__gt=0),
+                name="finance_pay_total_gt_zero",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(amount_paid__gte=0),
+                name="finance_pay_paid_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(amount_paid__lte=models.F("total_amount")),
+                name="finance_pay_paid_lte_total",
+            ),
+        ]
 
 
 

@@ -21,12 +21,6 @@ urlpatterns=[
     
 
     path(
-    "dashboard/",
-    views.inventory_dashboard,
-    name="dashboard"
-    ),
-    
-     path(
         "dashboard/",
         views.inventory_dashboard,
         name="inventory_dashboard"

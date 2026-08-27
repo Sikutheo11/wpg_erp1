@@ -141,12 +141,6 @@ urlpatterns = [
         name="cancel_delivery",
     ),
 
-    path(
-        "<int:pk>/processing/",
-        views.mark_processing,
-        name="mark_processing",
-    ),
-
     # ======================================================
     # INVENTORY
     # ======================================================

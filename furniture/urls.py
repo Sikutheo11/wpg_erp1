@@ -36,37 +36,25 @@ urlpatterns = [
     ),
 
     path(
-        "orders/<int:pk>/assign/",
-        views.assign_worker,
-        name="assign_worker",
-    ),
-
-    path(
-        "orders/<int:pk>/quotation/",
-        views.create_quotation,
-        name="create_quotation",
-    ),
-
-    path(
-        "orders/<int:pk>/materials/add/",
+        "production-jobs/<int:pk>/materials/add/",
         views.add_material,
         name="add_material",
     ),
 
     path(
-        "orders/<int:pk>/labour/add/",
+        "production-jobs/<int:pk>/labour/add/",
         views.add_labour,
         name="add_labour",
     ),
 
     path(
-        "orders/<int:pk>/machine/add/",
+        "production-jobs/<int:pk>/machine/add/",
         views.add_machine,
         name="add_machine",
     ),
 
     path(
-        "orders/<int:pk>/output/add/",
+        "production-jobs/<int:pk>/output/add/",
         views.add_output,
         name="add_output",
     ),
@@ -114,22 +102,10 @@ urlpatterns = [
         views.create_quotation,
         name="production_job_quotation",
     ),
-    path(
-        "production-jobs/<int:pk>/materials/add/",
-        views.add_material,
-        name="add_material",
-    ),
-
     # =====================================================
     # PRODUCTION TASKS
     # Only the existing task view is registered for now
     # =====================================================
-
-    path(
-        "production-tasks/<int:pk>/progress/",
-        views.production_task_progress,
-        name="production_task_progress",
-    ),
 
     # =====================================================
     # QUOTATIONS

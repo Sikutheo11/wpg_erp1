@@ -4,6 +4,7 @@ from decimal import Decimal
 from datetime import timedelta
 
 from django.db import transaction
+from django.core.exceptions import ValidationError
 from django.db.models import Sum, Count
 from django.utils import timezone
 
@@ -16,6 +17,16 @@ from .models import (
 )
 
 from inventory.models import StockMovement
+
+
+LEGACY_WRITE_MESSAGE = (
+    "Legacy Sales records are read-only. Use the shared Order Engine, "
+    "Enterprise Invoice workflow, and Finance Payments instead."
+)
+
+
+def _block_legacy_write():
+    raise ValidationError(LEGACY_WRITE_MESSAGE)
 
 
 
@@ -123,6 +134,7 @@ def calculate_quotation_total(quotation):
 
 
 def calculate_sale_total(sale):
+    _block_legacy_write()
 
     subtotal = Decimal("0")
 
@@ -167,6 +179,7 @@ def reduce_stock_after_sale(
         sale,
         user=None
 ):
+    _block_legacy_write()
 
 
     for item in sale.items.all():
@@ -210,6 +223,7 @@ def reduce_stock_after_sale(
 def create_invoice_from_sale(
         sale
 ):
+    _block_legacy_write()
 
 
     invoice = Invoice.objects.create(
@@ -251,6 +265,7 @@ def complete_sale(
         sale,
         user=None
 ):
+    _block_legacy_write()
 
 
     # Calculate total
@@ -297,6 +312,7 @@ def complete_sale(
 
 
 def prepare_sale(sale):
+    _block_legacy_write()
 
     if not sale.sale_no:
 

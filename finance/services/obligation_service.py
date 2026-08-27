@@ -48,7 +48,22 @@ class ObligationService:
             obligation.reference = f"PAY-{today:%Y%m%d}-{token}"
         else:
             obligation.invoice_number = f"REC-{today:%Y%m%d}-{token}"
-        obligation.total_amount = Decimal("0.00")
+        lines = formset.save(commit=False)
+        if not lines:
+            raise ValidationError("Add at least one item.")
+        initial_total = sum(
+            (
+                Decimal(str(line.quantity))
+                * Decimal(str(line.unit_price))
+            ).quantize(Decimal("0.01"))
+            for line in lines
+        )
+        if initial_total <= 0:
+            raise ValidationError("The obligation total must be greater than zero.")
+        # PostgreSQL checks the positive-total constraint when the parent is
+        # inserted. Calculate the formset total before that insert instead of
+        # temporarily saving an invalid zero-value header.
+        obligation.total_amount = initial_total
         obligation.amount_paid = Decimal("0.00")
         obligation.status = "unpaid"
         counterparty = obligation.counterparty
@@ -63,9 +78,6 @@ class ObligationService:
         counterparty.save(update_fields=["is_customer", "is_supplier"])
         obligation.save()
         formset.instance = obligation
-        lines = formset.save(commit=False)
-        if not lines:
-            raise ValidationError("Add at least one item.")
         for line in lines:
             if kind == "payable":
                 line.payable = obligation

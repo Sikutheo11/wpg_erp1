@@ -200,6 +200,24 @@ class Order(models.Model):
                 "Can process and deliver enterprise orders",
             ),
         ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(subtotal__gte=0),
+                name="orders_order_subtotal_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(discount__gte=0),
+                name="orders_order_discount_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(tax__gte=0),
+                name="orders_order_tax_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(total_amount__gte=0),
+                name="orders_order_total_nonnegative",
+            ),
+        ]
 
 
     def save(self, *args, **kwargs):
@@ -330,6 +348,46 @@ class OrderItem(models.Model):
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name="orders_item_quantity_gt_zero",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(price__gte=0),
+                name="orders_item_price_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(length_cm__isnull=True)
+                    | models.Q(length_cm__gt=0)
+                ),
+                name="orders_item_length_positive_or_null",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(width_cm__isnull=True)
+                    | models.Q(width_cm__gt=0)
+                ),
+                name="orders_item_width_positive_or_null",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(height_cm__isnull=True)
+                    | models.Q(height_cm__gt=0)
+                ),
+                name="orders_item_height_positive_or_null",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(customer_budget__isnull=True)
+                    | models.Q(customer_budget__gte=0)
+                ),
+                name="orders_item_budget_nonnegative_or_null",
+            ),
+        ]
 
     @property
     def subtotal(self):

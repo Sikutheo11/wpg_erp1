@@ -74,6 +74,21 @@ class CustomerPaymentInline(admin.TabularInline):
 # CUSTOMER ADMIN
 # ==========================================
 
+class LegacyReadOnlyAdminMixin:
+    """Keep historical records visible without allowing new legacy writes."""
+
+    def get_readonly_fields(self, request, obj=None):
+        return tuple(field.name for field in self.model._meta.fields)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
 
@@ -136,7 +151,7 @@ class SalesQuotationAdmin(admin.ModelAdmin):
 # ==========================================
 
 @admin.register(Sale)
-class SaleAdmin(admin.ModelAdmin):
+class SaleAdmin(LegacyReadOnlyAdminMixin, admin.ModelAdmin):
 
     list_display = (
         'sale_no',
@@ -159,18 +174,12 @@ class SaleAdmin(admin.ModelAdmin):
     )
 
 
-    inlines = [
-        SaleItemInline,
-    ]
-
-
-
 # ==========================================
 # INVOICE ADMIN
 # ==========================================
 
 @admin.register(Invoice)
-class InvoiceAdmin(admin.ModelAdmin):
+class InvoiceAdmin(LegacyReadOnlyAdminMixin, admin.ModelAdmin):
 
     list_display = (
         'invoice_no',
@@ -193,11 +202,6 @@ class InvoiceAdmin(admin.ModelAdmin):
     )
 
 
-    inlines = [
-        CustomerPaymentInline,
-    ]
-
-
     def balance_display(self, obj):
         return obj.balance
 
@@ -210,7 +214,7 @@ class InvoiceAdmin(admin.ModelAdmin):
 # ==========================================
 
 @admin.register(CustomerPayment)
-class CustomerPaymentAdmin(admin.ModelAdmin):
+class CustomerPaymentAdmin(LegacyReadOnlyAdminMixin, admin.ModelAdmin):
 
     list_display = (
         'invoice',

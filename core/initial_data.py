@@ -264,9 +264,9 @@ ENGINE_FEATURES = {
         ("All Orders", "ORDER_APPROVAL", "orders:all_order_business_units", "bi bi-list-ul", 3),
         ("Order Fulfilment", "ORDER_FULFILMENT", "orders:all_orders", "bi bi-truck", 4),
         ("Sales Dashboard", "SALES_DASHBOARD", "sales:sales_dashboard", "bi bi-speedometer2", 5),
-        ("Sales", "SALES_LIST", "sales:sale_list", "bi bi-receipt", 6),
+        ("Legacy Sales (Read Only)", "SALES_LIST", "sales:sale_list", "bi bi-archive", 6),
         ("Invoices", "SALES_INVOICES", "sales:invoice_list", "bi bi-file-earmark-text", 7),
-        ("Customer Payments", "SALES_PAYMENTS", "sales:payment_list", "bi bi-cash-coin", 8),
+        ("Legacy Customer Payments (Read Only)", "SALES_PAYMENTS", "sales:payment_list", "bi bi-archive", 8),
         ("Sales Reports", "SALES_REPORTS", "sales:sales_report", "bi bi-bar-chart", 9),
     ],
     "QUOTATION": [
@@ -718,7 +718,7 @@ FEATURE_DJANGO_PERMISSIONS = {
     "FURNITURE_QUOTATIONS": {"view_permission": "furniture.view_quotation", "add_permission": "furniture.add_quotation", "change_permission": "furniture.change_quotation", "delete_permission": "furniture.delete_quotation", "approve_permission": "furniture.approve_quotation"},
     "FURNITURE_MATERIALS": {"view_permission": "furniture.view_productionmaterial", "add_permission": "furniture.add_productionmaterial", "change_permission": "furniture.change_productionmaterial", "delete_permission": "furniture.delete_productionmaterial"},
     "FURNITURE_OUTPUTS": {"view_permission": "furniture.view_productionoutput", "add_permission": "furniture.add_productionoutput", "change_permission": "furniture.change_productionoutput", "delete_permission": "furniture.delete_productionoutput"},
-    "FURNITURE_ORDERS": {"view_permission": "furniture.view_order", "add_permission": "furniture.add_order", "change_permission": "furniture.change_order", "delete_permission": "furniture.delete_order"},
+    "FURNITURE_ORDERS": {"view_permission": "furniture.view_order"},
     "FURNITURE_TASKS": {"view_permission": "furniture.view_productiontask", "add_permission": "furniture.add_productiontask", "change_permission": "furniture.change_productiontask", "delete_permission": "furniture.delete_productiontask"},
     "FURNITURE_MY_TASKS": {"view_permission": "furniture.view_productiontask"},
     "FURNITURE_LABOUR": {"view_permission": "furniture.view_productionlabour", "add_permission": "furniture.add_productionlabour", "change_permission": "furniture.change_productionlabour", "delete_permission": "furniture.delete_productionlabour"},
@@ -769,9 +769,6 @@ FEATURE_DJANGO_PERMISSIONS = {
     },
     "SALES_LIST": {
         "view_permission": "sales.view_sale",
-        "add_permission": "sales.add_sale",
-        "change_permission": "sales.change_sale",
-        "delete_permission": "sales.delete_sale",
     },
     "SALES_INVOICES": {
         "view_permission": "sales.view_invoice",
@@ -781,9 +778,6 @@ FEATURE_DJANGO_PERMISSIONS = {
     },
     "SALES_PAYMENTS": {
         "view_permission": "sales.view_customerpayment",
-        "add_permission": "sales.add_customerpayment",
-        "change_permission": "sales.change_customerpayment",
-        "delete_permission": "sales.delete_customerpayment",
     },
     "SALES_REPORTS": {
         "view_permission": "sales.view_sale",

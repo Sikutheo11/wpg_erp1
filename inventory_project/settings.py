@@ -213,7 +213,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = os.environ.get(
+    "DJANGO_TIME_ZONE",
+    "Africa/Kigali",
+)
 
 USE_I18N = True
 
@@ -335,14 +338,73 @@ SECURE_SSL_REDIRECT = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
-SECURE_HSTS_SECONDS = (
-    3600
-    if not DEBUG
-    else 0
+SECURE_HSTS_SECONDS = int(
+    os.environ.get(
+        "DJANGO_SECURE_HSTS_SECONDS",
+        "3600" if not DEBUG else "0",
+    )
 )
-SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-SECURE_HSTS_PRELOAD = False
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _environment_boolean(
+    "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS",
+    default=False,
+)
+SECURE_HSTS_PRELOAD = _environment_boolean(
+    "DJANGO_SECURE_HSTS_PRELOAD",
+    default=False,
+)
 
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
+
+
+# Console-first logging for systemd/Gunicorn and container environments.
+LOG_LEVEL = os.environ.get(
+    "DJANGO_LOG_LEVEL",
+    "DEBUG" if DEBUG else "INFO",
+).upper()
+LOG_FORMAT = os.environ.get(
+    "DJANGO_LOG_FORMAT",
+    "verbose" if DEBUG else "json",
+).lower()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": "core.logging.JsonFormatter",
+        },
+        "verbose": {
+            "format": (
+                "{asctime} {levelname} {name} "
+                "{module}:{lineno} {message}"
+            ),
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": (
+                "json" if LOG_FORMAT == "json" else "verbose"
+            ),
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": LOG_LEVEL,
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}

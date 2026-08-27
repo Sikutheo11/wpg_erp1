@@ -16,6 +16,7 @@ from django.shortcuts import (
     render,
 )
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from core.permissions import wpg_permission_required
 
@@ -733,6 +734,7 @@ def income_declaration_document(request, pk):
 
 @login_required
 @wpg_permission_required("finance.add_incomedeclaration", feature_code="FINANCE_INCOME_DECLARATIONS", action="add")
+@require_POST
 def income_declaration_submit(request, pk):
     obj = get_object_or_404(IncomeDeclaration, pk=pk)
     return _run_workflow_action(request, obj, lambda: IncomeDeclarationService.submit(obj, request.user), "Income declaration submitted to the unit manager.", "finance:income_declaration_detail")
@@ -740,6 +742,7 @@ def income_declaration_submit(request, pk):
 
 @login_required
 @wpg_permission_required("finance.change_incomedeclaration", feature_code="FINANCE_INCOME_CONFIRMATIONS", action="approve")
+@require_POST
 def income_declaration_unit_approve(request, pk):
     obj = get_object_or_404(IncomeDeclaration, pk=pk)
     return _run_workflow_action(request, obj, lambda: IncomeDeclarationService.unit_approve(obj, request.user, request.POST.get("comment")), "Unit manager approved the income source.", "finance:income_declaration_detail")
@@ -747,6 +750,7 @@ def income_declaration_unit_approve(request, pk):
 
 @login_required
 @wpg_permission_required("finance.change_incomedeclaration", feature_code="FINANCE_INCOME_CONFIRMATIONS", action="approve")
+@require_POST
 def income_declaration_confirm(request, pk):
     obj = get_object_or_404(IncomeDeclaration, pk=pk)
     form = IncomeConfirmationForm(request.POST or None)
@@ -758,6 +762,7 @@ def income_declaration_confirm(request, pk):
 
 @login_required
 @wpg_permission_required("finance.change_incomedeclaration", feature_code="FINANCE_INCOME_CONFIRMATIONS", action="approve")
+@require_POST
 def income_declaration_decide(request, pk, decision):
     obj = get_object_or_404(IncomeDeclaration, pk=pk)
     return _run_workflow_action(request, obj, lambda: IncomeDeclarationService.return_or_reject(obj, request.user, decision.upper(), request.POST.get("comment")), f"Income declaration {decision.lower()}.", "finance:income_declaration_detail")
@@ -1058,6 +1063,7 @@ def _run_workflow_action(
 
 @login_required
 @wpg_permission_required("finance.add_expenserequest", feature_code="FINANCE_EXPENSE_REQUESTS", action="add")
+@require_POST
 def expense_request_submit(request, pk):
     obj = get_object_or_404(ExpenseRequest, pk=pk)
     return _run_workflow_action(request, obj, lambda: ExpenseRequestService.submit(obj, request.user), "Request submitted to the line manager.")
@@ -1065,6 +1071,7 @@ def expense_request_submit(request, pk):
 
 @login_required
 @wpg_permission_required("finance.change_expenserequest", feature_code="FINANCE_EXPENSE_APPROVALS", action="approve")
+@require_POST
 def expense_request_manager_approve(request, pk):
     obj = get_object_or_404(ExpenseRequest, pk=pk)
     return _run_workflow_action(request, obj, lambda: ExpenseRequestService.manager_approve(obj, request.user, request.POST.get("comment")), "Line manager approved the request.")
@@ -1072,6 +1079,7 @@ def expense_request_manager_approve(request, pk):
 
 @login_required
 @wpg_permission_required("finance.change_expenserequest", feature_code="FINANCE_EXPENSE_APPROVALS", action="approve")
+@require_POST
 def expense_request_verify(request, pk):
     obj = get_object_or_404(ExpenseRequest, pk=pk)
     form = ExpenseRequestVerificationForm(request.POST or None)
@@ -1083,6 +1091,7 @@ def expense_request_verify(request, pk):
 
 @login_required
 @wpg_permission_required("finance.change_expenserequest", feature_code="FINANCE_EXPENSE_APPROVALS", action="approve")
+@require_POST
 def expense_request_finance_approve(request, pk):
     obj = get_object_or_404(ExpenseRequest, pk=pk)
     return _run_workflow_action(request, obj, lambda: ExpenseRequestService.finance_approve(obj, request.user, request.POST.get("comment")), "Finance manager approved the request.")
@@ -1090,6 +1099,7 @@ def expense_request_finance_approve(request, pk):
 
 @login_required
 @wpg_permission_required("finance.change_expenserequest", feature_code="FINANCE_EXPENSE_APPROVALS", action="approve")
+@require_POST
 def expense_request_director_approve(request, pk):
     obj = get_object_or_404(ExpenseRequest, pk=pk)
     return _run_workflow_action(request, obj, lambda: ExpenseRequestService.director_approve(obj, request.user, request.POST.get("comment")), "Company director gave final approval.")
@@ -1097,6 +1107,7 @@ def expense_request_director_approve(request, pk):
 
 @login_required
 @wpg_permission_required("finance.change_expenserequest", feature_code="FINANCE_EXPENSE_APPROVALS", action="approve")
+@require_POST
 def expense_request_pay(request, pk):
     obj = get_object_or_404(ExpenseRequest, pk=pk)
     form = ExpenseRequestPaymentForm(request.POST or None, expense_request=obj)
@@ -1108,6 +1119,7 @@ def expense_request_pay(request, pk):
 
 @login_required
 @wpg_permission_required("finance.change_expenserequest", feature_code="FINANCE_EXPENSE_APPROVALS", action="approve")
+@require_POST
 def expense_request_decide(request, pk, decision):
     obj = get_object_or_404(ExpenseRequest, pk=pk)
     return _run_workflow_action(request, obj, lambda: ExpenseRequestService.return_or_reject(obj, request.user, decision.upper(), request.POST.get("comment")), f"Request {decision.lower()}.")
