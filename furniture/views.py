@@ -22,6 +22,7 @@ from .lifecycle_control import ProductionJobLifecycleControl
 from .lifecycle_evidence import ProductionJobLifecycleEvidence
 from .lifecycle_actions import ProductionJobLifecycleActions
 from .lifecycle_closure_service import ProductionJobClosureService
+from .profitability_service import FurnitureProfitabilityReconciliationService
 from .forms import (
     AssignWorkerForm,
     OrderForm,
@@ -334,6 +335,13 @@ def production_job_detail(request, pk):
         inspection=inspection,
     )
 
+    profitability_reconciliation = (
+        FurnitureProfitabilityReconciliationService.build(
+            job,
+            evidence=lifecycle_evidence,
+        )
+    )
+
     return render(
         request,
         "furniture/production_job_detail.html",
@@ -348,6 +356,7 @@ def production_job_detail(request, pk):
             "lifecycle_control": lifecycle_control,
             "lifecycle_evidence": lifecycle_evidence,
             "lifecycle_actions": lifecycle_actions,
+            "profitability_reconciliation": profitability_reconciliation,
             "can_create_reinspection": job.rework_orders.filter(
                 status__in={"COMPLETED", "VERIFIED"},
             ).exists(),
