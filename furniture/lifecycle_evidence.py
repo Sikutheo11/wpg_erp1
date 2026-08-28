@@ -25,6 +25,41 @@ class ProductionJobLifecycleEvidence:
         reservations = job.stock_reservations.all()
         outputs = job.outputs.all()
 
+        material_requirements = []
+        materials_ready = False
+        if job.product_id:
+            boms = job.product.furniture_boms.select_related("raw_material").all()
+            if boms.exists():
+                materials_ready = True
+                active_reservations = reservations.filter(
+                    status__in={"RESERVED", "USED"}
+                )
+                for bom in boms:
+                    required = (
+                        Decimal(str(bom.quantity_required or 0))
+                        * Decimal(str(job.quantity_to_produce or 0))
+                    )
+                    reserved = sum(
+                        (
+                            Decimal(str(value or 0))
+                            for value in active_reservations.filter(
+                                raw_material=bom.raw_material
+                            ).values_list("quantity", flat=True)
+                        ),
+                        Decimal("0.00"),
+                    )
+                    covered = reserved >= required
+                    if not covered:
+                        materials_ready = False
+                    material_requirements.append(
+                        {
+                            "raw_material": bom.raw_material,
+                            "required": required,
+                            "reserved": reserved,
+                            "covered": covered,
+                        }
+                    )
+
         output_quantity = sum(int(x.quantity_produced or 0) for x in outputs)
         released_quantity = sum(
             int(x.quantity_produced or 0)
@@ -69,7 +104,8 @@ class ProductionJobLifecycleEvidence:
                 "reserved_count": reservations.filter(status="RESERVED").count(),
                 "used_count": reservations.filter(status="USED").count(),
                 "has_reservations": reservations.exists(),
-                "ready": reservations.exists(),
+                "requirements": material_requirements,
+                "ready": materials_ready,
             },
             "production": {
                 "output_count": outputs.count(),

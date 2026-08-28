@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 
 from .lifecycle_evidence import ProductionJobLifecycleEvidence
+from .profitability_service import FurnitureProfitabilityReconciliationService
 
 
 class ProductionJobTransitionGuard:
@@ -84,6 +85,15 @@ class ProductionJobTransitionGuard:
         if investment_status and investment_status not in {"CLOSED", "CANCELLED"}:
             raise ValidationError(
                 "Close or settle the Job Funding record before closing the Production Job."
+            )
+
+        profitability = FurnitureProfitabilityReconciliationService.build(
+            job,
+            evidence=evidence,
+        )
+        if not profitability["reconciliation_ready"]:
+            raise ValidationError(
+                "Complete Furniture profitability reconciliation before closing the Production Job."
             )
 
         return evidence

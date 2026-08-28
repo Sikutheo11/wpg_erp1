@@ -1,0 +1,25 @@
+<div class="card mb-3">
+  <div class="card-header"><strong>Finance &amp; Profit Reconciliation</strong></div>
+  <div class="card-body">
+    {% if profitability_reconciliation %}
+      <div class="row">
+        <div class="col-md-3 mb-2"><small class="text-muted d-block">Actual revenue</small><strong>{{ profitability_reconciliation.actual_revenue|floatformat:0 }} RWF</strong></div>
+        <div class="col-md-3 mb-2"><small class="text-muted d-block">Actual cost</small><strong>{{ profitability_reconciliation.actual_cost|floatformat:0 }} RWF</strong></div>
+        <div class="col-md-3 mb-2"><small class="text-muted d-block">Actual profit / loss</small><strong>{{ profitability_reconciliation.actual_profit|floatformat:0 }} RWF</strong></div>
+        <div class="col-md-3 mb-2"><small class="text-muted d-block">Gross margin</small><strong>{{ profitability_reconciliation.profit_margin|floatformat:2 }}%</strong></div>
+      </div>
+      <hr>
+      <div class="small">
+        Revenue source: <strong>{{ profitability_reconciliation.revenue_source }}</strong> ·
+        Cost source: <strong>{{ profitability_reconciliation.cost_source }}</strong> ·
+        Finance income links: <strong>{{ profitability_reconciliation.income_link_count }}</strong> ·
+        Finance expense links: <strong>{{ profitability_reconciliation.expense_link_count }}</strong>
+      </div>
+      {% if profitability_reconciliation.reconciliation_ready %}
+        <div class="alert alert-success mt-3 mb-0">Final reconciliation evidence is complete.</div>
+      {% else %}
+        <div class="alert alert-warning mt-3 mb-0">This job cannot close until delivery, inventory release, payment and any investor settlement are reconciled.</div>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
