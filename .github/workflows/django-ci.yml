@@ -67,6 +67,7 @@ jobs:
           python manage.py check
           python manage.py makemigrations --check --dry-run
           python manage.py migrate --noinput
+          python manage.py collectstatic --noinput
 
       - name: Run test suite
         run: python manage.py test -v 1
