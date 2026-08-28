@@ -377,6 +377,15 @@ body{
         <div class="collapse"
              id="businessUnit{{ item.owner.id }}">
 
+            {% if item.owner.code == "FURNITURE" or item.owner.code == "AGRICULTURE" or item.owner.code == "CONSTRUCTION" %}
+                {% safe_url "inventory:product_create" as add_product_url %}
+                <a class="submenu"
+                   href="{{ add_product_url }}">
+                    <i class="bi bi-plus-circle"></i>
+                    Add Product
+                </a>
+            {% endif %}
+
             {% for feature in item.features %}
 
                 {% if feature.url_name %}
@@ -448,6 +457,14 @@ body{
 
         <div class="collapse"
              id="engine{{ item.owner.id }}">
+
+            {% if item.owner.code == "FINANCE" %}
+                {% safe_url "core:job_investment_list" as job_investment_list_url %}
+                <a class="submenu" href="{{ job_investment_list_url }}">
+                    <i class="bi bi-people-fill"></i>
+                    Job Investments
+                </a>
+            {% endif %}
 
             {% for feature in item.features %}
 

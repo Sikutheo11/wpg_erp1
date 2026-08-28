@@ -37,6 +37,21 @@ def _error_text(exc):
 
 @login_required
 @wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
+def job_investment_list(request):
+    investments = (
+        JobInvestment.objects.select_related("order", "opened_by")
+        .prefetch_related("investor_agreements__investor", "investor_contributions")
+        .order_by("-created_at")
+    )
+    return render(
+        request,
+        "core/job_investment/list.html",
+        {"investments": investments},
+    )
+
+
+@login_required
+@wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
 def job_investment_open(request, order_pk):
     order = get_object_or_404(
         Order.objects.select_related("customer_quotation").prefetch_related(

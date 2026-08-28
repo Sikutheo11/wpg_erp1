@@ -1,0 +1,47 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Job Investments{% endblock %}
+{% block page_title %}Job Investments{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h3 class="fw-bold mb-1">Job Investments</h3>
+      <p class="text-muted mb-0">Job-specific WPG and investor funding, agreements, settlements and Finance reconciliation.</p>
+    </div>
+  </div>
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <strong>Investment / Partnership Jobs</strong>
+      <span class="badge bg-secondary">{{ investments|length }}</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Reference</th><th>Order</th><th>Business Unit</th><th>Status</th>
+            <th class="text-end">Estimated Cost</th><th class="text-end">WPG Capital</th>
+            <th class="text-end">Investor Capital</th><th class="text-end">Funding Gap</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for investment in investments %}
+          <tr>
+            <td><strong>{{ investment.reference }}</strong><small class="d-block text-muted">{{ investment.created_at|date:"d M Y" }}</small></td>
+            <td>{{ investment.order.order_number }}<small class="d-block text-muted">{{ investment.order.customer_name }}</small></td>
+            <td>{{ investment.order.get_business_unit_display }}</td>
+            <td><span class="badge bg-light text-dark border">{{ investment.get_status_display }}</span></td>
+            <td class="text-end">{{ investment.estimated_job_cost|floatformat:0 }} RWF</td>
+            <td class="text-end">{{ investment.wpg_capital_committed|floatformat:0 }} RWF</td>
+            <td class="text-end">{{ investment.investor_capital_received|floatformat:0 }} RWF</td>
+            <td class="text-end">{{ investment.funding_gap|floatformat:0 }} RWF</td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'core:job_investment_detail' investment.pk %}">Open</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" class="text-center text-muted py-5">No job investment has been opened yet. Open one from an eligible Order.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
