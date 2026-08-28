@@ -4,6 +4,11 @@ from . import job_investment_views
 
 urlpatterns = [
     path("", job_investment_views.job_investment_list, name="job_investment_list"),
+    path(
+        "eligible-orders/",
+        job_investment_views.job_investment_eligible_orders,
+        name="job_investment_eligible_orders",
+    ),
     path("orders/<int:order_pk>/open/", job_investment_views.job_investment_open, name="job_investment_open"),
     path("<int:pk>/", job_investment_views.job_investment_detail, name="job_investment_detail"),
     path("<int:pk>/refresh/", job_investment_views.job_investment_refresh, name="job_investment_refresh"),

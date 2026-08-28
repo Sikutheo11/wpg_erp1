@@ -10,7 +10,8 @@ from .commercial_forms import ProductionPlanQuotationForm
 from .planner_forms import (
     ProductionPlanAdditionalCostForm, ProductionPlanForm,
     ProductionPlanLabourForm, ProductionPlanMachineForm,
-    ProductionPlanMaterialForm,
+    ProductionPlanMaterialForm, ProductionPlanLabourCatalogForm,
+    ProductionPlanMachineCatalogForm,
 )
 from .planner_models import ProductionPlan
 from .services.commercial_service import CustomFurnitureQuotationService
@@ -30,6 +31,41 @@ def production_plan_list(request):
         .order_by("-created_at")
     )
     return render(request, "furniture/planner/plan_list.html", {"plans": plans})
+
+
+@login_required
+@wpg_permission_required("furniture.add_productionplan", feature_code="FURNITURE_OPERATIONS")
+def order_technical_costing(request, order_id):
+    from orders.models import Order
+
+    order = get_object_or_404(Order, pk=order_id, business_unit="FURNITURE")
+
+    existing = (
+        ProductionPlan.objects.filter(order=order)
+        .exclude(status="SUPERSEDED")
+        .order_by("-created_at")
+        .first()
+    )
+    if existing:
+        return redirect("furniture:planner_detail", pk=existing.pk)
+
+    plan = ProductionPlan.objects.create(
+        order=order,
+        name=f"Technical Costing - {order.order_number}",
+        quantity=1,
+    )
+    try:
+        plan.prepared_by = request.user.employee
+        plan.save(update_fields=["prepared_by"])
+    except (AttributeError, ObjectDoesNotExist):
+        pass
+
+    ProductionPlanningCostService.initialise_plan_defaults(plan)
+    messages.info(
+        request,
+        "Technical costing plan created. Add raw materials, labour, machines and other costs.",
+    )
+    return redirect("furniture:planner_detail", pk=plan.pk)
 
 
 @login_required
@@ -76,8 +112,8 @@ def production_plan_detail(request, pk):
         "plan": plan,
         "quotation": quotation,
         "material_form": ProductionPlanMaterialForm(),
-        "labour_form": ProductionPlanLabourForm(),
-        "machine_form": ProductionPlanMachineForm(),
+        "labour_form": ProductionPlanLabourCatalogForm(),
+        "machine_form": ProductionPlanMachineCatalogForm(),
         "additional_form": ProductionPlanAdditionalCostForm(),
         "quotation_form": ProductionPlanQuotationForm(
             initial={
@@ -104,6 +140,22 @@ def production_plan_import_bom(request, pk):
     except ValidationError as exc:
         messages.error(request, _error_text(exc))
     return redirect("furniture:planner_detail", pk=pk)
+
+
+@login_required
+@require_POST
+@wpg_permission_required("furniture.change_productionplan", feature_code="FURNITURE_OPERATIONS")
+def production_plan_finish(request, pk):
+    plan = get_object_or_404(ProductionPlan, pk=pk)
+    try:
+        ProductionPlanningCostService.calculate(plan)
+        label = plan.order.order_number if plan.order_id else plan.name
+        messages.success(request, f"Technical costing for {label} was saved successfully.")
+    except ValidationError as exc:
+        messages.error(request, _error_text(exc))
+        return redirect("furniture:planner_detail", pk=pk)
+
+    return redirect("orders:all_orders")
 
 
 @login_required
@@ -170,14 +222,14 @@ def production_plan_add_material(request, pk):
 @require_POST
 @wpg_permission_required("furniture.change_productionplan", feature_code="FURNITURE_OPERATIONS")
 def production_plan_add_labour(request, pk):
-    return _add_line(request, pk, ProductionPlanLabourForm)
+    return _add_line(request, pk, ProductionPlanLabourCatalogForm)
 
 
 @login_required
 @require_POST
 @wpg_permission_required("furniture.change_productionplan", feature_code="FURNITURE_OPERATIONS")
 def production_plan_add_machine(request, pk):
-    return _add_line(request, pk, ProductionPlanMachineForm)
+    return _add_line(request, pk, ProductionPlanMachineCatalogForm)
 
 
 @login_required

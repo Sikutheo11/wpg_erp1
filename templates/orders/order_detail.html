@@ -1,1181 +1,326 @@
 {% extends "base_dashboard.html" %}
+{% load permission_tags %}
 
-{% block title %}
-Order {{ order.order_number|default:order.pk }}
-{% endblock %}
-
-{% block page_title %}
-Order Detail
-{% endblock %}
+{% block title %}Order {{ order.order_number|default:order.pk }}{% endblock %}
+{% block page_title %}Order Detail{% endblock %}
 
 {% block content %}
-
 <style>
-    .order-detail-page {
-        --wpg-primary: #173b57;
-        --wpg-accent: #c99a2e;
-        --wpg-soft: #f6f8fb;
-    }
-
-    .order-detail-page .summary-card,
-    .order-detail-page .content-card {
-        border: 1px solid #e8edf3 !important;
-        border-radius: 14px;
-    }
-
-    .order-detail-page .summary-icon {
-        width: 42px;
-        height: 42px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 12px;
-        background: var(--wpg-soft);
-        color: var(--wpg-primary);
-        font-size: 1.15rem;
-    }
-
-    .order-detail-page .section-title {
-        font-weight: 700;
-        color: #263746;
-    }
-
-    .order-detail-page .workflow-step {
-        position: relative;
-        display: flex;
-        gap: .75rem;
-        padding-bottom: 1rem;
-    }
-
-    .order-detail-page .workflow-step:not(:last-child)::after {
-        content: "";
-        position: absolute;
-        top: 22px;
-        left: 9px;
-        width: 2px;
-        height: calc(100% - 11px);
-        background: #e1e7ed;
-    }
-
-    .order-detail-page .workflow-step i {
-        position: relative;
-        z-index: 1;
-        background: #fff;
-    }
-
-    .order-detail-page .table thead th {
-        white-space: nowrap;
-        font-size: .78rem;
-        letter-spacing: .03em;
-        text-transform: uppercase;
-        color: #6c757d;
-        background: #f8fafc;
-        border-bottom-width: 1px;
-    }
-
-    .order-detail-page .action-card {
-        position: sticky;
-        top: 1rem;
-    }
+  .order-simple .card { border: 1px solid #e8edf3; border-radius: 14px; }
+  .order-simple .muted-label { color:#6c757d; font-size:.82rem; display:block; }
+  .order-simple .value { font-weight:700; color:#172033; }
+  .order-simple .action-panel { position:sticky; top:1rem; }
+  .order-simple .timeline-step { border-left:3px solid #e9ecef; padding-left:14px; margin-bottom:14px; }
+  .order-simple .timeline-step.current { border-left-color:#0d6efd; }
+  .order-simple .table thead th { white-space:nowrap; font-size:.78rem; color:#6c757d; background:#f8fafc; }
 </style>
 
-<div class="container-fluid">
-<div class="order-detail-page">
+<div class="container-fluid order-simple">
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm"
-                 role="alert">
-                {{ message }}
-                <button type="button"
-                        class="btn-close"
-                        data-bs-dismiss="alert"
-                        aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} shadow-sm">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
 
-    <!-- ================================================= -->
-    <!-- HEADER -->
-    <!-- ================================================= -->
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+        <h3 class="fw-bold mb-0">Order {{ order.order_number|default:order.pk }}</h3>
+        <span class="badge
+          {% if order.status == 'CANCELLED' %}bg-danger
+          {% elif order.status == 'DELIVERED' or order.status == 'COMPLETED' %}bg-success
+          {% elif order.status == 'READY' or order.status == 'READY_FOR_PRODUCTION' %}bg-primary
+          {% elif order.status == 'IN_PRODUCTION' or order.status == 'PROCESSING' %}bg-info text-dark
+          {% else %}bg-secondary{% endif %}">
+          {{ order.get_status_display }}
+        </span>
+      </div>
+      <div class="text-muted">
+        {{ order.get_business_unit_display }} · {{ order.get_order_type_display }}
+      </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'orders:order_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Orders
+      </a>
+      {% if order.business_unit == "FURNITURE" and job_investment %}
+        <a href="/job-investments/{{ job_investment.pk }}/" class="btn btn-outline-success">
+          <i class="bi bi-piggy-bank me-1"></i>Job Funding
+        </a>
+      {% endif %}
+      {% if order.business_unit == "FURNITURE" and order.production_job %}
+        <a href="{% url 'furniture:production_job_detail' order.production_job.pk %}" class="btn btn-success">
+          <i class="bi bi-hammer me-1"></i>Production Job
+        </a>
+      {% endif %}
+    </div>
+  </div>
 
-    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-3">
+      <div class="card h-100 shadow-sm"><div class="card-body">
+        <span class="muted-label">Customer</span>
+        <div class="value">{{ order.customer_name|default:"-" }}</div>
+        <small class="text-muted">{{ order.customer_phone|default:"" }}</small>
+      </div></div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card h-100 shadow-sm"><div class="card-body">
+        <span class="muted-label">Order Value</span>
+        <div class="value fs-5">{{ order.total_amount|default:0|floatformat:0 }} RWF</div>
+        <small class="text-muted">{{ order.get_payment_status_display|default:"Payment not recorded" }}</small>
+      </div></div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card h-100 shadow-sm"><div class="card-body">
+        <span class="muted-label">Delivery</span>
+        <div class="value">{{ order.get_delivery_status_display|default:"Not started" }}</div>
+        <small class="text-muted">Expected {{ order.expected_delivery_date|date:"d M Y"|default:"-" }}</small>
+      </div></div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card h-100 shadow-sm"><div class="card-body">
+        <span class="muted-label">Last Updated</span>
+        <div class="value">{{ order.updated_at|date:"d M Y, H:i"|default:"-" }}</div>
+        <small class="text-muted">Created {{ order.created_at|date:"d M Y"|default:"-" }}</small>
+      </div></div>
+    </div>
+  </div>
 
-        <div>
-            <h3 class="fw-bold mb-1">
-                Order {{ order.order_number|default:order.pk }}
-            </h3>
+  <div class="row g-4">
+    <div class="col-xl-8">
 
-            <p class="text-muted mb-1">
-                {{ order.get_business_unit_display }}
-                · {{ order.get_order_type_display }}
-                · {{ order.get_status_display }}
-            </p>
-
-            <small class="text-muted">
-                Created {{ order.created_at|date:"d M Y, H:i"|default:"-" }}
-                {% if order.created_by %}
-                    by {{ order.created_by.full_name|default:order.created_by }}
-                {% elif order.user %}
-                    by {{ order.user.full_name|default:order.user }}
-                {% endif %}
-            </small>
-        </div>
-
-        <div class="d-flex flex-wrap gap-2">
-
-            <a href="{% url 'orders:order_list' %}"
-               class="btn btn-outline-secondary">
-
-                <i class="bi bi-arrow-left me-1"></i>
-                Back to Orders
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <strong>What the customer needs</strong>
+            <div class="small text-muted">Only the essential order information.</div>
+          </div>
+          {% if can_edit_items and perms.orders.change_order %}
+            <a href="{% url 'orders:add_order_item' order.pk %}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-plus-circle me-1"></i>Add Item
             </a>
-
-            {% if order.business_unit == "FURNITURE" %}
-                {% if job_investment %}
-                    <a href="{% url 'core:job_investment_detail' job_investment.pk %}"
-                       class="btn btn-outline-success">
-                        <i class="bi bi-piggy-bank me-1"></i>
-                        Job Funding
-                    </a>
-                {% else %}
-                    <a href="{% url 'core:job_investment_open' order.pk %}"
-                       class="btn btn-outline-primary">
-                        <i class="bi bi-piggy-bank me-1"></i>
-                        Open Job Funding
-                    </a>
-                {% endif %}
-
-
-                {% if order.production_job %}
-
-                    <a href="{% url 'furniture:production_job_detail' order.production_job.pk %}"
-                       class="btn btn-success">
-
-                        <i class="bi bi-hammer me-1"></i>
-                        View Production Job
-                    </a>
-
-                {% elif order.status == "READY_FOR_PRODUCTION" %}
-
-                    {% if order.order_type == "CUSTOM_FURNITURE" or order.order_type == "RESTOCK" or order.order_type == "NEW_PRODUCT" %}
-
-                        <form method="post" action="{% url 'furniture:create_production_job' order.pk %}">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-warning">
-
-                            <i class="bi bi-gear me-1"></i>
-
-                            {% if order.order_type == "CUSTOM_FURNITURE" %}
-                                Create Production Job
-                            {% elif order.order_type == "RESTOCK" %}
-                                Create Restock Production
-                            {% elif order.order_type == "NEW_PRODUCT" %}
-                                Create Product Development Job
-                            {% endif %}
-                            </button>
-                        </form>
-
-                    {% endif %}
-
-                {% endif %}
-
-            {% endif %}
-
+          {% endif %}
         </div>
-
-    </div>
-
-
-    <!-- ================================================= -->
-    <!-- STATUS SUMMARY -->
-    <!-- ================================================= -->
-
-    <div class="row g-3 mb-4">
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card summary-card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between gap-3">
-                        <div>
-                            <small class="text-muted d-block">Order Status</small>
-                            <span class="badge mt-2
-                        {% if order.status == 'DRAFT' %}
-                            bg-secondary
-                        {% elif order.status == 'PENDING' %}
-                            bg-warning text-dark
-                        {% elif order.status == 'AWAITING_QUOTATION' or order.status == 'QUOTED' or order.status == 'AWAITING_CUSTOMER_APPROVAL' %}
-                            bg-warning text-dark
-                        {% elif order.status == 'READY_FOR_PRODUCTION' or order.status == 'CONFIRMED' %}
-                            bg-primary
-                        {% elif order.status == 'PROCESSING' %}
-                            bg-info text-dark
-                        {% elif order.status == 'WAITING_STOCK' %}
-                            bg-warning text-dark
-                        {% elif order.status == 'IN_PRODUCTION' %}
-                            bg-info text-dark
-                        {% elif order.status == 'READY' %}
-                            bg-success
-                        {% elif order.status == 'DELIVERED' or order.status == 'COMPLETED' %}
-                            bg-success
-                        {% elif order.status == 'CANCELLED' %}
-                            bg-danger
-                        {% else %}
-                            bg-secondary
-                        {% endif %}
-                    ">
-                                {{ order.get_status_display }}
-                            </span>
-                        </div>
-                        <span class="summary-icon"><i class="bi bi-diagram-3"></i></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card summary-card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between gap-3">
-                        <div>
-                            <small class="text-muted d-block">Payment Status</small>
-                            <h5 class="fw-bold mt-2 mb-0">
-                                {{ order.get_payment_status_display|default:"Not recorded" }}
-                            </h5>
-                        </div>
-                        <span class="summary-icon"><i class="bi bi-wallet2"></i></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card summary-card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between gap-3">
-                        <div>
-                            <small class="text-muted d-block">Delivery Status</small>
-                            <h5 class="fw-bold mt-2 mb-0">
-                                {{ order.get_delivery_status_display|default:"Not started" }}
-                            </h5>
-                        </div>
-                        <span class="summary-icon"><i class="bi bi-truck"></i></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card summary-card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between gap-3">
-                        <div>
-                            <small class="text-muted d-block">Total Amount</small>
-                            <h4 class="fw-bold text-success mt-2 mb-0">
-                                {{ order.total_amount|default:0|floatformat:0 }} RWF
-                            </h4>
-                        </div>
-                        <span class="summary-icon"><i class="bi bi-cash-stack"></i></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-
-    <div class="row g-4">
-
-        <!-- ================================================= -->
-        <!-- LEFT COLUMN -->
-        <!-- ================================================= -->
-
-        <div class="col-xl-8">
-
-            <!-- CUSTOMER INFO -->
-
-            <div class="card content-card border-0 shadow-sm mb-4">
-
-                <div class="card-header bg-white">
-                    <h5 class="section-title mb-0">
-                        Customer and Delivery Information
-                    </h5>
-                </div>
-
-                <div class="card-body">
-
-                    <div class="row g-3">
-
-                        <div class="col-md-6">
-                            <small class="text-muted d-block">
-                                Customer Name
-                            </small>
-
-                            <strong>
-                                {{ order.customer_name|default:"-" }}
-                            </strong>
-                        </div>
-
-                        <div class="col-md-6">
-                            <small class="text-muted d-block">
-                                Order Source
-                            </small>
-
-                            <strong>
-                                {% if order.source_sales_quotation %}
-                                    Approved quotation
-                                {% else %}
-                                    Direct order
-                                {% endif %}
-                            </strong>
-                        </div>
-
-                        <div class="col-md-6">
-                            <small class="text-muted d-block">
-                                Last Updated
-                            </small>
-
-                            <strong>
-                                {{ order.updated_at|date:"d M Y, H:i"|default:"-" }}
-                            </strong>
-                        </div>
-
-                        <div class="col-md-6">
-                            <small class="text-muted d-block">
-                                Phone
-                            </small>
-
-                            <strong>
-                                {{ order.customer_phone|default:"-" }}
-                            </strong>
-                        </div>
-
-                        <div class="col-md-6">
-                            <small class="text-muted d-block">
-                                Email
-                            </small>
-
-                            <strong>
-                                {{ order.customer_email|default:"-" }}
-                            </strong>
-                        </div>
-
-                        <div class="col-md-6">
-                            <small class="text-muted d-block">
-                                Expected Delivery
-                            </small>
-
-                            <strong>
-                                {{ order.expected_delivery_date|date:"d M Y"|default:"-" }}
-                            </strong>
-                        </div>
-
-                        <div class="col-12">
-                            <small class="text-muted d-block">
-                                Delivery / Service Location
-                            </small>
-
-                            <strong>
-                                {{ order.delivery_address|default:"-" }}
-                            </strong>
-
-                            {% if order.province or order.district or order.sector or order.cell or order.village %}
-
-                                <small class="text-muted d-block mt-1">
-                                    {{ order.province }}
-                                    {% if order.district %}, {{ order.district }}{% endif %}
-                                    {% if order.sector %}, {{ order.sector }}{% endif %}
-                                    {% if order.cell %}, {{ order.cell }}{% endif %}
-                                    {% if order.village %}, {{ order.village }}{% endif %}
-                                </small>
-
-                            {% endif %}
-                        </div>
-
-                        {% if order.notes %}
-                            <div class="col-12">
-                                <small class="text-muted d-block">
-                                    Notes
-                                </small>
-
-                                <div class="border rounded p-3 bg-light">
-                                    {{ order.notes|linebreaksbr }}
-                                </div>
-                            </div>
-                        {% endif %}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- ORDER ITEMS -->
-
-            <div class="card content-card border-0 shadow-sm mb-4">
-
-                <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
-
-                    <div>
-                        <h5 class="section-title mb-1">
-                            Order Items
-                        </h5>
-
-                        <small class="text-muted">
-                            Products, services or special customer requests.
-                        </small>
-                    </div>
-
-                    {% if can_edit_items %}
-                        <span class="badge bg-light text-dark border">
-                            Editable
-                        </span>
-                    {% endif %}
-
-                </div>
-
-                <div class="table-responsive">
-
-                    <table class="table table-hover align-middle mb-0">
-
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Item</th>
-                                <th>Specifications</th>
-                                <th>Quantity</th>
-                                {% if order.order_type != "CUSTOM_FURNITURE" %}
-                                    <th>Unit Price</th>
-                                    <th>Subtotal</th>
-                                {% endif %}
-
-                                {% if can_edit_items %}
-                                    <th></th>
-                                {% endif %}
-                            </tr>
-                        </thead>
-
-                        <tbody>
-
-                            {% for item in items %}
-
-                                <tr>
-
-                                    <td>
-                                        {{ forloop.counter }}
-                                    </td>
-
-                                    <td>
-                                        <strong>
-                                            {{ item.product_name|default:item.product.name }}
-                                        </strong>
-
-                                        {% if item.product %}
-                                            <small class="text-muted d-block">
-                                                Catalogue product
-                                            </small>
-                                        {% else %}
-                                            <small class="text-muted d-block">
-                                                Special request
-                                            </small>
-                                        {% endif %}
-                                    </td>
-
-                                    <td>
-                                        {{ item.specifications|default:"-"|truncatechars:90 }}
-
-                                        {% if item.length_cm or item.width_cm or item.height_cm %}
-                                            <small class="text-muted d-block mt-1">
-                                                Dimensions:
-                                                {{ item.length_cm|default:"-" }} ×
-                                                {{ item.width_cm|default:"-" }} ×
-                                                {{ item.height_cm|default:"-" }} cm
-                                            </small>
-                                        {% endif %}
-
-                                        {% if item.material_preference or item.colour or item.finish %}
-                                            <small class="text-muted d-block">
-                                                {{ item.material_preference|default:"" }}
-                                                {% if item.colour %} · {{ item.colour }}{% endif %}
-                                                {% if item.finish %} · {{ item.finish }} finish{% endif %}
-                                            </small>
-                                        {% endif %}
-
-                                        {% if item.reference_image %}
-                                            <a class="small d-block mt-1" href="{% url 'orders:order_item_attachment' item.pk 'reference' %}">
-                                                <i class="bi bi-image me-1"></i>Reference photo
-                                            </a>
-                                        {% endif %}
-
-                                        {% if item.design_attachment %}
-                                            <a class="small d-block" href="{% url 'orders:order_item_attachment' item.pk 'design' %}">
-                                                <i class="bi bi-paperclip me-1"></i>Design attachment
-                                            </a>
-                                        {% endif %}
-
-                                        {% if item.customer_budget %}
-                                            <small class="text-muted d-block">
-                                                Customer budget: {{ item.customer_budget|floatformat:0 }} RWF
-                                            </small>
-                                        {% endif %}
-                                    </td>
-
-                                    <td>
-                                        {{ item.quantity }}
-                                    </td>
-
-                                    {% if order.order_type != "CUSTOM_FURNITURE" %}
-                                        <td>{{ item.price|default:0|floatformat:0 }} RWF</td>
-                                        <td><strong>{{ item.subtotal|default:0|floatformat:0 }} RWF</strong></td>
-                                    {% endif %}
-
-                                    {% if can_edit_items %}
-
-                                        <td class="text-end">
-
-                                            <a href="{% url 'orders:edit_order_item' item.pk %}"
-                                               class="btn btn-sm btn-outline-primary">
-                                                Edit
-                                            </a>
-
-                                            <form method="post"
-                                                  action="{% url 'orders:remove_order_item' item.pk %}"
-                                                  class="d-inline">
-
-                                                {% csrf_token %}
-
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-danger"
-                                                        onclick="return confirm('Remove this order item?');">
-                                                    Remove
-                                                </button>
-
-                                            </form>
-
-                                        </td>
-
-                                    {% endif %}
-
-                                </tr>
-
-                            {% empty %}
-
-                                <tr>
-                                    <td colspan="{% if order.order_type == 'CUSTOM_FURNITURE' %}{% if can_edit_items %}5{% else %}4{% endif %}{% else %}{% if can_edit_items %}7{% else %}6{% endif %}{% endif %}"
-                                        class="text-center text-muted py-5">
-
-                                        <i class="bi bi-cart-x fs-1 d-block mb-2"></i>
-                                        No items have been added to this order.
-
-                                    </td>
-                                </tr>
-
-                            {% endfor %}
-
-                        </tbody>
-
-                        {% if order.order_type != "CUSTOM_FURNITURE" %}
-                        <tfoot>
-
-                            <tr>
-                                <th colspan="5" class="text-end">
-                                    Subtotal
-                                </th>
-
-                                <th>
-                                    {{ order.subtotal|default:0|floatformat:0 }} RWF
-                                </th>
-
-                                {% if can_edit_items %}
-                                    <th></th>
-                                {% endif %}
-                            </tr>
-
-                            <tr>
-                                <th colspan="5" class="text-end">
-                                    Discount
-                                </th>
-
-                                <th>
-                                    {{ order.discount|default:0|floatformat:0 }} RWF
-                                </th>
-
-                                {% if can_edit_items %}
-                                    <th></th>
-                                {% endif %}
-                            </tr>
-
-                            <tr>
-                                <th colspan="5" class="text-end">
-                                    Tax
-                                </th>
-
-                                <th>
-                                    {{ order.tax|default:0|floatformat:0 }} RWF
-                                </th>
-
-                                {% if can_edit_items %}
-                                    <th></th>
-                                {% endif %}
-                            </tr>
-
-                            <tr>
-                                <th colspan="5" class="text-end fs-5">
-                                    Total
-                                </th>
-
-                                <th class="text-success fs-5">
-                                    {{ order.total_amount|default:0|floatformat:0 }} RWF
-                                </th>
-
-                                {% if can_edit_items %}
-                                    <th></th>
-                                {% endif %}
-                            </tr>
-
-                        </tfoot>
-                        {% endif %}
-
-                    </table>
-
-                </div>
-
-            </div>
-
-
-            <!-- INVENTORY RESERVATIONS -->
-
-            <div class="card content-card border-0 shadow-sm">
-
-                <div class="card-header bg-white">
-                    <h5 class="section-title mb-1">
-                        Inventory Reservations
-                    </h5>
-
-                    <small class="text-muted">
-                        Stock reserved for catalogue products in this order.
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Key Specification</th>
+                <th>Qty</th>
+                {% if order.order_type != "CUSTOM_FURNITURE" %}<th class="text-end">Value</th>{% endif %}
+                {% if can_edit_items and perms.orders.change_order %}<th></th>{% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in items %}
+              <tr>
+                <td>
+                  <strong>{{ item.product_name|default:item.product.name }}</strong>
+                  {% if item.material_preference %}<small class="d-block text-muted">{{ item.material_preference }}</small>{% endif %}
+                </td>
+                <td>
+                  {{ item.specifications|default:"-"|truncatechars:120 }}
+                  {% if item.length_cm or item.width_cm or item.height_cm %}
+                    <small class="d-block text-muted">
+                      {{ item.length_cm|default:"-" }} × {{ item.width_cm|default:"-" }} × {{ item.height_cm|default:"-" }} cm
                     </small>
-                </div>
-
-                <div class="table-responsive">
-
-                    <table class="table table-hover align-middle mb-0">
-
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Warehouse</th>
-                                <th>Requested</th>
-                                <th>Reserved</th>
-                                <th>Shortage</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-
-                            {% for item in items %}
-
-                                {% if item.stock_reservation %}
-
-                                    <tr>
-                                        <td>
-                                            {{ item.stock_reservation.product.name }}
-                                        </td>
-
-                                        <td>
-                                            {{ item.stock_reservation.warehouse.name }}
-                                        </td>
-
-                                        <td>
-                                            {{ item.stock_reservation.requested_quantity }}
-                                        </td>
-
-                                        <td>
-                                            {{ item.stock_reservation.reserved_quantity }}
-                                        </td>
-
-                                        <td>
-                                            {{ item.stock_reservation.shortage_quantity }}
-                                        </td>
-
-                                        <td>
-                                            <span class="badge
-                                                {% if item.stock_reservation.status == 'RESERVED' %}
-                                                    bg-success
-                                                {% elif item.stock_reservation.status == 'PARTIAL' %}
-                                                    bg-warning text-dark
-                                                {% elif item.stock_reservation.status == 'FAILED' %}
-                                                    bg-danger
-                                                {% elif item.stock_reservation.status == 'COMPLETED' %}
-                                                    bg-primary
-                                                {% elif item.stock_reservation.status == 'RELEASED' %}
-                                                    bg-secondary
-                                                {% else %}
-                                                    bg-light text-dark border
-                                                {% endif %}
-                                            ">
-                                                {{ item.stock_reservation.get_status_display }}
-                                            </span>
-                                        </td>
-                                    </tr>
-
-                                {% endif %}
-
-                            {% empty %}
-
-                                <tr>
-                                    <td colspan="6"
-                                        class="text-center text-muted py-4">
-                                        No order items found.
-                                    </td>
-                                </tr>
-
-                            {% endfor %}
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </div>
-
+                  {% endif %}
+                  {% if item.reference_image %}
+                    <a class="small me-2" href="{% url 'orders:order_item_attachment' item.pk 'reference' %}">Reference</a>
+                  {% endif %}
+                  {% if item.design_attachment %}
+                    <a class="small" href="{% url 'orders:order_item_attachment' item.pk 'design' %}">Design</a>
+                  {% endif %}
+                </td>
+                <td>{{ item.quantity }}</td>
+                {% if order.order_type != "CUSTOM_FURNITURE" %}
+                  <td class="text-end">{{ item.subtotal|default:0|floatformat:0 }} RWF</td>
+                {% endif %}
+                {% if can_edit_items and perms.orders.change_order %}
+                  <td class="text-end">
+                    <a href="{% url 'orders:edit_order_item' item.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                  </td>
+                {% endif %}
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-4">No order items recorded.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
+      </div>
 
-
-        <!-- ================================================= -->
-        <!-- RIGHT COLUMN -->
-        <!-- ================================================= -->
-
-        <div class="col-xl-4">
-
-            <!-- ADD ITEM FORM -->
-
-            {% if can_edit_items %}
-
-                <div class="card content-card border-0 shadow-sm mb-4">
-
-                    <div class="card-header bg-white">
-
-                        <h5 class="section-title mb-1">
-                            Add Order Item
-                        </h5>
-
-                        <small class="text-muted">
-                            Add a product, service or special request.
-                        </small>
-
-                    </div>
-
-                    <div class="card-body">
-
-                        <form method="post"
-                              enctype="multipart/form-data"
-                              action="{% url 'orders:add_order_item' order.pk %}"
-                              novalidate>
-
-                            {% csrf_token %}
-
-                            {% for field in item_form %}
-
-                                <div class="mb-3">
-
-                                    <label for="{{ field.id_for_label }}"
-                                           class="form-label fw-semibold">
-
-                                        {{ field.label }}
-
-                                        {% if field.field.required %}
-                                            <span class="text-danger">*</span>
-                                        {% endif %}
-                                    </label>
-
-                                    {{ field }}
-
-                                    {% if field.help_text %}
-                                        <small class="text-muted d-block mt-1">
-                                            {{ field.help_text }}
-                                        </small>
-                                    {% endif %}
-
-                                    {% for error in field.errors %}
-                                        <div class="text-danger small mt-1">
-                                            {{ error }}
-                                        </div>
-                                    {% endfor %}
-
-                                </div>
-
-                            {% endfor %}
-
-                            <button type="submit"
-                                    class="btn btn-primary w-100">
-
-                                <i class="bi bi-plus-circle me-1"></i>
-                                Add Item
-                            </button>
-
-                        </form>
-
-                    </div>
-
-                </div>
-
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white"><strong>Customer & Delivery</strong></div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4"><span class="muted-label">Phone</span><div class="value">{{ order.customer_phone|default:"-" }}</div></div>
+            <div class="col-md-4"><span class="muted-label">Email</span><div class="value">{{ order.customer_email|default:"-" }}</div></div>
+            <div class="col-md-4"><span class="muted-label">Expected Delivery</span><div class="value">{{ order.expected_delivery_date|date:"d M Y"|default:"-" }}</div></div>
+            <div class="col-12">
+              <span class="muted-label">Delivery / Service Location</span>
+              <div class="value">{{ order.delivery_address|default:"-" }}</div>
+              {% if order.district or order.sector %}
+                <small class="text-muted">
+                  {{ order.province }}{% if order.district %}, {{ order.district }}{% endif %}{% if order.sector %}, {{ order.sector }}{% endif %}
+                </small>
+              {% endif %}
+            </div>
+            {% if order.notes %}
+              <div class="col-12"><span class="muted-label">Notes</span><div class="border rounded p-3 bg-light">{{ order.notes|linebreaksbr }}</div></div>
             {% endif %}
-
-
-            <!-- WORKFLOW -->
-
-            <div class="card content-card border-0 shadow-sm mb-4">
-
-                <div class="card-header bg-white">
-                    <h5 class="section-title mb-0">
-                        Order Workflow
-                    </h5>
-                </div>
-
-                <div class="card-body">
-
-                    {% if order.status == "AWAITING_QUOTATION" and order.business_unit == "FURNITURE" %}
-                        {% if order.order_type == "CUSTOM_FURNITURE" %}
-                            <form method="post" action="{% url 'sales:quotation_create_from_order' order.pk %}" class="mb-3">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="bi bi-receipt me-1"></i>Create Customer Quotation
-                                </button>
-                            </form>
-                        {% elif order.order_type == "RESTOCK" or order.order_type == "NEW_PRODUCT" %}
-                            <a href="{% url 'furniture:create_order_costing' order.pk %}" class="btn btn-primary w-100 mb-3">
-                                <i class="bi bi-calculator me-1"></i>Prepare Production Costing
-                            </a>
-                        {% endif %}
-                    {% endif %}
-
-                    {% if order.customer_quotation %}
-                        <div class="alert alert-light border">
-                            <strong>Customer quotation:</strong>
-                            <a href="{% url 'sales:quotation_detail' order.customer_quotation.pk %}">
-                                {{ order.customer_quotation.quotation_no }}
-                            </a>
-                            <span class="badge bg-secondary ms-1">{{ order.customer_quotation.get_status_display }}</span>
-                        </div>
-                    {% endif %}
-
-                    {% if order.production_costing %}
-                        <div class="alert alert-light border">
-                            <strong>Production costing:</strong> #{{ order.production_costing.pk }}
-                            <span class="badge bg-secondary ms-1">{{ order.production_costing.get_status_display }}</span>
-                        </div>
-                    {% endif %}
-
-                    <div class="workflow-step">
-                        <i class="bi bi-check-circle-fill text-success"></i>
-                        <div>
-                            <span class="fw-semibold d-block">Draft created</span>
-                            <small class="text-muted">Order registered in the Order Engine.</small>
-                        </div>
-                    </div>
-
-                    <div class="workflow-step">
-                        {% if order.status != "DRAFT" %}
-                            <i class="bi bi-check-circle-fill text-success"></i>
-                        {% else %}
-                            <i class="bi bi-circle text-muted"></i>
-                        {% endif %}
-                        <div>
-                            <span class="fw-semibold d-block">Submitted</span>
-                            <small class="text-muted">Ready for review and confirmation.</small>
-                        </div>
-                    </div>
-
-                    <div class="workflow-step">
-                        {% if order.status == "CONFIRMED" or order.status == "PROCESSING" or order.status == "WAITING_STOCK" or order.status == "IN_PRODUCTION" or order.status == "READY" or order.status == "DELIVERED" or order.status == "COMPLETED" %}
-                            <i class="bi bi-check-circle-fill text-success"></i>
-                        {% else %}
-                            <i class="bi bi-circle text-muted"></i>
-                        {% endif %}
-                        <div>
-                            <span class="fw-semibold d-block">Confirmed</span>
-                            <small class="text-muted">Commercial order approved for fulfilment.</small>
-                        </div>
-                    </div>
-
-                    <div class="workflow-step">
-                        {% if order.status == "PROCESSING" or order.status == "WAITING_STOCK" or order.status == "IN_PRODUCTION" or order.status == "READY" or order.status == "DELIVERED" or order.status == "COMPLETED" %}
-                            <i class="bi bi-check-circle-fill text-success"></i>
-                        {% else %}
-                            <i class="bi bi-circle text-muted"></i>
-                        {% endif %}
-                        <div>
-                            <span class="fw-semibold d-block">Processing</span>
-                            <small class="text-muted">Reserved items are being prepared for fulfilment.</small>
-                        </div>
-                    </div>
-
-                    {% if order.business_unit == "FURNITURE" %}
-                        {% if order.order_type == "CUSTOM_FURNITURE" or order.order_type == "RESTOCK" or order.order_type == "NEW_PRODUCT" %}
-                            <div class="workflow-step">
-                                {% if order.production_job %}
-                                    <i class="bi bi-check-circle-fill text-success"></i>
-                                {% else %}
-                                    <i class="bi bi-circle text-muted"></i>
-                                {% endif %}
-                                <div>
-                                    <span class="fw-semibold d-block">Production handoff</span>
-                                    <small class="text-muted">
-                                        {% if order.production_job %}
-                                            Production job created in Furniture &amp; Manufacturing.
-                                        {% else %}
-                                            Waiting for production job creation.
-                                        {% endif %}
-                                    </small>
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endif %}
-
-                    <div class="workflow-step">
-                        {% if order.status == "READY" or order.status == "DELIVERED" or order.status == "COMPLETED" %}
-                            <i class="bi bi-check-circle-fill text-success"></i>
-                        {% else %}
-                            <i class="bi bi-circle text-muted"></i>
-                        {% endif %}
-                        <div>
-                            <span class="fw-semibold d-block">Ready</span>
-                            <small class="text-muted">Items cleared for dispatch or collection.</small>
-                        </div>
-                    </div>
-
-                    <div class="workflow-step">
-                        {% if order.delivery_status == "SHIPPED" or order.delivery_status == "DELIVERED" %}
-                            <i class="bi bi-check-circle-fill text-success"></i>
-                        {% else %}
-                            <i class="bi bi-circle text-muted"></i>
-                        {% endif %}
-                        <div>
-                            <span class="fw-semibold d-block">Shipped</span>
-                            <small class="text-muted">Order dispatched to the customer.</small>
-                        </div>
-                    </div>
-
-                    <div class="workflow-step pb-0">
-                        {% if order.delivery_status == "DELIVERED" %}
-                            <i class="bi bi-check-circle-fill text-success"></i>
-                        {% else %}
-                            <i class="bi bi-circle text-muted"></i>
-                        {% endif %}
-                        <div>
-                            <span class="fw-semibold d-block">Delivered</span>
-                            <small class="text-muted">Delivery completed and stock posted.</small>
-                        </div>
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- ORDER ACTIONS -->
-
-            <div class="card content-card action-card border-0 shadow-sm">
-
-                <div class="card-header bg-white">
-                    <h5 class="section-title mb-0">
-                        Order Actions
-                    </h5>
-                </div>
-
-                <div class="card-body">
-
-                    {% if can_submit %}
-
-                        <form method="post"
-                              action="{% url 'orders:submit_order' order.pk %}"
-                              class="mb-2">
-
-                            {% csrf_token %}
-
-                            <button type="submit"
-                                    class="btn btn-primary w-100">
-
-                                <i class="bi bi-send me-1"></i>
-                                Submit Order
-                            </button>
-
-                        </form>
-
-                    {% endif %}
-
-
-                    {% if can_confirm %}
-
-                        <form method="post"
-                              action="{% url 'orders:confirm_order' order.pk %}"
-                              class="mb-2">
-
-                            {% csrf_token %}
-
-                            <button type="submit"
-                                    class="btn btn-success w-100">
-
-                                <i class="bi bi-check-circle me-1"></i>
-                                Confirm Order
-                            </button>
-                        </form>
-
-                    {% endif %}
-
-                    {% if can_process %}
-                    <form method="post"
-                        action="{% url 'orders:mark_processing' order.pk %}"
-                        class="mb-2">
-
-                        {% csrf_token %}
-
-                        <button type="submit"
-                                class="btn btn-primary w-100">
-                            <i class="bi bi-gear me-1"></i>
-                            Start Processing
-                        </button>
-                    </form>
-                    {% endif %}
-
-
-                    {% if can_mark_ready %}
-                    <form method="post"
-                        action="{% url 'orders:mark_ready' order.pk %}"
-                        class="mb-2">
-
-                        {% csrf_token %}
-
-                        <input type="hidden"
-                            name="note"
-                            value="Order items prepared and ready for delivery.">
-
-                        <button type="submit"
-                                class="btn btn-warning w-100">
-                            <i class="bi bi-box-seam me-1"></i>
-                            Mark Ready
-                        </button>
-                    </form>
-                    {% endif %}
-
-
-                    <!-- MARK AS SHIPPED -->
-                    {% if order.status == "READY" and order.delivery_status != "SHIPPED" and order.delivery_status != "DELIVERED" %}
-
-                        <form method="post"
-                              action="{% url 'orders:mark_shipped' order.pk %}"
-                              class="mb-2">
-
-                            {% csrf_token %}
-
-                            <button type="submit"
-                                    class="btn btn-primary w-100">
-
-                                <i class="bi bi-truck me-1"></i>
-                                Mark as Shipped
-                            </button>
-
-                        </form>
-
-                    {% endif %}
-
-
-                    <!-- DELIVER ORDER -->
-                    {% if order.status == "READY" and order.delivery_status != "DELIVERED" %}
-
-                        <form method="post"
-                              action="{% url 'orders:deliver_order' order.pk %}"
-                              class="mb-2">
-
-                            {% csrf_token %}
-
-                            <div class="mb-2">
-
-                                <label for="deliveryNote"
-                                       class="form-label">
-
-                                    Delivery Note
-                                </label>
-
-                                <textarea name="note"
-                                          id="deliveryNote"
-                                          class="form-control"
-                                          rows="2"
-                                          placeholder="Optional delivery note"></textarea>
-
-                            </div>
-
-                            <button type="submit"
-                                    class="btn btn-success w-100"
-                                    onclick="return confirm('Confirm delivery and deduct stock?');">
-
-                                <i class="bi bi-box-seam me-1"></i>
-                                Deliver Order
-                            </button>
-
-                        </form>
-
-                    {% endif %}
-
-
-                    {% if can_cancel %}
-
-                        <form method="post"
-                              action="{% url 'orders:cancel_order' order.pk %}">
-
-                            {% csrf_token %}
-
-                            <div class="mb-2">
-
-                                <label for="cancelReason"
-                                       class="form-label">
-
-                                    Cancellation Reason
-                                </label>
-
-                                <textarea name="reason"
-                                          id="cancelReason"
-                                          class="form-control"
-                                          rows="2"
-                                          placeholder="Optional reason"></textarea>
-
-                            </div>
-
-                            <button type="submit"
-                                    class="btn btn-outline-danger w-100"
-                                    onclick="return confirm('Cancel this order?');">
-
-                                <i class="bi bi-x-circle me-1"></i>
-                                Cancel Order
-                            </button>
-
-                        </form>
-
-                    {% endif %}
-
-
-                    {% if not can_submit and not can_confirm and not can_cancel and order.status != "READY" %}
-
-                        <div class="alert alert-light border mb-0">
-                            <i class="bi bi-info-circle me-1"></i>
-                            No actions are currently available for this order.
-                        </div>
-
-                    {% endif %}
-
-                </div>
-
-            </div>
-
+          </div>
         </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-white"><strong>Order Progress</strong></div>
+        <div class="card-body">
+          <div class="timeline-step {% if order.status == 'DRAFT' %}current{% endif %}">
+            <strong>1. Order captured</strong>
+            <div class="small text-muted">Customer need and items are recorded.</div>
+          </div>
+          <div class="timeline-step {% if order.status == 'PENDING' or order.status == 'AWAITING_QUOTATION' or order.status == 'QUOTED' or order.status == 'AWAITING_CUSTOMER_APPROVAL' %}current{% endif %}">
+            <strong>2. Review / Quotation</strong>
+            <div class="small text-muted">Commercial approval, quotation or costing is completed.</div>
+          </div>
+          <div class="timeline-step {% if order.status == 'READY_FOR_PRODUCTION' or order.status == 'CONFIRMED' %}current{% endif %}">
+            <strong>3. Authorized for execution</strong>
+            <div class="small text-muted">Funding, stock or production execution can proceed.</div>
+          </div>
+          <div class="timeline-step {% if order.status == 'PROCESSING' or order.status == 'IN_PRODUCTION' or order.status == 'READY' %}current{% endif %}">
+            <strong>4. Processing / Production</strong>
+            <div class="small text-muted">The order is being prepared for customer delivery.</div>
+          </div>
+          <div class="timeline-step {% if order.status == 'DELIVERED' or order.status == 'COMPLETED' %}current{% endif %}">
+            <strong>5. Delivery / Completion</strong>
+            <div class="small text-muted">The customer receives the order and the commercial workflow closes.</div>
+          </div>
+        </div>
+      </div>
 
     </div>
 
-</div>
-</div>
+    <div class="col-xl-4">
+      <div class="card shadow-sm action-panel">
+        <div class="card-header bg-white">
+          <strong>Next Action</strong>
+          <div class="small text-muted">Only actions allowed by the current stage and your role are shown.</div>
+        </div>
+        <div class="card-body">
 
+          {% if order.status == "DRAFT" %}
+            {% if can_submit and perms.orders.change_order %}
+              <form method="post" action="{% url 'orders:submit_order' order.pk %}" class="d-grid mb-2">
+                {% csrf_token %}<button class="btn btn-primary"><i class="bi bi-send me-1"></i>Submit Order</button>
+              </form>
+            {% endif %}
+            {% if can_edit_items and perms.orders.change_order %}
+              <a href="{% url 'orders:add_order_item' order.pk %}" class="btn btn-outline-primary w-100 mb-2">Add / Update Items</a>
+            {% endif %}
+
+          {% elif order.status == "PENDING" %}
+            {% if can_confirm and perms.orders.approve_order %}
+              <form method="post" action="{% url 'orders:confirm_order' order.pk %}" class="d-grid mb-2">
+                {% csrf_token %}<button class="btn btn-success"><i class="bi bi-check2-circle me-1"></i>Confirm Order</button>
+              </form>
+            {% endif %}
+
+          {% elif order.status == "AWAITING_QUOTATION" or order.status == "QUOTED" or order.status == "AWAITING_CUSTOMER_APPROVAL" %}
+            {% if order.customer_quotation_id and perms.sales.view_salesquotation %}
+              <a href="{% url 'sales:quotation_detail' order.customer_quotation_id %}" class="btn btn-primary w-100 mb-2">
+                <i class="bi bi-file-earmark-text me-1"></i>Open Customer Quotation
+              </a>
+            {% endif %}
+            {% if order.business_unit == "FURNITURE" and order.order_type == "RESTOCK" or order.business_unit == "FURNITURE" and order.order_type == "NEW_PRODUCT" %}
+              {% if perms.furniture.view_quotation %}
+                <a href="{% url 'furniture:create_order_costing' order.pk %}" class="btn btn-outline-primary w-100 mb-2">Open Production Costing</a>
+              {% endif %}
+            {% endif %}
+
+          {% elif order.status == "READY_FOR_PRODUCTION" %}
+            {% if order.business_unit == "FURNITURE" %}
+              {% if job_investment %}
+                <a href="/job-investments/{{ job_investment.pk }}/" class="btn btn-outline-success w-100 mb-2">
+                  <i class="bi bi-piggy-bank me-1"></i>Review Job Funding
+                </a>
+              {% else %}
+                <a href="/job-investments/orders/{{ order.pk }}/open/" class="btn btn-outline-primary w-100 mb-2">
+                  <i class="bi bi-piggy-bank me-1"></i>Open Job Funding
+                </a>
+              {% endif %}
+              {% if order.production_job %}
+                <a href="{% url 'furniture:production_job_detail' order.production_job.pk %}" class="btn btn-success w-100 mb-2">Open Production Job</a>
+              {% elif perms.furniture.add_productionjob %}
+                <form method="post" action="{% url 'furniture:create_production_job' order.pk %}" class="d-grid mb-2">
+                  {% csrf_token %}<button class="btn btn-warning">Create Production Job</button>
+                </form>
+              {% endif %}
+            {% endif %}
+
+          {% elif order.status == "CONFIRMED" %}
+            {% if perms.orders.fulfil_order %}
+              <form method="post" action="{% url 'orders:mark_processing' order.pk %}" class="d-grid mb-2">
+                {% csrf_token %}<button class="btn btn-primary">Start Processing</button>
+              </form>
+            {% endif %}
+
+          {% elif order.status == "PROCESSING" or order.status == "IN_PRODUCTION" %}
+            {% if order.business_unit == "FURNITURE" and order.production_job %}
+              <a href="{% url 'furniture:production_job_detail' order.production_job.pk %}" class="btn btn-primary w-100 mb-2">Open Production Job</a>
+            {% endif %}
+            {% if perms.orders.fulfil_order and order.status == "PROCESSING" %}
+              <form method="post" action="{% url 'orders:mark_ready' order.pk %}" class="d-grid mb-2">
+                {% csrf_token %}<button class="btn btn-success">Mark Ready</button>
+              </form>
+            {% endif %}
+
+          {% elif order.status == "READY" %}
+            {% if perms.orders.fulfil_order %}
+              <form method="post" action="{% url 'orders:mark_shipped' order.pk %}" class="d-grid mb-2">
+                {% csrf_token %}<button class="btn btn-outline-primary">Mark Shipped</button>
+              </form>
+              <form method="post" action="{% url 'orders:deliver_order' order.pk %}" class="d-grid mb-2">
+                {% csrf_token %}<button class="btn btn-success">Confirm Delivery</button>
+              </form>
+            {% endif %}
+
+          {% elif order.status == "DELIVERED" or order.status == "COMPLETED" %}
+            <div class="alert alert-success mb-2"><i class="bi bi-check-circle me-1"></i>This order has reached delivery/completion.</div>
+
+          {% elif order.status == "CANCELLED" %}
+            <div class="alert alert-danger mb-2">This order is cancelled. No workflow action is available.</div>
+          {% endif %}
+
+          {% if can_cancel and perms.orders.approve_order and order.status != "CANCELLED" and order.status != "DELIVERED" and order.status != "COMPLETED" %}
+            <hr>
+            <form method="post" action="{% url 'orders:cancel_order' order.pk %}" class="d-grid">
+              {% csrf_token %}
+              <button class="btn btn-outline-danger" onclick="return confirm('Cancel this order?');">Cancel Order</button>
+            </form>
+          {% endif %}
+
+          {% if not can_submit and not can_confirm and not can_cancel %}
+            {% if not perms.orders.fulfil_order %}
+              <div class="alert alert-light border mt-3 mb-0">
+                <i class="bi bi-shield-lock me-1"></i>
+                No action is assigned to your role at this stage.
+              </div>
+            {% endif %}
+          {% endif %}
+
+          <hr>
+          <div class="small text-muted">
+            <strong>Current stage:</strong> {{ order.get_status_display }}<br>
+            <strong>Payment:</strong> {{ order.get_payment_status_display }}<br>
+            <strong>Delivery:</strong> {{ order.get_delivery_status_display }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

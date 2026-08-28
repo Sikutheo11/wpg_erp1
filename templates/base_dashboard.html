@@ -332,6 +332,275 @@ body{
         overflow-wrap:anywhere;
     }
 }
+
+/* WPG GLOBAL LIST PAGINATION */
+.wpg-pagination-wrap{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:.4rem;
+    flex-wrap:wrap;
+    padding:1rem .75rem .25rem;
+}
+.wpg-pagination-wrap .btn{
+    min-width:42px;
+}
+.wpg-pagination-wrap .wpg-page-btn.active{
+    background:#0d6efd;
+    border-color:#0d6efd;
+    color:#fff;
+}
+.wpg-pagination-meta{
+    width:100%;
+    text-align:center;
+    color:#6b7280;
+    font-size:.78rem;
+    margin-bottom:.15rem;
+}
+
+
+/* WPG GLOBAL COMPACT PAGE + LIST DESIGN */
+
+/* Reduce wasted vertical space on every dashboard page */
+.main-content{
+    padding:1rem 1.25rem 1.5rem!important;
+}
+
+.main-content > .container-fluid{
+    padding-top:0!important;
+}
+
+.main-content .container-fluid > :first-child{
+    margin-top:0!important;
+}
+
+.main-content h1,
+.main-content h2,
+.main-content h3{
+    margin-top:0;
+}
+
+.main-content .mb-5{
+    margin-bottom:1.5rem!important;
+}
+
+.main-content .mb-4{
+    margin-bottom:1.15rem!important;
+}
+
+.main-content .py-5{
+    padding-top:1.5rem!important;
+    padding-bottom:1.5rem!important;
+}
+
+/* Compact cards and panels */
+.main-content .card{
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    box-shadow:0 2px 8px rgba(15,23,42,.045);
+}
+
+.main-content .card-header{
+    padding:.8rem 1rem;
+    border-bottom:1px solid #e5e7eb;
+}
+
+.main-content .card-body{
+    padding:1rem;
+}
+
+/* Cleaner list / table design */
+.main-content .table-responsive{
+    border-radius:0 0 12px 12px;
+}
+
+.main-content table.table{
+    margin-bottom:0;
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+}
+
+.main-content table.table thead th{
+    background:#f8fafc;
+    color:#64748b;
+    font-size:.76rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.035em;
+    padding:.72rem .8rem;
+    border-top:0;
+    border-bottom:1px solid #dfe5ec;
+    vertical-align:middle;
+}
+
+.main-content table.table tbody td{
+    padding:.72rem .8rem;
+    border-bottom:1px solid #edf1f5;
+    vertical-align:middle;
+    color:#1f2937;
+}
+
+.main-content table.table tbody tr:last-child td{
+    border-bottom:0;
+}
+
+.main-content table.table tbody tr{
+    transition:background-color .15s ease;
+}
+
+.main-content table.table tbody tr:hover{
+    background:#f8fbff;
+}
+
+/* Keep important identifiers visually clear */
+.main-content table.table tbody td:first-child strong,
+.main-content table.table tbody td:first-child a{
+    font-weight:700;
+}
+
+/* Compact badges and controls inside lists */
+.main-content table.table .badge{
+    font-size:.72rem;
+    padding:.4rem .55rem;
+    border-radius:8px;
+}
+
+.main-content table.table .btn-sm{
+    padding:.35rem .55rem;
+    min-height:auto;
+}
+
+/* List-card titles and counts */
+.main-content .card-header h1,
+.main-content .card-header h2,
+.main-content .card-header h3,
+.main-content .card-header h4,
+.main-content .card-header h5,
+.main-content .card-header h6{
+    margin-bottom:.15rem;
+}
+
+/* Make filters less tall */
+.main-content form .form-label{
+    margin-bottom:.35rem;
+}
+
+.main-content .form-control,
+.main-content .form-select{
+    border-radius:9px;
+}
+
+@media (min-width: 992px){
+    .main-content{
+        padding-top:.85rem!important;
+    }
+}
+
+@media (max-width: 767.98px){
+    .main-content{
+        padding:.75rem!important;
+    }
+
+    .main-content .card-body{
+        padding:.85rem;
+    }
+}
+
+
+/* WPG ULTRA COMPACT PAGE SPACING */
+
+/* Pull page content much closer to topbar */
+.main-content{
+    padding-top:.25rem!important;
+    padding-right:1rem!important;
+    padding-bottom:1rem!important;
+    padding-left:1rem!important;
+}
+
+.main-content > .container-fluid{
+    padding-top:0!important;
+    margin-top:0!important;
+}
+
+/* Remove extra spacing created by first page header blocks */
+.main-content > .container-fluid > .d-flex:first-child,
+.main-content > .container-fluid > .row:first-child,
+.main-content > .container-fluid > div:first-child{
+    margin-top:0!important;
+    padding-top:0!important;
+}
+
+.main-content > .container-fluid > .d-flex:first-child{
+    margin-bottom:.65rem!important;
+}
+
+.main-content h1,
+.main-content h2,
+.main-content h3{
+    margin-top:0!important;
+    margin-bottom:.35rem!important;
+}
+
+/* Compress common Bootstrap spacing even further */
+.main-content .mb-5{
+    margin-bottom:1rem!important;
+}
+
+.main-content .mb-4{
+    margin-bottom:.75rem!important;
+}
+
+.main-content .mb-3{
+    margin-bottom:.6rem!important;
+}
+
+.main-content .mt-4{
+    margin-top:.75rem!important;
+}
+
+.main-content .mt-3{
+    margin-top:.6rem!important;
+}
+
+.main-content .py-5{
+    padding-top:1rem!important;
+    padding-bottom:1rem!important;
+}
+
+.main-content .py-4{
+    padding-top:.75rem!important;
+    padding-bottom:.75rem!important;
+}
+
+/* Compact filter/list cards */
+.main-content .card-header{
+    padding:.6rem .85rem!important;
+}
+
+.main-content .card-body{
+    padding:.75rem .85rem!important;
+}
+
+.main-content table.table thead th{
+    padding:.55rem .65rem!important;
+}
+
+.main-content table.table tbody td{
+    padding:.58rem .65rem!important;
+}
+
+/* Reduce large title blocks on desktop */
+@media (min-width: 992px){
+    .main-content{
+        padding-top:.15rem!important;
+    }
+
+    .main-content > .container-fluid{
+        padding-top:0!important;
+    }
+}
+
 </style>
 {% include "includes/mobile_density.html" %}
 </head>
@@ -459,8 +728,7 @@ body{
              id="engine{{ item.owner.id }}">
 
             {% if item.owner.code == "FINANCE" %}
-                {% safe_url "core:job_investment_list" as job_investment_list_url %}
-                <a class="submenu" href="{{ job_investment_list_url }}">
+                <a class="submenu" href="/job-investments/">
                     <i class="bi bi-people-fill"></i>
                     Job Investments
                 </a>
@@ -745,6 +1013,131 @@ body{
 
 {% block scripts %}
 {% endblock %}
+
+
+<script>
+/* WPG GLOBAL TABLE PAGINATION */
+(function () {
+    const PAGE_SIZE = 10;
+
+    function meaningfulRows(tbody) {
+        return Array.from(tbody.children).filter(function (row) {
+            if (row.tagName !== "TR") return false;
+            if (row.dataset.paginationIgnore === "true") return false;
+            return true;
+        });
+    }
+
+    function buildPagination(table) {
+        if (table.dataset.wpgPaginated === "true") return;
+        if (table.classList.contains("no-auto-pagination")) return;
+
+        const tbody = table.tBodies && table.tBodies[0];
+        if (!tbody) return;
+
+        const rows = meaningfulRows(tbody);
+        if (rows.length <= PAGE_SIZE) return;
+
+        table.dataset.wpgPaginated = "true";
+
+        let currentPage = 1;
+        const totalPages = Math.ceil(rows.length / PAGE_SIZE);
+
+        const wrap = document.createElement("div");
+        wrap.className = "wpg-pagination-wrap";
+
+        const meta = document.createElement("div");
+        meta.className = "wpg-pagination-meta";
+        wrap.appendChild(meta);
+
+        const previous = document.createElement("button");
+        previous.type = "button";
+        previous.className = "btn btn-sm btn-outline-primary";
+        previous.innerHTML = '<i class="bi bi-chevron-double-left"></i> Previous';
+        wrap.appendChild(previous);
+
+        const pageButtons = [];
+        for (let i = 1; i <= totalPages; i++) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "btn btn-sm btn-outline-primary wpg-page-btn";
+            button.textContent = i;
+            button.dataset.page = i;
+            button.addEventListener("click", function () {
+                currentPage = i;
+                render();
+            });
+            pageButtons.push(button);
+            wrap.appendChild(button);
+        }
+
+        const next = document.createElement("button");
+        next.type = "button";
+        next.className = "btn btn-sm btn-outline-primary";
+        next.innerHTML = 'Next <i class="bi bi-chevron-double-right"></i>';
+        wrap.appendChild(next);
+
+        previous.addEventListener("click", function () {
+            if (currentPage > 1) {
+                currentPage -= 1;
+                render();
+            }
+        });
+
+        next.addEventListener("click", function () {
+            if (currentPage < totalPages) {
+                currentPage += 1;
+                render();
+            }
+        });
+
+        function render() {
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+
+            rows.forEach(function (row, index) {
+                row.style.display = (index >= start && index < end) ? "" : "none";
+            });
+
+            previous.disabled = currentPage === 1;
+            next.disabled = currentPage === totalPages;
+
+            pageButtons.forEach(function (button, index) {
+                const page = index + 1;
+                button.classList.toggle("active", page === currentPage);
+
+                if (totalPages > 9) {
+                    const visible =
+                        page === 1 ||
+                        page === totalPages ||
+                        Math.abs(page - currentPage) <= 2;
+                    button.style.display = visible ? "" : "none";
+                }
+            });
+
+            const firstItem = start + 1;
+            const lastItem = Math.min(end, rows.length);
+            meta.textContent =
+                "Showing " + firstItem + "–" + lastItem +
+                " of " + rows.length + " items · 10 per page";
+        }
+
+        const host = table.closest(".table-responsive") || table.parentElement;
+        if (host && host.parentNode) {
+            host.insertAdjacentElement("afterend", wrap);
+        }
+
+        render();
+    }
+
+    function applyGlobalPagination() {
+        document.querySelectorAll(".main-content table").forEach(buildPagination);
+    }
+
+    document.addEventListener("DOMContentLoaded", applyGlobalPagination);
+    window.WPGRefreshPagination = applyGlobalPagination;
+})();
+</script>
 
 </body>
 </html>

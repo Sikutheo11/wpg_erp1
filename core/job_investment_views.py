@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -38,15 +40,106 @@ def _error_text(exc):
 @login_required
 @wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
 def job_investment_list(request):
-    investments = (
+    status_filter = request.GET.get("status", "").strip()
+    business_unit_filter = request.GET.get("business_unit", "").strip()
+
+    queryset = (
         JobInvestment.objects.select_related("order", "opened_by")
-        .prefetch_related("investor_agreements__investor", "investor_contributions")
+        .prefetch_related(
+            "investor_agreements__investor",
+            "investor_agreements__settlement",
+            "investor_contributions",
+            "finance_income_links",
+            "finance_expense_links",
+        )
         .order_by("-created_at")
     )
+
+    valid_statuses = {value for value, _label in JobInvestment.STATUSES}
+    business_unit_choices = tuple(
+        Order._meta.get_field("business_unit").choices or ()
+    )
+    valid_business_units = {value for value, _label in business_unit_choices}
+
+    if status_filter in valid_statuses:
+        queryset = queryset.filter(status=status_filter)
+    else:
+        status_filter = ""
+
+    if business_unit_filter in valid_business_units:
+        queryset = queryset.filter(order__business_unit=business_unit_filter)
+    else:
+        business_unit_filter = ""
+
+    investments = list(queryset)
+    zero = Decimal("0.00")
+
+    summary = {
+        "job_count": len(investments),
+        "contract_value": sum((item.contract_value for item in investments), zero),
+        "estimated_cost": sum((item.estimated_job_cost for item in investments), zero),
+        "estimated_profit": sum((item.estimated_profit for item in investments), zero),
+        "wpg_capital": sum((item.wpg_capital_committed for item in investments), zero),
+        "investor_capital": sum((item.investor_capital_received for item in investments), zero),
+        "funding_gap": sum((item.funding_gap for item in investments), zero),
+        "actual_revenue": sum((item.actual_revenue_snapshot for item in investments), zero),
+        "actual_cost": sum((item.actual_cost_snapshot for item in investments), zero),
+        "actual_profit": sum((item.actual_profit_snapshot for item in investments), zero),
+    }
+
     return render(
         request,
         "core/job_investment/list.html",
-        {"investments": investments},
+        {
+            "investments": investments,
+            "summary": summary,
+            "status_choices": JobInvestment.STATUSES,
+            "business_unit_choices": business_unit_choices,
+            "selected_status": status_filter,
+            "selected_business_unit": business_unit_filter,
+        },
+    )
+
+
+@login_required
+@wpg_permission_required("orders.view_order", feature_code="ORDER_LIST")
+def job_investment_eligible_orders(request):
+    orders = list(
+        Order.objects.filter(business_unit="FURNITURE")
+        .exclude(status="CANCELLED")
+        .filter(job_investment__isnull=True)
+        .select_related("customer_quotation")
+        .prefetch_related("furniture_production_plans")
+        .order_by("-created_at")
+    )
+
+    for order in orders:
+        plans = list(order.furniture_production_plans.all())
+        usable_plans = [
+            plan for plan in plans
+            if plan.status in {"CALCULATED", "APPROVED"}
+        ]
+        order.job_investment_plan_count = len(plans)
+        order.job_investment_usable_plan_count = len(usable_plans)
+        order.job_investment_estimated_cost = sum(
+            (Decimal(str(plan.estimated_total_cost or 0)) for plan in usable_plans),
+            Decimal("0.00"),
+        )
+        order.job_investment_ready = (
+            bool(plans)
+            and len(usable_plans) == len(plans)
+            and order.job_investment_estimated_cost > 0
+        )
+        order.job_investment_contract_value = (
+            order.customer_quotation.total_amount
+            if order.customer_quotation_id
+            else order.total_amount
+        )
+
+    return render(
+        request,
+        "core/job_investment/eligible_orders.html",
+        {"eligible_orders": orders},
     )
 
 
@@ -78,6 +171,10 @@ def job_investment_open(request, order_pk):
         if order.customer_quotation_id
         else order.total_amount
     )
+    estimated_profit_preview = (
+        Decimal(str(contract_value_preview or 0))
+        - Decimal(str(estimated_cost_preview or 0))
+    )
 
     form = JobInvestmentOpenForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -102,6 +199,7 @@ def job_investment_open(request, order_pk):
             "form": form,
             "estimated_cost_preview": estimated_cost_preview,
             "contract_value_preview": contract_value_preview,
+            "estimated_profit_preview": estimated_profit_preview,
             "plans": plans,
         },
     )

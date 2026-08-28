@@ -2,6 +2,7 @@ from django.urls import include, path
 
 from . import views
 from . import product_views
+from . import planner_views
 
 
 app_name = "furniture"
@@ -149,7 +150,7 @@ urlpatterns = [
     ),
     path(
         "orders/<int:order_id>/production-costing/",
-        views.create_order_costing,
+        planner_views.order_technical_costing,
         name="create_order_costing",
     ),
 

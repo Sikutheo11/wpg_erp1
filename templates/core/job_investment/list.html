@@ -6,38 +6,88 @@
   <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
     <div>
       <h3 class="fw-bold mb-1">Job Investments</h3>
-      <p class="text-muted mb-0">Job-specific WPG and investor funding, agreements, settlements and Finance reconciliation.</p>
+      <p class="text-muted mb-0">Portfolio view of job-specific WPG capital, investor funding, Finance actuals and settlements.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="/job-investments/eligible-orders/" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>
+        Open Job Investment
+      </a>
+      <a href="/orders/" class="btn btn-outline-secondary">
+        <i class="bi bi-cart-check me-1"></i>
+        View All Orders
+      </a>
     </div>
   </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><small class="text-muted">Job Investments</small><h3 class="mb-0">{{ summary.job_count }}</h3></div></div></div>
+    <div class="col-md-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><small class="text-muted">Contract Value</small><h4 class="mb-0">{{ summary.contract_value|floatformat:0 }} RWF</h4></div></div></div>
+    <div class="col-md-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><small class="text-muted">Estimated Job Cost</small><h4 class="mb-0">{{ summary.estimated_cost|floatformat:0 }} RWF</h4><small class="text-muted">Estimated profit {{ summary.estimated_profit|floatformat:0 }} RWF</small></div></div></div>
+    <div class="col-md-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><small class="text-muted">Funding Gap</small><h4 class="mb-0">{{ summary.funding_gap|floatformat:0 }} RWF</h4></div></div></div>
+    <div class="col-md-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><small class="text-muted">WPG Capital</small><h4 class="mb-0">{{ summary.wpg_capital|floatformat:0 }} RWF</h4></div></div></div>
+    <div class="col-md-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><small class="text-muted">Investor Capital Received</small><h4 class="mb-0">{{ summary.investor_capital|floatformat:0 }} RWF</h4></div></div></div>
+    <div class="col-md-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><small class="text-muted">Finance Actuals</small><div class="small mt-1">Revenue <strong>{{ summary.actual_revenue|floatformat:0 }}</strong></div><div class="small">Cost <strong>{{ summary.actual_cost|floatformat:0 }}</strong></div></div></div></div>
+    <div class="col-md-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><small class="text-muted">Actual Profit / Loss</small><h4 class="mb-0">{{ summary.actual_profit|floatformat:0 }} RWF</h4></div></div></div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-5">
+          <label class="form-label">Status</label>
+          <select class="form-select" name="status">
+            <option value="">All statuses</option>
+            {% for value, label in status_choices %}
+              <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label">Business Unit</label>
+          <select class="form-select" name="business_unit">
+            <option value="">All business units</option>
+            {% for value, label in business_unit_choices %}
+              <option value="{{ value }}" {% if selected_business_unit == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 d-grid"><button class="btn btn-outline-primary">Apply Filter</button></div>
+      </form>
+    </div>
+  </div>
+
   <div class="card border-0 shadow-sm">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-      <strong>Investment / Partnership Jobs</strong>
+      <div><strong>Investment / Partnership Jobs</strong><div class="text-muted small">Investor capital is funding; Finance-confirmed customer income is revenue.</div></div>
       <span class="badge bg-secondary">{{ investments|length }}</span>
     </div>
     <div class="table-responsive">
-      <table class="table align-middle mb-0">
-        <thead>
-          <tr>
-            <th>Reference</th><th>Order</th><th>Business Unit</th><th>Status</th>
-            <th class="text-end">Estimated Cost</th><th class="text-end">WPG Capital</th>
-            <th class="text-end">Investor Capital</th><th class="text-end">Funding Gap</th><th></th>
-          </tr>
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Reference / Job</th><th>Status</th><th>Contract</th><th>Estimated Cost</th><th>Est. Profit</th><th>WPG Capital</th><th>Investor Capital</th><th>Total Capital</th><th>Funding Gap</th><th>Actual Revenue</th><th>Actual Cost</th><th>Actual Profit</th><th>Agreements</th><th>Opened</th><th></th></tr>
         </thead>
         <tbody>
           {% for investment in investments %}
           <tr>
-            <td><strong>{{ investment.reference }}</strong><small class="d-block text-muted">{{ investment.created_at|date:"d M Y" }}</small></td>
-            <td>{{ investment.order.order_number }}<small class="d-block text-muted">{{ investment.order.customer_name }}</small></td>
-            <td>{{ investment.order.get_business_unit_display }}</td>
+            <td style="min-width:220px"><strong>{{ investment.reference }}</strong><small class="d-block">{{ investment.order.order_number }} - {{ investment.order.customer_name }}</small><small class="d-block text-muted">{{ investment.order.get_business_unit_display }}</small></td>
             <td><span class="badge bg-light text-dark border">{{ investment.get_status_display }}</span></td>
-            <td class="text-end">{{ investment.estimated_job_cost|floatformat:0 }} RWF</td>
-            <td class="text-end">{{ investment.wpg_capital_committed|floatformat:0 }} RWF</td>
-            <td class="text-end">{{ investment.investor_capital_received|floatformat:0 }} RWF</td>
-            <td class="text-end">{{ investment.funding_gap|floatformat:0 }} RWF</td>
+            <td>{{ investment.contract_value|floatformat:0 }}</td>
+            <td>{{ investment.estimated_job_cost|floatformat:0 }}</td>
+            <td>{{ investment.estimated_profit|floatformat:0 }}</td>
+            <td>{{ investment.wpg_capital_committed|floatformat:0 }}</td>
+            <td>{{ investment.investor_capital_received|floatformat:0 }}</td>
+            <td>{{ investment.total_capital_available|floatformat:0 }}</td>
+            <td><strong>{{ investment.funding_gap|floatformat:0 }}</strong></td>
+            <td>{{ investment.actual_revenue_snapshot|floatformat:0 }}</td>
+            <td>{{ investment.actual_cost_snapshot|floatformat:0 }}</td>
+            <td><strong>{{ investment.actual_profit_snapshot|floatformat:0 }}</strong></td>
+            <td><span class="badge bg-secondary">{{ investment.investor_agreements.all|length }}</span>{% for agreement in investment.investor_agreements.all %}<small class="d-block text-muted">{{ agreement.investor.name }} - {{ agreement.get_status_display }}{% if agreement.settlement %} - {{ agreement.settlement.get_status_display }}{% endif %}</small>{% endfor %}</td>
+            <td>{{ investment.created_at|date:"d M Y" }}<small class="d-block text-muted">{% if investment.opened_by %}{{ investment.opened_by }}{% else %}-{% endif %}</small></td>
             <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'core:job_investment_detail' investment.pk %}">Open</a></td>
           </tr>
           {% empty %}
-          <tr><td colspan="9" class="text-center text-muted py-5">No job investment has been opened yet. Open one from an eligible Order.</td></tr>
+          <tr><td colspan="15" class="text-center text-muted py-5">No Job Investment matches the selected filters. Funding records are opened from an eligible Order.</td></tr>
           {% endfor %}
         </tbody>
       </table>

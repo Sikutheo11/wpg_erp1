@@ -1,0 +1,103 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Open Job Investment{% endblock %}
+{% block page_title %}Open Job Investment{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h3 class="fw-bold mb-1">Select a Job / Order to Fund</h3>
+      <p class="text-muted mb-0">
+        Choose an eligible Furniture order. The Job Investment uses the Order contract value
+        and calculated/approved Production Plans for estimated job cost.
+      </p>
+    </div>
+    <a href="/job-investments/" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Back to Job Investments
+    </a>
+  </div>
+
+  <div class="alert alert-info border-0 shadow-sm">
+    <strong>Funding entry rule:</strong>
+    Job Investment starts from an existing Order. Investor money is not received automatically;
+    received capital must later match a Finance-confirmed INVESTMENT income declaration.
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <div>
+        <strong>Eligible Furniture Orders</strong>
+        <div class="small text-muted">Cancelled orders and orders already linked to Job Investment are excluded.</div>
+      </div>
+      <span class="badge bg-secondary">{{ eligible_orders|length }}</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Order / Customer</th>
+            <th>Status</th>
+            <th>Order Type</th>
+            <th class="text-end">Contract Value</th>
+            <th>Production Plans</th>
+            <th class="text-end">Estimated Cost</th>
+            <th>Funding Readiness</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in eligible_orders %}
+          <tr>
+            <td style="min-width:220px">
+              <strong>{{ order.order_number }}</strong>
+              <small class="d-block">{{ order.customer_name }}</small>
+              <small class="d-block text-muted">{{ order.created_at|date:"d M Y" }}</small>
+            </td>
+            <td><span class="badge bg-light text-dark border">{{ order.get_status_display }}</span></td>
+            <td>{{ order.get_order_type_display }}</td>
+            <td class="text-end"><strong>{{ order.job_investment_contract_value|floatformat:0 }} RWF</strong></td>
+            <td>
+              {{ order.job_investment_usable_plan_count }} / {{ order.job_investment_plan_count }}
+              <small class="d-block text-muted">calculated or approved</small>
+            </td>
+            <td class="text-end">{{ order.job_investment_estimated_cost|floatformat:0 }} RWF</td>
+            <td>
+              {% if order.job_investment_ready %}
+                <span class="badge bg-success">Ready to Fund</span>
+              {% elif order.job_investment_plan_count == 0 %}
+                <span class="badge bg-warning text-dark">Production Plan Required</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Calculate All Plans</span>
+              {% endif %}
+            </td>
+            <td class="text-end" style="min-width:190px">
+              <a href="/orders/{{ order.pk }}/" class="btn btn-sm btn-outline-secondary">View Order</a>
+              {% if order.job_investment_ready %}
+                <a href="/job-investments/orders/{{ order.pk }}/open/" class="btn btn-sm btn-primary">Open Funding Form</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-5">
+              No eligible Furniture order is available. Create or prepare an Order first.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mt-4">
+    <div class="card-body">
+      <h6 class="fw-bold">What happens next?</h6>
+      <div class="row g-3">
+        <div class="col-md-3"><div class="border rounded p-3 h-100"><strong>1. Open Funding</strong><small class="d-block text-muted">Enter WPG capital committed and notes.</small></div></div>
+        <div class="col-md-3"><div class="border rounded p-3 h-100"><strong>2. Investor Agreement</strong><small class="d-block text-muted">Add investor, committed capital and return terms.</small></div></div>
+        <div class="col-md-3"><div class="border rounded p-3 h-100"><strong>3. Receive Capital</strong><small class="d-block text-muted">Link received funds to Finance confirmation.</small></div></div>
+        <div class="col-md-3"><div class="border rounded p-3 h-100"><strong>4. Settle</strong><small class="d-block text-muted">Repay capital and return through Finance.</small></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

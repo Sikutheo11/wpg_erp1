@@ -717,7 +717,7 @@ def add_material(request, pk):
                 return redirect("furniture:production_job_detail", pk=production_job.pk)
 
     else:
-        form = ProductionMaterialForm()
+        form = ProductionMaterialForm(production_job=production_job)
 
     return render(
         request,

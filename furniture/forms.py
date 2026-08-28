@@ -555,19 +555,39 @@ class ProductionMaterialForm(forms.ModelForm):
         return quantity
 
     def __init__(self, *args, **kwargs):
+        production_job = kwargs.pop("production_job", None)
+        self.production_job = production_job
         super().__init__(*args, **kwargs)
-        self.fields["raw_material"].queryset = RawMaterial.objects.filter(
-            status="active",
-        ).order_by("name")
+        qs = RawMaterial.objects.filter(status="active")
+        if production_job is not None and production_job.order_id:
+            from furniture.planner_models import ProductionPlanMaterial
+            approved_ids = ProductionPlanMaterial.objects.filter(
+                plan__order_id=production_job.order_id,
+                plan__status="APPROVED",
+            ).values_list("raw_material_id", flat=True)
+            qs = qs.filter(pk__in=approved_ids)
+        self.fields["raw_material"].queryset = qs.order_by("name")
         self.fields["warehouse"].queryset = Warehouse.objects.filter(
             is_active=True,
             warehouse_type__in={"MAIN", "RAW_MATERIAL"},
         ).order_by("warehouse_type", "name")
 
+    def clean(self):
+        cleaned = super().clean()
+        raw_material = cleaned.get("raw_material")
+        quantity = cleaned.get("quantity_used")
+        if self.production_job is not None and raw_material and quantity:
+            from furniture.services.production_service import ProductionCostingMaterialGuard
+            try:
+                ProductionCostingMaterialGuard.assert_material_in_approved_costing(
+                    self.production_job, raw_material, quantity
+                )
+            except Exception as exc:
+                raise forms.ValidationError(
+                    getattr(exc, "messages", None) or [str(exc)]
+                )
+        return cleaned
 
-# ======================================================
-# LABOUR FORM
-# ======================================================
 
 class ProductionLabourForm(forms.ModelForm):
 

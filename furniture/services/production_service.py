@@ -569,3 +569,45 @@ class ProductionService:
         )
 
         return production_job
+
+class ProductionCostingMaterialGuard:
+    @staticmethod
+    def approved_plan_for_job(production_job):
+        if not production_job.order_id:
+            raise ValidationError("This production job has no linked Order.")
+        from furniture.planner_models import ProductionPlan
+        plan = (
+            ProductionPlan.objects.filter(order_id=production_job.order_id, status="APPROVED")
+            .prefetch_related("materials__raw_material")
+            .order_by("-updated_at")
+            .first()
+        )
+        if not plan:
+            raise ValidationError(
+                "No approved Production Costing exists for this Order. "
+                "Approve technical costing before requesting or consuming materials."
+            )
+        return plan
+
+    @staticmethod
+    def assert_material_in_approved_costing(production_job, raw_material, quantity):
+        from django.db.models import Sum
+        from furniture.models import ProductionMaterial
+        plan = ProductionCostingMaterialGuard.approved_plan_for_job(production_job)
+        line = plan.materials.filter(raw_material=raw_material).first()
+        if not line:
+            raise ValidationError(
+                f"{raw_material} was not included in the approved Production Costing for this Order. "
+                "Update and re-approve the Production Plan before requesting it."
+            )
+        used = (
+            ProductionMaterial.objects.filter(
+                production_job=production_job, raw_material=raw_material
+            ).aggregate(total=Sum("quantity_used"))["total"] or 0
+        )
+        if used + quantity > line.estimated_quantity:
+            raise ValidationError(
+                f"Quantity exceeds approved costing. Approved: {line.estimated_quantity}; "
+                f"already recorded: {used}; requested: {quantity}."
+            )
+        return line

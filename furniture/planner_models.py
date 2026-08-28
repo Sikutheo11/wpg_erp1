@@ -211,3 +211,48 @@ class ProductionPlanAdditionalCost(models.Model):
 
     def __str__(self):
         return f"{self.plan} - {self.description}"
+
+class LabourRate(models.Model):
+    role_name = models.CharField(max_length=120, unique=True)
+    hourly_rate = models.DecimalField(max_digits=18, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+    note = models.CharField(max_length=255, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        app_label = "furniture"
+        ordering = ["role_name"]
+
+    def clean(self):
+        if self.hourly_rate is not None and self.hourly_rate < 0:
+            raise ValidationError({"hourly_rate": "Hourly rate cannot be negative."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.role_name} - {self.hourly_rate}"
+
+
+class MachineRate(models.Model):
+    asset = models.OneToOneField(Asset, on_delete=models.CASCADE, related_name="furniture_machine_rate")
+    hourly_cost = models.DecimalField(max_digits=18, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+    note = models.CharField(max_length=255, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        app_label = "furniture"
+        ordering = ["asset__name"]
+
+    def clean(self):
+        if self.hourly_cost is not None and self.hourly_cost < 0:
+            raise ValidationError({"hourly_cost": "Hourly machine cost cannot be negative."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.asset} - {self.hourly_cost}"
