@@ -585,6 +585,22 @@ class OrderItemForm(forms.ModelForm):
             self.fields["specifications"].required = True
             self.fields.pop("price", None)
 
+            # Furniture specifications are maintained in the uploaded
+            # reference/design attachment for these two workflows. Keep the
+            # model columns for historical compatibility, but do not collect
+            # duplicate structured specification fields on the create form.
+            if self.order_type in {"CUSTOM_FURNITURE", "NEW_PRODUCT"}:
+                for field_name in [
+                    "length_cm",
+                    "width_cm",
+                    "height_cm",
+                    "material_preference",
+                    "colour",
+                    "finish",
+                    "customer_budget",
+                ]:
+                    self.fields.pop(field_name, None)
+
             self.fields["product"].label = (
                 "Related Existing Product / Service (Optional)"
             )
@@ -626,7 +642,6 @@ class OrderItemForm(forms.ModelForm):
                 )
                 self.fields.pop("price", None)
                 self.fields["reference_image"].label = "Reference Photo"
-                self.fields["customer_budget"].label = "Customer Budget (Optional)"
 
     def clean_quantity(self):
         quantity = self.cleaned_data.get(

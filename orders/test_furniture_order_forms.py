@@ -47,14 +47,15 @@ class FurnitureOrderItemFormTests(TestCase):
         form = OrderItemForm(order_type="ECOMMERCE", business_unit="FURNITURE")
         self.assertEqual(set(form.fields), {"product", "quantity", "specifications"})
 
-    def test_custom_furniture_collects_design_and_costing_details(self):
+    def test_custom_furniture_uses_attachments_without_duplicate_spec_fields(self):
         form = OrderItemForm(order_type="CUSTOM_FURNITURE", business_unit="FURNITURE")
-        for field_name in (
-            "reference_image", "design_attachment", "length_cm", "width_cm",
-            "height_cm", "material_preference", "colour", "finish",
-            "customer_budget",
-        ):
+        for field_name in ("reference_image", "design_attachment"):
             self.assertIn(field_name, form.fields)
+        for field_name in (
+            "length_cm", "width_cm", "height_cm", "material_preference",
+            "colour", "finish", "customer_budget",
+        ):
+            self.assertNotIn(field_name, form.fields)
         self.assertNotIn("price", form.fields)
 
     def test_restock_uses_product_quantity_and_optional_photo(self):
@@ -67,13 +68,18 @@ class FurnitureOrderItemFormTests(TestCase):
     def test_new_product_requires_design_attachment(self):
         form = OrderItemForm(order_type="NEW_PRODUCT", business_unit="FURNITURE")
         self.assertTrue(form.fields["design_attachment"].required)
+        for field_name in (
+            "length_cm", "width_cm", "height_cm", "material_preference",
+            "colour", "finish", "customer_budget",
+        ):
+            self.assertNotIn(field_name, form.fields)
         self.assertNotIn("price", form.fields)
 
     def test_pos_uses_catalogue_product_selection(self):
         form = OrderItemForm(order_type="POS", business_unit="FURNITURE")
         self.assertEqual(set(form.fields), {"product", "quantity", "specifications"})
 
-    def test_custom_fields_are_visible_on_initial_order_page(self):
+    def test_duplicate_spec_fields_are_hidden_on_initial_order_page(self):
         request = RequestFactory().get(
             "/orders/create/form/?business_unit=FURNITURE&type=CUSTOM_FURNITURE"
         )
@@ -97,12 +103,13 @@ class FurnitureOrderItemFormTests(TestCase):
             },
             request=request,
         )
-        for field_name in (
-            "reference_image", "design_attachment", "length_cm", "width_cm",
-            "height_cm", "material_preference", "colour", "finish",
-            "customer_budget",
-        ):
+        for field_name in ("reference_image", "design_attachment"):
             self.assertIn(f'name="{field_name}"', html)
+        for field_name in (
+            "length_cm", "width_cm", "height_cm", "material_preference",
+            "colour", "finish", "customer_budget",
+        ):
+            self.assertNotIn(f'name="{field_name}"', html)
         self.assertNotIn('name="price"', html)
 
 
