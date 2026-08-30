@@ -9,6 +9,8 @@ class CoreConfig(AppConfig):
     name = "core"
 
     def ready(self):
+        from core.internal_codes import install_model_form_code_policy
+        install_model_form_code_policy()
         import core.reports
         import furniture.providers
         import core.job_investment_models  # noqa: F401

@@ -64,6 +64,7 @@ class ProductFormUxTests(TestCase):
         response = self.client.get(reverse("inventory:product_create"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Product identity")
+        self.assertNotContains(response, "Product Code")
         product = Product.objects.create(
             business_unit="FURNITURE",
             product_type="FINISHED_GOOD",
@@ -84,7 +85,9 @@ class ProductFormUxTests(TestCase):
             self.product_data(is_published="on"),
         )
         self.assertRedirects(response, reverse("inventory:product_list"))
-        product = Product.objects.get(product_code="BED-UX-001")
+        product = Product.objects.get(name="Approved Bed")
+        self.assertTrue(product.product_code)
+        self.assertNotEqual(product.product_code, "BED-UX-001")
         self.assertTrue(product.is_active)
         self.assertTrue(product.is_published)
 

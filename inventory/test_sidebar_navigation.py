@@ -97,7 +97,9 @@ class InventorySidebarNavigationTests(TestCase):
             },
         )
         self.assertRedirects(response, reverse("inventory:warehouse_list"))
-        self.assertTrue(Warehouse.objects.filter(code="FGS").exists())
+        warehouse = Warehouse.objects.get(name='Finished Goods Store')
+        self.assertTrue(warehouse.code)
+        self.assertNotEqual(warehouse.code, "FGS")
 
         response = self.client.post(
             reverse("inventory:supplier_create"),
