@@ -191,6 +191,8 @@ def populate_internal_codes_before_save(sender, instance, raw=False, **kwargs):
 
 
 _ORIGINAL_BASE_MODEL_FORM_INIT = None
+_ORIGINAL_BASE_MODEL_FORM_ITER = None
+_ORIGINAL_BASE_MODEL_FORM_VISIBLE_FIELDS = None
 
 
 def install_model_form_code_policy() -> None:
@@ -203,11 +205,15 @@ def install_model_form_code_policy() -> None:
     and impossible for a submitted POST to override.
     """
     global _ORIGINAL_BASE_MODEL_FORM_INIT
+    global _ORIGINAL_BASE_MODEL_FORM_ITER
+    global _ORIGINAL_BASE_MODEL_FORM_VISIBLE_FIELDS
 
     if getattr(BaseModelForm, "_wpg_internal_code_policy_installed", False):
         return
 
     _ORIGINAL_BASE_MODEL_FORM_INIT = BaseModelForm.__init__
+    _ORIGINAL_BASE_MODEL_FORM_ITER = BaseModelForm.__iter__
+    _ORIGINAL_BASE_MODEL_FORM_VISIBLE_FIELDS = BaseModelForm.visible_fields
 
     def _wpg_init(self, *args, **kwargs):
         _ORIGINAL_BASE_MODEL_FORM_INIT(self, *args, **kwargs)
@@ -226,7 +232,33 @@ def install_model_form_code_policy() -> None:
             form_field.widget = forms.HiddenInput()
             form_field.help_text = ""
 
+    def _internal_code_names(form):
+        model = getattr(getattr(form, "_meta", None), "model", None)
+        if model is None:
+            return set()
+        return {
+            field.name
+            for field in internal_code_fields_for_model(model)
+        }
+
+    def _wpg_iter(self):
+        hidden_internal_names = _internal_code_names(self)
+        for bound_field in _ORIGINAL_BASE_MODEL_FORM_ITER(self):
+            if bound_field.name in hidden_internal_names:
+                continue
+            yield bound_field
+
+    def _wpg_visible_fields(self):
+        hidden_internal_names = _internal_code_names(self)
+        return [
+            bound_field
+            for bound_field in _ORIGINAL_BASE_MODEL_FORM_VISIBLE_FIELDS(self)
+            if bound_field.name not in hidden_internal_names
+        ]
+
     BaseModelForm.__init__ = _wpg_init
+    BaseModelForm.__iter__ = _wpg_iter
+    BaseModelForm.visible_fields = _wpg_visible_fields
     BaseModelForm._wpg_internal_code_policy_installed = True
 
 

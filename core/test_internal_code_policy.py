@@ -68,6 +68,40 @@ class SystemwideInternalCodePolicyTests(TestCase):
         assign_missing_internal_codes(product)
         self.assertTrue(product.product_code.startswith("FUR-PRD-"))
 
+    def test_internal_codes_are_not_yielded_to_templates(self):
+        for model in (
+            Warehouse,
+            RawMaterial,
+            Product,
+            Department,
+            PoultryFarm,
+            PoultryBreed,
+        ):
+            internal_names = {
+                field.name
+                for field in internal_code_fields_for_model(model)
+            }
+            if not internal_names:
+                continue
+
+            field_names = [
+                field.name
+                for field in model._meta.fields
+                if field.editable
+            ]
+            FormClass = forms.modelform_factory(model, fields=field_names)
+            form = FormClass()
+
+            iterated_names = {bound_field.name for bound_field in form}
+            visible_names = {
+                bound_field.name
+                for bound_field in form.visible_fields()
+            }
+
+            with self.subTest(model=model._meta.label):
+                self.assertTrue(internal_names.isdisjoint(iterated_names))
+                self.assertTrue(internal_names.isdisjoint(visible_names))
+
     def test_external_identifiers_are_not_internal_codes(self):
         names = {field.name for field in internal_code_fields_for_model(Product)}
         self.assertNotIn("barcode", names)
